@@ -1,1 +1,2 @@
+docker-py
 cloudify-plugins-common>=3.0
