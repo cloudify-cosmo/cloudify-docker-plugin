@@ -18,7 +18,7 @@ import time
 
 import setuptools
 
-import docker
+import docker_plugin
 
 
 LICENCE = open('LICENSE').read()
@@ -30,11 +30,11 @@ DEPENDENCY_LINKS = open('dependency_links.txt').read().split('\n')
 setuptools.setup(name='cloudify-docker-plugin',
                  author='Michał Soczewka',
                  author_email='michal.soczewka@codilime.com',
-                 version=docker.__version__,
-                 description=docker.__doc__,
+                 version=docker_plugin.__version__,
+                 description=docker_plugin.__doc__,
                  license=LICENCE,
                  long_description=README,
-                 packages=['docker'],
+                 packages=['docker_plugin'],
                  dependency_links=DEPENDENCY_LINKS,
                  install_requires=REQUIREMENTS,
                  zip_safe=False)
