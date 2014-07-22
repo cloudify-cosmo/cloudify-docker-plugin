@@ -27,14 +27,14 @@ REQUIREMENTS = open('requirements.txt').read().split('\n')
 DEPENDENCY_LINKS = open('dependency_links.txt').read().split('\n')
 
 
-setuptools.setup(name='cloudify-docker-plugin',
-                 author='Michał Soczewka',
+setuptools.setup(author='Michał Soczewka',
                  author_email='michal.soczewka@codilime.com',
+                 name=docker_plugin.__name__,
                  version=docker_plugin.__version__,
                  description=docker_plugin.__doc__,
                  license=LICENCE,
                  long_description=README,
-                 packages=['docker_plugin'],
                  dependency_links=DEPENDENCY_LINKS,
                  install_requires=REQUIREMENTS,
+                 packages=setuptools.find_packages(),
                  zip_safe=False)
