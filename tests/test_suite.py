@@ -11,10 +11,11 @@ class DockerSuite(unittest.TestSuite):
 
     def __init__(self):
         super(DockerSuite, self).__init__()
-        self.addTest(TestStopAndRun())
-        self.addTest(TestCommand())
-        self.addTest(TestPortsConfig())
-        self.addTest(TestVolumes())
-        self.addTest(TestExceptions('wrongPathToImage'))
+        # self.addTest(TestStopAndRun())
+        # self.addTest(TestCommand())
+        # self.addTest(TestPortsConfig())
+        # self.addTest(TestVolumes())
+        # self.addTest(TestExceptions('wrongPathToImage'))
         self.addTest(TestExceptions('wrongCommand'))
-        self.addTest(TestExceptions('wrongVolumes'))
+        # self.addTest(TestExceptions('wrongVolumes'))
+        self.addTest(TestExceptions('noImagePath'))

@@ -18,9 +18,9 @@ def create(ctx):
     ):
         image = docker_wrapper.build_image(ctx, client)
     else:
-        ERROR_NO_IMAGE_SRC = ("Either path or url" +
+        ERROR_NO_IMAGE_SRC = ("Either path or url "
                               "to image must be given")
-        docker_wrapper.ctx.logger.error(ERROR_NO_IMAGE_SRC)
+        ctx.logger.error(ERROR_NO_IMAGE_SRC)
         raise exceptions.NonRecoverableError(ERROR_NO_IMAGE_SRC)
     ctx.runtime_properties.update({'image': image})
     docker_wrapper.create_container(ctx, client)
@@ -38,7 +38,7 @@ def run(ctx):
         "Top: " + top_info
     )
     logs = client.logs(ctx.runtime_properties['container'])
-    # TODO function will not return anything
+    # TODO(Zosia) function will not return anything
     return (containers, top_info, logs)
 
 

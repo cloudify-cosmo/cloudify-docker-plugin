@@ -8,7 +8,6 @@ from TestCaseBase import TestCaseBase
 
 class TestExceptions(TestCaseBase):
     def wrongPathToImage(self):
-        p = copy.deepcopy(self.ctx.properties['image'])
         self.ctx.properties['image'].update({'path': "wrong path"})
         self.assertRaises(
             exceptions.NonRecoverableError,
@@ -32,3 +31,11 @@ class TestExceptions(TestCaseBase):
             {'binds': {DIR: {'bind': MNT_DIR}}}
         )
         self.assertRaises(exceptions.NonRecoverableError, tasks.run, self.ctx)
+
+    def noImagePath(self):
+        image = self.ctx.properties.pop('image')
+        self.assertRaises(
+             exceptions.NonRecoverableError,
+             tasks.create,
+             self.ctx
+        )
