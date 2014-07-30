@@ -14,29 +14,55 @@ def _is_image_id_valid(ctx, image_id):
     return re.match('^[a-f0-9]{12,64}$', image_id) is not None
 
 
+def _get_import_image_id(ctx, client, import_image_output):
+    # import_image returns long string where in the second line
+    # after last status is image id
+    output_line = import_image_output.split('\n')[1]
+    position_of_last_status = output_line.rfind('status')
+    if position_of_last_status < 0:
+        # If there was an error, there is no 'status'
+        # in second output line
+        # error message is after last 'error'
+        position_of_error = output_line.rfind('error')
+        err_msg = output_line[position_of_error:].split('"')[2]
+        err_msg = 'Error during image import {}'.format(err_msg)
+        _log_and_raise(ctx, client, err_msg)
+    image_id = output_line[position_of_last_status:].split('"')[2]
+    if _is_image_id_valid(ctx, image_id):
+        return image_id
+    else:
+        _log_and_raise(ctx, client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
+
+
+def _get_build_image_id(ctx, client, stream_generator):
+    stream = None
+    for stream in stream_generator:
+        pass
+    # Fourth word in a string stream is an id
+    # I can't find it in docker documentation
+    if stream is None:
+        _log_and_raise(
+            ctx,
+            client,
+            _ERR_MSG_UNKNOWN_IMAGE_BUILD,
+            exceptions.RecoverableError
+        )
+    image_id = re.sub(r'[\W_]+', ' ', stream).split()[3]
+    if _is_image_id_valid(ctx, image_id):
+        return image_id
+    else:
+        _log_and_raise(
+            ctx,
+            client,
+            _ERR_MSG_UNKNOWN_IMAGE_BUILD
+        )
+
+
 def import_image(ctx, client):
-
-    def get_image_id(import_image_output):
-        # import_image returns long string where in the second line
-        # after last status is image id
-        output_line = import_image_output.split('\n')[1]
-        position_of_last_status = output_line.rfind('status')
-        if position_of_last_status < 0:
-            # If there was an error, there is no 'status'
-            # in second output line
-            # error message is after last 'error'
-            position_of_error = output_line.rfind('error')
-            err_msg = output_line[position_of_error:].split('"')[2]
-            err_msg = 'Error during image import {}'.format(err_msg)
-            _log_and_raise(ctx, client, err_msg)
-        image_id = output_line[position_of_last_status:].split('"')[2]
-        if _is_image_id_valid(ctx, image_id):
-            return image_id
-        else:
-            _log_and_raise(ctx, client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
-
     ctx.logger.info('Importing image')
-    image_id = get_image_id(
+    image_id = _get_import_image_id(
+        ctx,
+        client,
         client.import_image(**ctx.properties['image_import'])
     )
     ctx.logger.info('Image {} has been imported'.format(image_id))
@@ -44,30 +70,6 @@ def import_image(ctx, client):
 
 
 def build_image(ctx, client):
-
-    def get_image_id(stream_generator):
-        stream = None
-        for stream in stream_generator:
-            pass
-        # Fourth word in a string stream is an id
-        # I can't find it in docker documentation
-        if stream is None:
-            _log_and_raise(
-                ctx,
-                client,
-                _ERR_MSG_UNKNOWN_IMAGE_BUILD,
-                exceptions.RecoverableError
-            )
-        image_id = re.sub(r'[\W_]+', ' ', stream).split()[3]
-        if _is_image_id_valid(ctx, image_id):
-            return image_id
-        else:
-            _log_and_raise(
-                ctx,
-                client,
-                _ERR_MSG_UNKNOWN_IMAGE_BUILD
-            )
-
     ctx.logger.info(
         'Building image from path {}'.format(ctx.properties['image_build']['path'])
     )
@@ -77,7 +79,7 @@ def build_image(ctx, client):
         error_msg = 'Error while building image: {}'.format(str(e))
         _log_and_raise(ctx, client, error_msg)
     else:
-        image_id = get_image_id(image_stream)
+        image_id = _get_build_image_id(ctx, client, image_stream)
         ctx.logger.info('Image {} has been built'.format(image_id))
         return image_id
 
