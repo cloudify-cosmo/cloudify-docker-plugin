@@ -1,5 +1,3 @@
-import copy
-
 from cloudify import exceptions
 
 from docker_plugin import tasks
