@@ -6,8 +6,8 @@ import docker
 from cloudify import exceptions
 
 
-ERR_MSG_UNKNOWN_IMAGE_IMPORT = 'Unknown error during image import'
-ERR_MSG_UNKNOWN_IMAGE_BUILD = 'Unknown error while building image'
+_ERR_MSG_UNKNOWN_IMAGE_IMPORT = 'Unknown error during image import'
+_ERR_MSG_UNKNOWN_IMAGE_BUILD = 'Unknown error while building image'
 
 
 def _is_image_id_valid(ctx, image_id):
@@ -33,7 +33,7 @@ def import_image(ctx, client):
         if _is_image_id_valid(ctx, image_id):
             return image_id
         else:
-            _log_and_raise(ctx, client, ERR_MSG_UNKNOWN_IMAGE_IMPORT)
+            _log_and_raise(ctx, client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
 
     ctx.logger.info('Importing image')
     image_id = get_image_id(
@@ -55,7 +55,7 @@ def build_image(ctx, client):
             _log_and_raise(
                 ctx,
                 client,
-                ERR_MSG_UNKNOWN_IMAGE_BUILD,
+                _ERR_MSG_UNKNOWN_IMAGE_BUILD,
                 exceptions.RecoverableError
             )
         image_id = re.sub(r'[\W_]+', ' ', stream).split()[3]
@@ -65,7 +65,7 @@ def build_image(ctx, client):
             _log_and_raise(
                 ctx,
                 client,
-                ERR_MSG_UNKNOWN_IMAGE_BUILD
+                _ERR_MSG_UNKNOWN_IMAGE_BUILD
             )
 
     ctx.logger.info(
@@ -135,7 +135,7 @@ def stop_container(ctx, client):
 
 def remove_container(ctx, client):
     container = ctx.runtime_properties['container']
-    ctx.logger.info('Removing container ' + container)
+    ctx.logger.info('Removing container {}'.format(container))
     container_remove = ctx.properties.get('container_remove', {})
     try:
         client.remove_container(
@@ -144,7 +144,7 @@ def remove_container(ctx, client):
         )
     except docker.errors.APIError as e:
         _log_and_raise(ctx, client, str(e))
-    ctx.logger.info('Removed container ' + container)
+    ctx.logger.info('Removed container {}'.format(container))
 
 
 def remove_image(ctx, client):

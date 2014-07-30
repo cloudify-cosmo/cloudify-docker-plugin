@@ -5,7 +5,7 @@ from cloudify import exceptions
 import docker_wrapper
 
 
-ERR_MSG_NO_IMAGE_SRC = 'Either path or url to image must be given'
+_ERR_MSG_NO_IMAGE_SRC = 'Either path or url to image must be given'
 
 
 def create(ctx):
@@ -21,8 +21,8 @@ def create(ctx):
     ):
         image = docker_wrapper.build_image(ctx, client)
     else:
-        ctx.logger.error(ERR_MSG_NO_IMAGE_SRC)
-        raise exceptions.NonRecoverableError(ERR_MSG_NO_IMAGE_SRC)
+        ctx.logger.error(_ERR_MSG_NO_IMAGE_SRC)
+        raise exceptions.NonRecoverableError(_ERR_MSG_NO_IMAGE_SRC)
     ctx.runtime_properties.update({'image': image})
     docker_wrapper.create_container(ctx, client)
 
