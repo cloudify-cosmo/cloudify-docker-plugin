@@ -1,5 +1,3 @@
-import time
-
 from docker_plugin import tasks
 from TestCaseBase import TestCaseBase
 
