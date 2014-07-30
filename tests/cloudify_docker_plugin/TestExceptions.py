@@ -6,9 +6,15 @@ from docker_plugin import tasks
 from TestCaseBase import TestCaseBase
 
 
+_WRONG_PATH = 'wrong path'
+_WRONG_CMD = 'wrong command'
+_DIR = 'wrong_directory'
+_MNT_DIR = 'wrong_mnt'
+
+
 class TestExceptions(TestCaseBase):
     def wrongPathToImage(self):
-        self.ctx.properties['image'].update({'path': "wrong path"})
+        self.ctx.properties['image'].update({'path': _WRONG_PATH})
         self.assertRaises(
             exceptions.NonRecoverableError,
             tasks.create,
@@ -17,25 +23,21 @@ class TestExceptions(TestCaseBase):
         self.assertRaises(KeyError, tasks.run, self.ctx)
 
     def wrongCommand(self):
-        self.ctx.properties['container_create'].update(
-            {'command': "wrong command"}
-        )
+        self.ctx.properties['container_create'].update({'command': _WRONG_CMD})
         tasks.create(self.ctx)
         self.assertRaises(exceptions.NonRecoverableError, tasks.run, self.ctx)
 
     def wrongVolumes(self):
         tasks.create(self.ctx)
-        DIR = 'wrong_directory'
-        MNT_DIR = 'wrong_mnt'
         self.ctx.properties['container_start'].update(
-            {'binds': {DIR: {'bind': MNT_DIR}}}
+            {'binds': {_DIR: {'bind': _MNT_DIR}}}
         )
         self.assertRaises(exceptions.NonRecoverableError, tasks.run, self.ctx)
 
     def noImagePath(self):
         image = self.ctx.properties.pop('image')
         self.assertRaises(
-             exceptions.NonRecoverableError,
-             tasks.create,
-             self.ctx
+            exceptions.NonRecoverableError,
+            tasks.create,
+            self.ctx
         )

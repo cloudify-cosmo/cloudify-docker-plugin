@@ -2,7 +2,10 @@ import docker
 
 from cloudify import exceptions
 
-from codilime import docker_wrapper
+import docker_wrapper
+
+
+ERR_MSG_NO_IMAGE_SRC = 'Either path or url to image must be given'
 
 
 def create(ctx):
@@ -18,10 +21,8 @@ def create(ctx):
     ):
         image = docker_wrapper.build_image(ctx, client)
     else:
-        ERROR_NO_IMAGE_SRC = ("Either path or url "
-                              "to image must be given")
-        ctx.logger.error(ERROR_NO_IMAGE_SRC)
-        raise exceptions.NonRecoverableError(ERROR_NO_IMAGE_SRC)
+        ctx.logger.error(ERR_MSG_NO_IMAGE_SRC)
+        raise exceptions.NonRecoverableError(ERR_MSG_NO_IMAGE_SRC)
     ctx.runtime_properties.update({'image': image})
     docker_wrapper.create_container(ctx, client)
 
@@ -32,11 +33,12 @@ def run(ctx):
     containers = client.containers()
     container = docker_wrapper.get_container_info(ctx, client)
     top_info = docker_wrapper.get_top_info(ctx, client)
-    ctx.logger.info(
-        "Container: " + container['Id'] + "\n"
-        "Ports: " + str(container['Ports']) + "\n"
-        "Top: " + top_info
+    log_msg = 'Container: {}\nPorts: {}\nTop: {}'.format(
+        container['Id'],
+        str(container['Ports']),
+        top_info
     )
+    ctx.logger.info(log_msg)
     logs = client.logs(ctx.runtime_properties['container'])
     # TODO(Zosia) function will not return anything
     return (containers, top_info, logs)

@@ -4,15 +4,30 @@ from docker_plugin import tasks
 from TestCaseBase import TestCaseBase
 
 
+_CMD_SUCC = '/bin/true'
+_CMD_FAIL = '/bin/false'
+
+
 class TestCommand(TestCaseBase):
-    def runTest(self):
+    def _check_command(self, command, assert_fun):
+        self.ctx.properties['container_create'].update({'command': command})
         tasks.create(self.ctx)
-        (containers, top_table, logs) = tasks.run(self.ctx)
-        time.sleep(2)
-        self.assertEqual(
+        tasks.run(self.ctx)
+        tasks.stop(self.ctx)
+        assert_fun(
             self.client.inspect_container(
                 self.ctx.runtime_properties['container']
-            )['State']['ExitCode'],
-            0
+            )['State']['ExitCode']
         )
-        self.assertTrue("Hello" in logs)
+
+    def command_success(self):
+        self._check_command(
+            _CMD_SUCC,
+            lambda exit_code: self.assertEqual(exit_code, 0)
+        )
+
+    def command_failure(self):
+        self._check_command(
+            _CMD_FAIL,
+            lambda exit_code: self.assertNotEqual(exit_code, 0)
+        )

@@ -5,22 +5,10 @@ from TestCaseBase import TestCaseBase
 class TestStopAndRun(TestCaseBase):
     def runTest(self):
         tasks.create(self.ctx)
-        (containers, top_table, logs) = tasks.run(self.ctx)
+        containers, top_table, logs = tasks.run(self.ctx)
         self.assertGreater(len(containers), 0)
-        self.assertTrue(
-            self.client.inspect_container(
-                self.ctx.runtime_properties['container']
-            )['State']['Running']
-        )
+        self._assert_container_running(self.assertTrue)
         tasks.stop(self.ctx)
-        self.assertFalse(
-            self.client.inspect_container(
-                self.ctx.runtime_properties['container']
-            )['State']['Running']
-        )
+        self._assert_container_running(self.assertFalse)
         tasks.run(self.ctx)
-        self.assertTrue(
-            self.client.inspect_container(
-                self.ctx.runtime_properties['container']
-            )['State']['Running']
-        )
+        self._assert_container_running(self.assertTrue)

@@ -8,6 +8,7 @@ _INTERFACE = '127.0.0.1'
 _HOST = _INTERFACE
 _PORT1 = 1234
 _PORT2 = 1235
+_CMD = '/bin/nc -nvl {}'.format(str(_PORT1))
 
 
 class TestPortsConfig(TestCaseBase):
@@ -24,9 +25,7 @@ class TestPortsConfig(TestCaseBase):
 
     def setUp(self):
         super(TestPortsConfig, self).setUp()
-        self.ctx.properties['container_create'].update(
-            {'command': "/bin/nc -nvl " + str(_PORT1)}
-        )
+        self.ctx.properties['container_create'].update({'command': _CMD})
         self.ctx.properties['container_create'].update({'ports': [_PORT1]})
         self.ctx.properties['container_start'].update(
             {'port_bindings': {_PORT1: (_INTERFACE, _PORT2)}}

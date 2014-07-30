@@ -6,6 +6,10 @@ import docker
 from cloudify import exceptions
 
 
+ERR_MSG_UNKNOWN_IMAGE_IMPORT = 'Unknown error during image import'
+ERR_MSG_UNKNOWN_IMAGE_BUILD = 'Unknown error while building image'
+
+
 def _is_image_id_valid(ctx, image_id):
     return re.match('^[a-f0-9]{12,64}$', image_id) is not None
 
@@ -15,7 +19,6 @@ def import_image(ctx, client):
     def get_image_id(import_image_output):
         # import_image returns long string where in the second line
         # after last status is image id
-        ERR_MSG_UNKNOWN_IMAGE_IMPORT = 'Unknown error during image import'
         output_line = import_image_output.split('\n')[1]
         position_of_last_status = output_line.rfind('status')
         if position_of_last_status < 0:
@@ -43,7 +46,6 @@ def import_image(ctx, client):
 def build_image(ctx, client):
 
     def get_image_id(stream_generator):
-        ERR_MSG_UNKNOWN_IMAGE_BUILD = 'Unknown error while building image'
         stream = None
         for stream in stream_generator:
             pass
@@ -53,8 +55,8 @@ def build_image(ctx, client):
             _log_and_raise(
                 ctx,
                 client,
-                exceptions.RecoverableError,
-                ERR_MSG_UNKNOWN_IMAGE_BUILD
+                ERR_MSG_UNKNOWN_IMAGE_BUILD,
+                exceptions.RecoverableError
             )
         image_id = re.sub(r'[\W_]+', ' ', stream).split()[3]
         if _is_image_id_valid(ctx, image_id):
@@ -207,9 +209,9 @@ def _log_error_container_logs(ctx, client, message=''):
     if container is not None:
         if message:
             message += '\n'
-        message += 'Container: ' + container
+        message += 'Container: {}'.format(container)
         logs = client.logs(container)
         if logs:
-            message += '\nLogs:\n' + logs
+            message += '\nLogs:\n{}'.format(logs)
     if message:
         ctx.logger.error(message)

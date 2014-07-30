@@ -4,12 +4,13 @@ from docker_plugin import tasks
 from TestCaseBase import TestCaseBase
 
 
-_DIR = '/tmp/test_folder' + '.' + str(os.getpid())
+_DIR = '/tmp/test_folder.{}'.format(str(os.getpid()))
 _FILE = 'test_file'
-_FILE_PATH = _DIR + '/' + _FILE
+_FILE_PATH = '{}/{}'.format(_DIR, _FILE)
 _MNT_DIR = '/mnt'
-_CONT_FILE_PATH = _MNT_DIR + '/' + _FILE
-_TEXT = "Sample text\n" # The `\n' is **extremely** important.
+_CONT_FILE_PATH = '{}/{}'.format(_MNT_DIR, _FILE)
+_TEXT = 'Sample text\n'  # The '\n' is **extremely** important.
+_CMD = 'sh -c \'/bin/cat {}; sleep 1\''.format(_CONT_FILE_PATH)
 
 
 class TestVolumes(TestCaseBase):
@@ -22,10 +23,7 @@ class TestVolumes(TestCaseBase):
     def setUp(self):
         super(TestVolumes, self).setUp()
         self.ctx.properties['container_create'].update(
-            {
-                'volumes': [_MNT_DIR],
-                'command': 'sh -c \'/bin/cat ' + _CONT_FILE_PATH + '; sleep 1\''
-            }
+            {'volumes': [_MNT_DIR], 'command': _CMD}
         )
         self.ctx.properties['container_start'].update(
             {'binds': {_DIR: {'bind': _MNT_DIR}}}
