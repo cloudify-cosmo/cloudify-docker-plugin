@@ -30,18 +30,13 @@ def create(ctx):
 def run(ctx):
     client = docker_wrapper.get_client(ctx)
     docker_wrapper.start_container(ctx, client)
-    containers = client.containers()
     container = docker_wrapper.get_container_info(ctx, client)
-    top_info = docker_wrapper.get_top_info(ctx, client)
     log_msg = 'Container: {}\nPorts: {}\nTop: {}'.format(
         container['Id'],
         str(container['Ports']),
-        top_info
+        docker_wrapper.get_top_info(ctx, client)
     )
     ctx.logger.info(log_msg)
-    logs = client.logs(ctx.runtime_properties['container'])
-    # TODO(Zosia) function will not return anything
-    return (containers, top_info, logs)
 
 
 def stop(ctx):

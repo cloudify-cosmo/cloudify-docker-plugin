@@ -17,7 +17,8 @@ class TestVolumes(TestCaseBase):
 
     def runTest(self):
         tasks.create(self.ctx)
-        (containers, top_table, logs) = tasks.run(self.ctx)
+        tasks.run(self.ctx)
+        logs = self.client.logs(self.ctx.runtime_properties['container'])
         self.assertEqual(logs, _TEXT)
 
     def setUp(self):
