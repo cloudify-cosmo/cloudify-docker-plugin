@@ -6,6 +6,8 @@ from cloudify_docker_plugin.TestPortsConfig import TestPortsConfig
 from cloudify_docker_plugin.TestVolumes import TestVolumes
 from cloudify_docker_plugin.TestExceptions import TestExceptions
 from cloudify_docker_plugin.TestPrivateMethods import TestPrivateMethods
+from cloudify_docker_plugin.TestExceptions import TestExceptions
+from cloudify_docker_plugin.TestGetBuildImageId import TestGetBuildImageId
 
 
 class DockerSuite(unittest.TestSuite):
@@ -21,5 +23,7 @@ class DockerSuite(unittest.TestSuite):
         self.addTest(TestExceptions('wrongCommand'))
         self.addTest(TestExceptions('wrongVolumes'))
         self.addTest(TestExceptions('noImagePath'))
-        self.addTest(TestPrivateMethods('build_image_get_id'))
+        self.addTest(TestGetBuildImageId('empty_stream'))
+        self.addTest(TestGetBuildImageId('valid_stream'))
+        self.addTest(TestGetBuildImageId('invalid_stream'))
         self.addTest(TestPrivateMethods('is_image_id_valid'))
