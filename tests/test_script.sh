@@ -2,7 +2,7 @@
 
 f(){
     echo $1 >&2
-    #sleep 10
+    sleep 1
     exit $2
 }
 
