@@ -159,26 +159,25 @@ def remove_image(ctx, client):
 
 def get_top_info(ctx, client):
 
-    def top_table(ctx, top_dictionary):
-        top_table = ' '.join(top_dictionary['Titles']) + '\n'
-        for process in top_dictionary['Processes']:
-            top_table += ' '.join(process) + '\n'
+    def top_table(ctx, top_dict):
+        top_table = ' '.join(top_dict['Titles']) + '\n'
+        top_table += '\n'.join(' '.join(p) for p in top_dict['Processes'])
         return top_table
 
     _log_container_info(ctx, 'getting TOP info of container')
     try:
-        top_dictionary = client.top(ctx.runtime_properties['container'])
+        top_dict = client.top(ctx.runtime_properties['container'])
     except docker.errors.APIError as e:
         _log_and_raise(ctx, client, str(e))
     else:
-        return top_table(ctx, top_dictionary)
+        return top_table(ctx, top_dict)
 
 
 def get_container_info(ctx,  client):
     container = ctx.runtime_properties.get('container')
     if container is not None:
         for c in client.containers():
-            if container in c.values():
+            if container in c.itervalues():
                 return c
     return None
 
