@@ -69,10 +69,10 @@ def build_image(ctx, client):
             )
 
     ctx.logger.info(
-        'Building image from path {}'.format(ctx.properties['image']['path'])
+        'Building image from path {}'.format(ctx.properties['image_build']['path'])
     )
     try:
-        image_stream = client.build(**ctx.properties['image'])
+        image_stream = client.build(**ctx.properties['image_build'])
     except OSError as e:
         error_msg = 'Error while building image: {}'.format(str(e))
         _log_and_raise(ctx, client, error_msg)

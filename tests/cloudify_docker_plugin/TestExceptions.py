@@ -12,7 +12,7 @@ _MNT_DIR = 'wrong_mnt'
 
 class TestExceptions(TestCaseBase):
     def wrongPathToImage(self):
-        self.ctx.properties['image'].update({'path': _WRONG_PATH})
+        self.ctx.properties['image_build'].update({'path': _WRONG_PATH})
         self.assertRaises(
             exceptions.NonRecoverableError,
             tasks.create,
@@ -33,7 +33,8 @@ class TestExceptions(TestCaseBase):
         self.assertRaises(exceptions.NonRecoverableError, tasks.run, self.ctx)
 
     def noImagePath(self):
-        image = self.ctx.properties.pop('image')
+        image = self.ctx.properties.pop('image_build')
+        image = self.ctx.properties.pop('image_import')
         self.assertRaises(
             exceptions.NonRecoverableError,
             tasks.create,

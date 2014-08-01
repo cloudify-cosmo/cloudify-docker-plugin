@@ -29,7 +29,7 @@ class TestCaseBase(unittest.TestCase):
         self.client = docker.Client()
         example_properties = {
             'daemon_client': {},
-            'image': {
+            'image_build': {
                 'path': _TEST_PATH,
                 'rm': True
             },

@@ -12,7 +12,7 @@ def create(ctx):
     client = docker_wrapper.get_client(ctx)
     if ctx.properties.get('image_import', {}).get('src'):
         image = docker_wrapper.import_image(ctx, client)
-    elif ctx.properties.get('image', {}).get('path'):
+    elif ctx.properties.get('image_build', {}).get('path'):
         image = docker_wrapper.build_image(ctx, client)
     else:
         ctx.logger.error(_ERR_MSG_NO_IMAGE_SRC)
