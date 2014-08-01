@@ -17,7 +17,10 @@ def _is_image_id_valid(ctx, image_id):
 def _get_import_image_id(ctx, client, import_image_output):
     # import_image returns long string where in the second line
     # after last status is image id
-    output_line = import_image_output.split('\n')[1]
+    try:
+        output_line = import_image_output.split('\n')[1]
+    except IndexError as e:
+        _log_and_raise(ctx, client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
     position_of_last_status = output_line.rfind('status')
     if position_of_last_status < 0:
         # If there was an error, there is no 'status'
@@ -27,7 +30,10 @@ def _get_import_image_id(ctx, client, import_image_output):
         err_msg = output_line[position_of_error:].split('"')[2]
         err_msg = 'Error during image import {}'.format(err_msg)
         _log_and_raise(ctx, client, err_msg)
-    image_id = output_line[position_of_last_status:].split('"')[2]
+    try:
+        image_id = output_line[position_of_last_status:].split('"')[2]
+    except IndexError as e:
+        _log_and_raise(ctx, client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
     if _is_image_id_valid(ctx, image_id):
         return image_id
     else:
