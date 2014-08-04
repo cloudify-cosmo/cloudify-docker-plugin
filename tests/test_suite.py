@@ -8,6 +8,7 @@ from cloudify_docker_plugin.TestExceptions import TestExceptions
 from cloudify_docker_plugin.TestPrivateMethods import TestPrivateMethods
 from cloudify_docker_plugin.TestGetBuildImageId import TestGetBuildImageId
 from cloudify_docker_plugin.TestGetImportImageId import TestGetImportImageId
+from cloudify_docker_plugin.TestSubprocessWrapper import TestSubprocessWrapper
 
 
 class DockerSuite(unittest.TestSuite):
@@ -32,3 +33,6 @@ class DockerSuite(unittest.TestSuite):
         self.addTest(TestGetImportImageId('no_id'))
         self.addTest(TestGetImportImageId('no_quotes'))
         self.addTest(TestGetImportImageId('wrong_quotes'))
+        self.addTest(TestSubprocessWrapper('run_valid_process'))
+        self.addTest(TestSubprocessWrapper('run_hung_up_process'))
+        self.addTest(TestSubprocessWrapper('run_hung_up_on_terminate'))

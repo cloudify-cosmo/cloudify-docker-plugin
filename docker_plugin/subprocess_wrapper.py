@@ -3,15 +3,14 @@ import os
 import psutil
 import subprocess
 import time
-from fcntl import fcntl
 import fcntl
 
 from cloudify import exceptions
 from cloudify import mocks
 
 
-_MAX_WAITING_TIME = 20
-_TIMEOUT_TERMINATE = 10
+_MAX_WAITING_TIME = 10
+_TIMEOUT_TERMINATE = 5
 
 
 def _get_output(ctx, pipe, stream):
@@ -80,7 +79,12 @@ def _set_flags(ctx, pipe):
     fcntl.fcntl(pipe.stderr, fcntl.F_SETFL, stderr_flags | os.O_NONBLOCK)
 
 
-def _manually_clean_up(ctx, pipe, timeout_terminate):
+def _get_simple_output(ctx, pipe, stream):
+    end_of_output, wait_output, output = _get_output(ctx, pipe, stream)
+    return output
+
+
+def _manually_clean_up(ctx, pipe, timeout_terminate, waiting_for_output):
     ctx.logger.info('Terminating process')
     pipe.terminate()
     time_no_terminate = 0
@@ -92,21 +96,35 @@ def _manually_clean_up(ctx, pipe, timeout_terminate):
         time.sleep(1)
         process = psutil.Process(pipe.pid)
         time_no_terminate += 1
-    ctx.logger.info('Killing process')
-    pipe.kill()
-    # TODO(Zosia) read stdout, stderr
+
+    stdout, stderr, success = _read_streams(ctx, pipe, waiting_for_output)
+    if process.status() == psutil.STATUS_ZOMBIE:
+        ctx.logger.info('Process terminated')
+    else:
+        ctx.logger.info('Killing process')
+        pipe.kill()
+        stdout += _get_simple_output(ctx, pipe, pipe.stdout)
+        stderr += _get_simple_output(ctx, pipe, pipe.stderr)
     pipe.wait()
+    return stdout, stderr
 
 
-def _clean_up(ctx, pipe, success, timeout_terminate):
+def _clean_up(ctx, pipe, success, timeout_terminate, waiting_for_output):
     ctx.logger.info('Cleaning up')
+    stdout, stderr = '', ''
     if success:
         pipe.wait()
     else:
-        _manually_clean_up(ctx, pipe, timeout_terminate)
+        stdout, stderr = _manually_clean_up(
+            ctx,
+            pipe,
+            timeout_terminate,
+            waiting_for_output
+        )
     pipe.stdout.close()
     pipe.stderr.close()
     ctx.logger.info('Cleaned up')
+    return stdout, stderr
 
 
 def run_process(
@@ -117,12 +135,20 @@ def run_process(
 ):
     ctx.logger.info('Starting process')
     pipe = subprocess.Popen(
-        [process],
+        process.split(' '),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
     _set_flags(ctx, pipe)
     stdout, stderr, success = _read_streams(ctx, pipe, waiting_for_output)
-    _clean_up(ctx, pipe, success, timeout_terminate)
+    new_stdout, new_stderr = _clean_up(
+        ctx,
+        pipe,
+        success,
+        timeout_terminate,
+        waiting_for_output
+    )
+    stdout += new_stdout
+    stderr += new_stderr
     ctx.logger.info('Finishing process')
     return pipe.returncode, stdout, stderr

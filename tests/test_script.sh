@@ -7,7 +7,7 @@ f(){
 }
 
 trap 'f TERM 1' TERM
-
+echo $1
 for i in {1..2}; do
     for j in {1..1000}; do
         echo -n 'oooooooooooooooooooooooo';
