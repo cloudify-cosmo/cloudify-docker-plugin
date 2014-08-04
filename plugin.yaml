@@ -1,0 +1,95 @@
+imports:
+    - http://www.getcloudify.org/spec/cloudify/3.0/types.yaml
+
+plugins:
+    docker_plugin:
+        derived_from: cloudify.plugins.agent_plugin
+        properties:
+            #TODO fix URL
+            url: http://insert/url/to/plugin/here
+
+types:
+    cloudify.types.docker.web_server:
+        derived_from: cloudify.types.web_server
+        interfaces:
+            cloudify.interfaces.lifecycle:
+                - create: docker_plugin.tasks.create
+                - start: docker_plugin.tasks.run
+                - stop: docker_plugin.tasks.stop
+                - delete: docker_plugin.tasks.delete
+        properties:
+            - daemon_client
+            - image_build
+            - image_import
+            - container_create
+            - container_start
+            - container_stop
+            - container_remove
+
+    cloudify.types.docker.app_server:
+        derived_from: cloudify.types.app_server
+        interfaces:
+            cloudify.interfaces.lifecycle:
+                - create: docker_plugin.tasks.create
+                - start: docker_plugin.tasks.run
+                - stop: docker_plugin.tasks.stop
+                - delete: docker_plugin.tasks.delete
+        properties:
+            - daemon_client
+            - image_build
+            - image_import
+            - container_create
+            - container_start
+            - container_stop
+            - container_remove
+
+    cloudify.types.docker.db_server:
+        derived_from: cloudify.types.db_server
+        interfaces:
+            cloudify.interfaces.lifecycle:
+                - create: docker_plugin.tasks.create
+                - start: docker_plugin.tasks.run
+                - stop: docker_plugin.tasks.stop
+                - delete: docker_plugin.tasks.delete
+        properties:
+            - daemon_client
+            - image_build
+            - image_import
+            - container_create
+            - container_start
+            - container_stop
+            - container_remove
+
+    cloudify.types.docker.message_bus_server:
+        derived_from: cloudify.types.message_bus_server
+        interfaces:
+            cloudify.interfaces.lifecycle:
+                - create: docker_plugin.tasks.create
+                - start: docker_plugin.tasks.run
+                - stop: docker_plugin.tasks.stop
+                - delete: docker_plugin.tasks.delete
+        properties:
+            - daemon_client
+            - image_build
+            - image_import
+            - container_create
+            - container_start
+            - container_stop
+            - container_remove
+
+    cloudify.types.docker.app_module:
+        derived_from: cloudify.types.app_module
+        interfaces:
+            cloudify.interfaces.lifecycle:
+                - create: docker_plugin.tasks.create
+                - start: docker_plugin.tasks.run
+                - stop: docker_plugin.tasks.stop
+                - delete: docker_plugin.tasks.delete
+        properties:
+            - daemon_client
+            - image_build
+            - image_import
+            - container_create
+            - container_start
+            - container_stop
+            - container_remove
