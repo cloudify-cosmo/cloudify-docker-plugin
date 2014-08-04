@@ -8,7 +8,7 @@ import docker_wrapper
 _ERR_MSG_NO_IMAGE_SRC = 'Either path or url to image must be given'
 
 
-def create(ctx):
+def create(ctx, *args, **kwargs):
     client = docker_wrapper.get_client(ctx)
     if ctx.properties.get('image_import', {}).get('src'):
         image = docker_wrapper.import_image(ctx, client)
@@ -21,7 +21,7 @@ def create(ctx):
     docker_wrapper.create_container(ctx, client)
 
 
-def run(ctx):
+def run(ctx, *args, **kwargs):
     client = docker_wrapper.get_client(ctx)
     docker_wrapper.start_container(ctx, client)
     container = docker_wrapper.get_container_info(ctx, client)
@@ -33,12 +33,12 @@ def run(ctx):
     ctx.logger.info(log_msg)
 
 
-def stop(ctx):
+def stop(ctx, *args, **kwargs):
     client = docker_wrapper.get_client(ctx)
     docker_wrapper.stop_container(ctx, client)
 
 
-def delete(ctx):
+def delete(ctx, *args, **kwargs):
     client = docker_wrapper.get_client(ctx)
     container_info = docker_wrapper.inspect_container(ctx, client)
     if container_info and container_info['State']['Running']:
