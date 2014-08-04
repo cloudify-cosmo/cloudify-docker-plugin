@@ -18,7 +18,7 @@ def _get_import_image_id(ctx, client, import_image_output):
     # import_image returns long string where in the second line
     # after last status is image id
     try:
-        output_line = import_image_output.split('\n')[1]
+        output_line = import_image_output.split('\n')[-2]
     except IndexError as e:
         _log_and_raise(ctx, client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
     position_of_last_status = output_line.rfind('status')
