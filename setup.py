@@ -37,4 +37,5 @@ setuptools.setup(author='Michał Soczewka',
                  dependency_links=DEPENDENCY_LINKS,
                  install_requires=REQUIREMENTS,
                  packages=setuptools.find_packages(),
-                 zip_safe=False)
+                 zip_safe=False,
+                 scripts=['bin/install_docker.sh'])

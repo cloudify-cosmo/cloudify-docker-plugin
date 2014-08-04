@@ -3,7 +3,7 @@ import subprocess_wrapper
 from cloudify import mocks
 
 
-_PROCESS_COMMAND = './install.sh'
+_PROCESS_COMMAND = 'install_docker.sh'
 
 
 def launch_process(ctx):
