@@ -111,7 +111,7 @@ def create_container(ctx, client):
         error_msg = 'Error while creating container: {}'.format(str(e))
         _log_and_raise(ctx, client, error_msg)
     else:
-        ctx.runtime_properties.update({'container': cont['Id']})
+        ctx.runtime_properties['container'] = cont['Id']
     _log_container_info(ctx, 'Created container ')
 
 
