@@ -66,3 +66,6 @@ class TestGetImportImageId(TestCaseBase):
                 _VALID_OUTPUT
             )
         )
+
+    def tearDown(self):
+        pass

@@ -12,7 +12,7 @@ _ERR_MSG_NO_IMAGE_SRC = 'Either path or url to image must be given'
 
 @operation
 def create(ctx, *args, **kwargs):
-    apt_get_wrapper.launch_process(ctx)
+    #apt_get_wrapper.launch_process(ctx)
     client = docker_wrapper.get_client(ctx)
     if ctx.properties.get('image_import', {}).get('src'):
         image = docker_wrapper.import_image(ctx, client)

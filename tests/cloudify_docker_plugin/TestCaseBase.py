@@ -50,5 +50,5 @@ class TestCaseBase(unittest.TestCase):
         # if it fails, because it doesnt exist, do nothing
         try:
             tasks.delete(self.ctx)
-        except (docker.errors.APIError, KeyError):
+        except (docker.errors.APIError, exceptions.NonRecoverableError):
             pass

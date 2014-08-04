@@ -30,3 +30,6 @@ class TestPrivateMethods(TestCaseBase):
             for (img_id, is_valid)
             in _IDS
         ]
+
+    def tearDown(self):
+        pass

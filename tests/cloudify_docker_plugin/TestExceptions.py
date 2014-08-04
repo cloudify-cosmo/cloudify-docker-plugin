@@ -18,7 +18,7 @@ class TestExceptions(TestCaseBase):
             tasks.create,
             self.ctx
         )
-        self.assertRaises(KeyError, tasks.run, self.ctx)
+        self.assertRaises(exceptions.NonRecoverableError, tasks.run, self.ctx)
 
     def wrongCommand(self):
         self.ctx.properties['container_create'].update({'command': _WRONG_CMD})

@@ -77,7 +77,9 @@ def import_image(ctx, client):
 
 def build_image(ctx, client):
     ctx.logger.info(
-        'Building image from path {}'.format(ctx.properties['image_build']['path'])
+        'Building image from path {}'.format(
+            ctx.properties['image_build']['path']
+        )
     )
     try:
         image_stream = client.build(**ctx.properties['image_build'])
@@ -102,15 +104,14 @@ def get_client(ctx):
 def create_container(ctx, client):
     ctx.logger.info('Creating container')
     container_create = ctx.properties.get('container_create', {})
+    image = _get_image_or_raise(ctx, client)
     try:
-        cont = client.create_container(
-            ctx.runtime_properties['image'],
-            **container_create
-        )
+        cont = client.create_container(image, **container_create)
     except docker.errors.APIError as e:
         error_msg = 'Error while creating container: {}'.format(str(e))
         _log_and_raise(ctx, client, error_msg)
     else:
+        print 'else create'
         ctx.runtime_properties['container'] = cont['Id']
     _log_container_info(ctx, 'Created container ')
 
@@ -118,11 +119,9 @@ def create_container(ctx, client):
 def start_container(ctx, client):
     _log_container_info(ctx, 'Starting container')
     container_start = ctx.properties.get('container_start', {})
+    container = _get_container_or_raise(ctx, client)
     try:
-        client.start(
-            ctx.runtime_properties['container'],
-            **container_start
-        )
+        client.start(container, **container_start)
     except docker.errors.APIError as e:
         _log_and_raise(ctx, client, str(e))
     _log_container_info(ctx, 'Started container')
@@ -131,25 +130,20 @@ def start_container(ctx, client):
 def stop_container(ctx, client):
     _log_container_info(ctx, 'Stopping container')
     container_stop = ctx.properties.get('container_stop', {})
+    container = _get_container_or_raise(ctx, client)
     try:
-        client.stop(
-            ctx.runtime_properties['container'],
-            **container_stop
-        )
+        client.stop(container, **container_stop)
     except docker.errors.APIError as e:
         _log_and_raise(ctx, client, str(e))
     _log_container_info(ctx, 'Stopped container')
 
 
 def remove_container(ctx, client):
-    container = ctx.runtime_properties['container']
+    container = _get_container_or_raise(ctx, client)
     ctx.logger.info('Removing container {}'.format(container))
     container_remove = ctx.properties.get('container_remove', {})
     try:
-        client.remove_container(
-            container,
-            **container_remove
-        )
+        client.remove_container(container, **container_remove)
     except docker.errors.APIError as e:
         _log_and_raise(ctx, client, str(e))
     ctx.logger.info('Removed container {}'.format(container))
@@ -173,8 +167,9 @@ def get_top_info(ctx, client):
         return top_table
 
     _log_container_info(ctx, 'getting TOP info of container')
+    container = _get_container_or_raise(ctx, client)
     try:
-        top_dict = client.top(ctx.runtime_properties['container'])
+        top_dict = client.top(container)
     except docker.errors.APIError as e:
         _log_and_raise(ctx, client, str(e))
     else:
@@ -195,6 +190,20 @@ def inspect_container(ctx, client):
     if container is not None:
         return client.inspect_container(container)
     return None
+
+
+def _get_container_or_raise(ctx, client):
+    container = ctx.runtime_properties.get('container')
+    if container is None:
+        _log_and_raise(ctx, client, "No container specified")
+    return container
+
+
+def _get_image_or_raise(ctx, client):
+    image = ctx.runtime_properties.get('image')
+    if image is None:
+        _log_and_raise(ctx, client, "No image specified")
+    return image
 
 
 def _log_container_info(ctx, message=''):

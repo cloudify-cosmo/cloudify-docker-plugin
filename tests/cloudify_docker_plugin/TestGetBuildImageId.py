@@ -49,3 +49,6 @@ class TestGetBuildImageId(TestCaseBase):
             self.client,
             self._gen_stream(_INVALID_STREAM_LIST)
         )
+
+    def tearDown(self):
+        pass

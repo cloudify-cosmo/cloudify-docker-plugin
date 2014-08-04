@@ -94,6 +94,7 @@ def _manually_clean_up(ctx, pipe, timeout_terminate):
         time_no_terminate += 1
     ctx.logger.info('Killing process')
     pipe.kill()
+    # TODO(Zosia) read stdout, stderr
     pipe.wait()
 
 
