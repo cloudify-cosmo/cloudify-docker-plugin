@@ -1,6 +1,7 @@
 import docker
 
 from cloudify import exceptions
+from cloudify.decorators import operation
 
 import docker_wrapper
 
@@ -8,6 +9,7 @@ import docker_wrapper
 _ERR_MSG_NO_IMAGE_SRC = 'Either path or url to image must be given'
 
 
+@operation
 def create(ctx, *args, **kwargs):
     client = docker_wrapper.get_client(ctx)
     if ctx.properties.get('image_import', {}).get('src'):
@@ -21,6 +23,7 @@ def create(ctx, *args, **kwargs):
     docker_wrapper.create_container(ctx, client)
 
 
+@operation
 def run(ctx, *args, **kwargs):
     client = docker_wrapper.get_client(ctx)
     docker_wrapper.start_container(ctx, client)
@@ -33,11 +36,13 @@ def run(ctx, *args, **kwargs):
     ctx.logger.info(log_msg)
 
 
+@operation
 def stop(ctx, *args, **kwargs):
     client = docker_wrapper.get_client(ctx)
     docker_wrapper.stop_container(ctx, client)
 
 
+@operation
 def delete(ctx, *args, **kwargs):
     client = docker_wrapper.get_client(ctx)
     container_info = docker_wrapper.inspect_container(ctx, client)
