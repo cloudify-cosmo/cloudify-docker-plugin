@@ -1,4 +1,3 @@
-import os
 import re
 
 import docker
@@ -111,7 +110,6 @@ def create_container(ctx, client):
         error_msg = 'Error while creating container: {}'.format(str(e))
         _log_and_raise(ctx, client, error_msg)
     else:
-        print 'else create'
         ctx.runtime_properties['container'] = cont['Id']
     _log_container_info(ctx, 'Created container ')
 
@@ -195,14 +193,14 @@ def inspect_container(ctx, client):
 def _get_container_or_raise(ctx, client):
     container = ctx.runtime_properties.get('container')
     if container is None:
-        _log_and_raise(ctx, client, "No container specified")
+        _log_and_raise(ctx, client, 'No container specified')
     return container
 
 
 def _get_image_or_raise(ctx, client):
     image = ctx.runtime_properties.get('image')
     if image is None:
-        _log_and_raise(ctx, client, "No image specified")
+        _log_and_raise(ctx, client, 'No image specified')
     return image
 
 

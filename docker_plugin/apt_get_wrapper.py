@@ -12,5 +12,5 @@ def launch_process(ctx):
         _PROCESS_COMMAND
     )
     ctx.logger.info('stdout\n{}'.format(stdout))
-    ctx.logger.info('stderr\n{}'.format(stderr))
+    ctx.logger.error('stderr\n{}'.format(stderr))
     assert(return_code == 0)
