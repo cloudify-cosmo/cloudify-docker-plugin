@@ -9,24 +9,29 @@ _NON_ALPHANUM_ID = '2_318d26665ef'
 _LONG_ID = 'ba5877dc9beca5a0af9521846e79419e98575a11cbfe1ff2ad2e95302cff26bff'
 _SHORT_ID = '318d26665ef'
 _VALID_ID = '2318d26665ef'
-_IDS = [
-    (_NON_HASH_ID, False),
-    (_EMPTY_ID, False),
-    (_NON_ALPHANUM_ID, False),
-    (_LONG_ID, False),
-    (_SHORT_ID, False),
-    (_VALID_ID, True)
-]
 
 
-class TestPrivateMethods(TestWithMockupCtx):
+class TestIsImageIdValid(TestWithMockupCtx):
+    def _assert_image_id(self, image_id, is_valid):
+        self.assertEqual(
+            docker_wrapper._is_image_id_valid(self.ctx, image_id),
+            is_valid
+        )
 
-    def test_is_image_id_valid(self):
-        [
-            self.assertEqual(
-                docker_wrapper._is_image_id_valid(self.ctx, img_id),
-                is_valid
-            )
-            for (img_id, is_valid)
-            in _IDS
-        ]
+    def test_valid_id(self):
+        self._assert_image_id(_VALID_ID, True)
+
+    def test_non_alphanum_id(self):
+        self._assert_image_id(_NON_ALPHANUM_ID, False)
+
+    def test_too_long_id(self):
+        self._assert_image_id(_LONG_ID, False)
+
+    def test_too_short_id(self):
+        self._assert_image_id(_SHORT_ID, False)
+
+    def test_empty_id(self):
+        self._assert_image_id(_EMPTY_ID, False)
+
+    def test_non_hash_id(self):
+        self._assert_image_id(_NON_HASH_ID, False)
