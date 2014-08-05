@@ -1,6 +1,6 @@
 from docker_plugin import docker_wrapper
 
-from TestCaseBase import TestCaseBase
+from TestWithMockupCtx import TestWithMockupCtx
 
 
 _EMPTY_ID = ''
@@ -19,7 +19,7 @@ _IDS = [
 ]
 
 
-class TestPrivateMethods(TestCaseBase):
+class TestPrivateMethods(TestWithMockupCtx):
 
     def is_image_id_valid(self):
         [
@@ -30,6 +30,3 @@ class TestPrivateMethods(TestCaseBase):
             for (img_id, is_valid)
             in _IDS
         ]
-
-    def tearDown(self):
-        pass

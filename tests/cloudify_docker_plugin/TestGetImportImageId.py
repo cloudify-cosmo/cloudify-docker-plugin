@@ -2,7 +2,7 @@ from cloudify import exceptions
 
 from docker_plugin import docker_wrapper
 
-from TestCaseBase import TestCaseBase
+from TestWithMockupCtx import TestWithMockupCtx
 
 
 _BEGINNING = ('{"status":"Downloading from http://www.img.com/ubuntu.tar"}\n')
@@ -35,7 +35,7 @@ _NO_ID_OUTPUT = ('{}{}{{"status":""}}\n{}'
 _NO_QUOTES = _VALID_OUTPUT.replace('"', ' ')
 
 
-class TestGetImportImageId(TestCaseBase):
+class TestGetImportImageId(TestWithMockupCtx):
     def _invalid_output(self, output):
         self.assertRaises(
             exceptions.NonRecoverableError,
@@ -66,6 +66,3 @@ class TestGetImportImageId(TestCaseBase):
                 _VALID_OUTPUT
             )
         )
-
-    def tearDown(self):
-        pass

@@ -2,7 +2,7 @@ from cloudify import exceptions
 
 from docker_plugin import docker_wrapper
 
-from TestCaseBase import TestCaseBase
+from TestWithMockupCtx import TestWithMockupCtx
 
 
 _BUILD_ID = 'ba5877dc9bec'
@@ -17,7 +17,7 @@ _INVALID_STREAM_LIST = [
 ]
 
 
-class TestGetBuildImageId(TestCaseBase):
+class TestGetBuildImageId(TestWithMockupCtx):
     def _gen_stream(self, stream_list):
         for s in stream_list:
             yield s
@@ -49,6 +49,3 @@ class TestGetBuildImageId(TestCaseBase):
             self.client,
             self._gen_stream(_INVALID_STREAM_LIST)
         )
-
-    def tearDown(self):
-        pass

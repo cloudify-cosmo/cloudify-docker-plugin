@@ -1,11 +1,8 @@
-import unittest
-
-import docker
-
 from cloudify import exceptions
-from cloudify import mocks
 
 from docker_plugin import tasks
+
+from TestWithMockupCtx import TestWithMockupCtx
 
 
 _CMD = ('sh -c \'i=0; while [ 1 ]; do i=`expr $i + 1`;'
@@ -13,11 +10,7 @@ _CMD = ('sh -c \'i=0; while [ 1 ]; do i=`expr $i + 1`;'
 _TEST_PATH = 'tests'
 
 
-class TestCaseBase(unittest.TestCase):
-
-    ctx = None
-    client = None
-
+class TestCaseBase(TestWithMockupCtx):
     def _assert_container_running(self, assert_fun):
         assert_fun(
             self.client.inspect_container(
@@ -26,7 +19,7 @@ class TestCaseBase(unittest.TestCase):
         )
 
     def setUp(self):
-        self.client = docker.Client()
+        super(TestCaseBase, self).setUp()
         example_properties = {
             'daemon_client': {},
             'image_build': {
@@ -41,14 +34,12 @@ class TestCaseBase(unittest.TestCase):
             'container_remove': {},
             'image_import': {}
         }
-        self.ctx = mocks.MockCloudifyContext(properties=example_properties)
-        # TODO(Zosia) temporary debug help
-        self.ctx.logger.info('\n'+str(self.id)+'\n')
+        self.ctx.properties.update(example_properties)
 
     def tearDown(self):
         # Try to delete container,
         # if it fails, because it doesnt exist, do nothing
         try:
             tasks.delete(self.ctx)
-        except (docker.errors.APIError, exceptions.NonRecoverableError):
+        except exceptions.NonRecoverableError:
             pass
