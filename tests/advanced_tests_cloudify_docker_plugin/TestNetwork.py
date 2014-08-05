@@ -1,7 +1,7 @@
 import copy
 
 from docker_plugin import tasks
-from TestCaseBase import TestCaseBase
+from tests.TestCaseBase import TestCaseBase
 
 from cloudify import mocks
 
@@ -26,7 +26,7 @@ class TestNetwork(TestCaseBase):
         tasks.run(ctx)
         return ctx
 
-    def runTest(self):
+    def test_network(self):
         self.broadcaster = self._start_container_with_network(
             _CMD_CONTAINER_BROADCASTER,
             'bridge',

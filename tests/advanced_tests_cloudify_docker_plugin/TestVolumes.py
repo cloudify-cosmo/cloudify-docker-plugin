@@ -1,7 +1,7 @@
 import os
 
 from docker_plugin import tasks
-from TestCaseBase import TestCaseBase
+from tests.TestCaseBase import TestCaseBase
 
 
 _DIR = '/tmp/test_folder.{}'.format(str(os.getpid()))
@@ -15,7 +15,7 @@ _CMD = 'sh -c \'/bin/cat {}; sleep 1\''.format(_CONT_FILE_PATH)
 
 class TestVolumes(TestCaseBase):
 
-    def runTest(self):
+    def test_volumes(self):
         tasks.create(self.ctx)
         tasks.run(self.ctx)
         logs = self.client.logs(self.ctx.runtime_properties['container'])

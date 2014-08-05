@@ -1,6 +1,6 @@
 from docker_plugin import docker_wrapper
 
-from TestWithMockupCtx import TestWithMockupCtx
+from tests.TestWithMockupCtx import TestWithMockupCtx
 
 
 _EMPTY_ID = ''
@@ -21,7 +21,7 @@ _IDS = [
 
 class TestPrivateMethods(TestWithMockupCtx):
 
-    def is_image_id_valid(self):
+    def test_is_image_id_valid(self):
         [
             self.assertEqual(
                 docker_wrapper._is_image_id_valid(self.ctx, img_id),

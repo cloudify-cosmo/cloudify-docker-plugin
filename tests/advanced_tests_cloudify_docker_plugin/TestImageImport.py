@@ -2,7 +2,7 @@ import os
 import time
 
 from docker_plugin import tasks
-from TestCaseBase import TestCaseBase
+from tests.TestCaseBase import TestCaseBase
 
 
 # _IMAGE = 'http://localhost:8080'
@@ -12,7 +12,7 @@ _IMAGE = 'http://students.mimuw.edu.pl/~zo306403/ubuntu.tar'
 
 # Still under development
 class TestImageImport(TestCaseBase):
-    def runTest(self):
+    def _todo_test_image_import(self):
         # TODO(Zosia) Change image to smaller one
         # TODO(Zosia) Change the command
         # os.system(_CMD)

@@ -1,5 +1,5 @@
 from docker_plugin import tasks
-from TestCaseBase import TestCaseBase
+from tests.TestCaseBase import TestCaseBase
 
 
 _CMD_SUCC = '/bin/true'
@@ -18,13 +18,13 @@ class TestCommand(TestCaseBase):
             )['State']['ExitCode']
         )
 
-    def command_success(self):
+    def test_command_success(self):
         self._check_command(
             _CMD_SUCC,
             lambda exit_code: self.assertEqual(exit_code, 0)
         )
 
-    def command_failure(self):
+    def test_command_failure(self):
         self._check_command(
             _CMD_FAIL,
             lambda exit_code: self.assertNotEqual(exit_code, 0)

@@ -2,7 +2,7 @@ from cloudify import exceptions
 
 from docker_plugin import docker_wrapper
 
-from TestWithMockupCtx import TestWithMockupCtx
+from tests.TestWithMockupCtx import TestWithMockupCtx
 
 
 _BUILD_ID = 'ba5877dc9bec'
@@ -22,7 +22,7 @@ class TestGetBuildImageId(TestWithMockupCtx):
         for s in stream_list:
             yield s
 
-    def empty_stream(self):
+    def test_empty_stream(self):
         self.assertRaises(
             exceptions.RecoverableError,
             docker_wrapper._get_build_image_id,
@@ -31,7 +31,7 @@ class TestGetBuildImageId(TestWithMockupCtx):
             self._gen_stream(_EMPTY_STREAM_LIST)
         )
 
-    def valid_stream(self):
+    def test_valid_stream(self):
         self.assertEqual(
             _BUILD_ID,
             docker_wrapper._get_build_image_id(
@@ -41,7 +41,7 @@ class TestGetBuildImageId(TestWithMockupCtx):
             )
         )
 
-    def invalid_stream(self):
+    def test_invalid_stream(self):
         self.assertRaises(
             exceptions.NonRecoverableError,
             docker_wrapper._get_build_image_id,

@@ -1,9 +1,9 @@
 from docker_plugin import tasks
-from TestCaseBase import TestCaseBase
+from tests.TestCaseBase import TestCaseBase
 
 
 class TestStopAndRun(TestCaseBase):
-    def runTest(self):
+    def test_stop_and_run(self):
         tasks.create(self.ctx)
         tasks.run(self.ctx)
         self._assert_container_running(self.assertTrue)

@@ -1,7 +1,7 @@
 import socket
 
 from docker_plugin import tasks
-from TestCaseBase import TestCaseBase
+from tests.TestCaseBase import TestCaseBase
 
 
 _INTERFACE = '127.0.0.1'
@@ -13,7 +13,7 @@ _CMD = '/bin/nc -nvl {}'.format(str(_PORT1))
 
 class TestPortsConfig(TestCaseBase):
 
-    def runTest(self):
+    def test_ports_config(self):
         tasks.create(self.ctx)
         tasks.run(self.ctx)
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

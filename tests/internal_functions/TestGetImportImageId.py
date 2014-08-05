@@ -2,7 +2,7 @@ from cloudify import exceptions
 
 from docker_plugin import docker_wrapper
 
-from TestWithMockupCtx import TestWithMockupCtx
+from tests.TestWithMockupCtx import TestWithMockupCtx
 
 
 _BEGINNING = ('{"status":"Downloading from http://www.img.com/ubuntu.tar"}\n')
@@ -45,19 +45,19 @@ class TestGetImportImageId(TestWithMockupCtx):
             output
         )
 
-    def empty_output(self):
+    def test_empty_output(self):
         self._invalid_output('')
 
-    def no_id(self):
+    def test_no_id(self):
         self._invalid_output(_NO_ID_OUTPUT)
 
-    def no_quotes(self):
+    def test_no_quotes(self):
         self._invalid_output(_NO_QUOTES)
 
-    def wrong_quotes(self):
+    def test_wrong_quotes(self):
         self._invalid_output(_WRONG_QUOTES)
 
-    def valid_output(self):
+    def test_valid_output(self):
         self.assertEqual(
             _IMAGE_ID,
             docker_wrapper._get_import_image_id(

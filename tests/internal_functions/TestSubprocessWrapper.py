@@ -2,11 +2,11 @@ from cloudify import exceptions
 
 from docker_plugin import docker_wrapper
 
-from TestCaseBase import TestCaseBase
+from tests.TestWithMockupCtx import TestWithMockupCtx
 from docker_plugin import subprocess_wrapper
 
 
-_VALID_PROCESS = 'tests/basic_script.sh'
+_VALID_PROCESS = 'tests/internal_functions/basic_script.sh'
 _SUCCESS_EXIT_CODE = 0
 
 _HUNG_UP_SLEEP_TIME = 100
@@ -43,7 +43,7 @@ _INVALID_VALUES = [
 ]
 
 
-class TestSubprocessWrapper(TestCaseBase):
+class TestSubprocessWrapper(TestWithMockupCtx):
     def _assert_process_values(self, process, expected_exit_code, values):
         return_code, stdout, stderr = subprocess_wrapper.run_process(
             self.ctx,
@@ -56,26 +56,23 @@ class TestSubprocessWrapper(TestCaseBase):
             else:
                 self.assertFalse(v[0] in stdout or v[0] in stderr)
 
-    def run_valid_process(self):
+    def test_run_valid_process(self):
         self._assert_process_values(
             _VALID_PROCESS,
             _SUCCESS_EXIT_CODE,
             _VALID_VALUES
         )
 
-    def run_hung_up_process(self):
+    def test_run_hung_up_process(self):
         self._assert_process_values(
             _HUNG_UP_PROCESS,
             _HUNG_UP_EXIT_CODE,
             _INVALID_VALUES
         )
 
-    def run_hung_up_on_terminate(self):
+    def test_run_hung_up_on_terminate(self):
         self._assert_process_values(
             _HUNG_UP_ON_TERMINATE_PROCESS,
             _HUN_UP_ON_TERMINATE_EXIT_CODE,
             _INVALID_VALUES
         )
-
-    def tearDown(self):
-        pass
