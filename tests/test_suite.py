@@ -9,6 +9,7 @@ from cloudify_docker_plugin.TestPrivateMethods import TestPrivateMethods
 from cloudify_docker_plugin.TestGetBuildImageId import TestGetBuildImageId
 from cloudify_docker_plugin.TestGetImportImageId import TestGetImportImageId
 from cloudify_docker_plugin.TestSubprocessWrapper import TestSubprocessWrapper
+from cloudify_docker_plugin.TestNetwork import TestNetwork
 
 
 class DockerSuite(unittest.TestSuite):
@@ -36,3 +37,4 @@ class DockerSuite(unittest.TestSuite):
         self.addTest(TestSubprocessWrapper('run_valid_process'))
         self.addTest(TestSubprocessWrapper('run_hung_up_process'))
         self.addTest(TestSubprocessWrapper('run_hung_up_on_terminate'))
+        self.addTest(TestNetwork())
