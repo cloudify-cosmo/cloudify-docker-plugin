@@ -1,3 +1,11 @@
+"""Functions that wrap docker functions.
+
+All functions take
+    ctx: cloudify context and
+    client: docker client
+as a parameters.
+"""
+
 import re
 
 import docker
@@ -49,6 +57,7 @@ def _get_import_image_id(ctx, client, import_image_output):
 
 
 def _get_build_image_id(ctx, client, stream_generator):
+    # TODO(Zosia) delete build_image
     stream = None
     for stream in stream_generator:
         pass
@@ -114,6 +123,24 @@ def _log_error_container_logs(ctx, client, message=''):
 
 
 def get_top_info(ctx, client):
+    """Get container top info.
+
+    Get container top info using docker top function with container id
+    from ctx.properties['container'].
+
+    Transforms data into a simple top table.
+
+    Args:
+        ctx (cloudify context)
+        client (docker client)
+
+    Returns:
+        top_table (str)
+
+    Raises:
+        NonRecoverableError: when container in ctx.runtime_properties is None.
+
+    """
 
     def top_table(ctx, top_dict):
         top_table = ' '.join(top_dict['Titles']) + '\n'
@@ -131,6 +158,19 @@ def get_top_info(ctx, client):
 
 
 def get_container_info(ctx,  client):
+    """Get container info.
+
+    Get list of containers dictionaries from docker containers function.
+    Find container which is specified in ctx.runtime_properties['container'].
+
+    Args:
+        ctx (cloudify context)
+        client (docker client)
+
+    Returns:
+        container_info (dictionary)
+
+    """
     container = ctx.runtime_properties.get('container')
     if container is not None:
         for c in client.containers():
@@ -140,6 +180,18 @@ def get_container_info(ctx,  client):
 
 
 def inspect_container(ctx, client):
+    """Inspect container.
+
+    Call inspect with container id from ctx.runtime_properties['container'].
+
+    Args:
+        ctx (cloudify context)
+        client (docker client)
+
+    Returns:
+        container_info (dictionary)
+
+    """
     container = ctx.runtime_properties.get('container')
     if container is not None:
         return client.inspect_container(container)
@@ -147,6 +199,17 @@ def inspect_container(ctx, client):
 
 
 def set_env_var(ctx, client):
+    """Set environmental variables.
+
+    Set variables from ctx.properties that are not used by cloudify plugin
+    to enviromental variables, which will be added to variables from
+    ctx.properties['container_create']['enviroment'] and relayed to container.
+
+    Args:
+        ctx (cloudify context)
+        client (docker client)
+
+    """
     if 'environment' not in ctx.properties['container_create']:
         ctx.properties['container_create']['environment'] = {}
     for key in ctx.properties:
@@ -165,6 +228,21 @@ def set_env_var(ctx, client):
 
 
 def get_client(ctx):
+    """Get client.
+
+    Returns docker client, using optional options from
+    ctx.properties['daemon_client']
+
+    Args:
+        ctx (cloudify context)
+
+    Raise
+        NonRecoverableError: when docker.errors.APIError during client.
+
+    Returns:
+        client (docker client)
+
+    """
     daemon_client = ctx.properties.get('daemon_client', {})
     try:
         return docker.Client(**daemon_client)
@@ -174,6 +252,24 @@ def get_client(ctx):
 
 
 def import_image(ctx, client):
+    """Imports image.
+
+    Import image from ctx.properties['image_import'] with optional
+    options from ctx.properties['image_import'].
+    'src' in ctx.properties['image_import'] must be specified.
+
+    Args:
+        ctx (cloudify context)
+        client (docker client)
+
+    Returns:
+        image_id (str) valid docker image id
+
+    Raises:
+        NonRecoverableError: when 'image' in ctx.runtime_properties is None
+            or when there was a problem during image download.
+
+    """
     ctx.logger.info('Importing image')
     image_id = _get_import_image_id(
         ctx,
@@ -185,6 +281,7 @@ def import_image(ctx, client):
 
 
 def build_image(ctx, client):
+    # TODO(Zosia) delete build_image
     ctx.logger.info(
         'Building image from path {}'.format(
             ctx.properties['image_build']['path']
@@ -202,6 +299,24 @@ def build_image(ctx, client):
 
 
 def create_container(ctx, client):
+    """Create container.
+
+    Create container from image which id is specified in ctx.runtime_properties
+    ['container'] with options from ctx.properties['container_create'].
+    In those options at least 'command' must be specified.
+
+    Set container id in ctx.runtime_properties['container'].
+
+    Args:
+        ctx (cloudify context)
+        client (docker client)
+
+    Raises:
+        NonRecoverableError: when 'image' in ctx.runtime_properties is None
+            or when docker.errors.APIError (for example when 'command' is
+            not specified in ctx.properties['container_create'].
+
+    """
     ctx.logger.info('Creating container')
     container_create = ctx.properties.get('container_create', {})
     image = _get_image_or_raise(ctx, client)
@@ -216,6 +331,19 @@ def create_container(ctx, client):
 
 
 def start_container(ctx, client):
+    """Start container.
+
+    Start container which id is specified in ctx.runtime_properties
+    ['container'] with optional options from ctx.properties['container_start'].
+
+    Args:
+        ctx (cloudify context)
+        client (docker client)
+
+    Raises:
+        NonRecoverableError: when 'container' in ctx.runtime_properties is None
+            or when docker.errors.APIError.
+    """
     _log_container_info(ctx, 'Starting container')
     container_start = ctx.properties.get('container_start', {})
     container = _get_container_or_raise(ctx, client)
@@ -227,6 +355,19 @@ def start_container(ctx, client):
 
 
 def stop_container(ctx, client):
+    """Stop container.
+
+    Stop container which id is specified in ctx.runtime_properties
+    ['container'] with optional options from ctx.properties['container_stop'].
+
+    Args:
+        ctx (cloudify context)
+        client (docker client)
+
+    Raises:
+        NonRecoverableError: when 'container' in ctx.runtime_properties is None
+            or when docker.errors.APIError.
+    """
     _log_container_info(ctx, 'Stopping container')
     container_stop = ctx.properties.get('container_stop', {})
     container = _get_container_or_raise(ctx, client)
@@ -238,6 +379,20 @@ def stop_container(ctx, client):
 
 
 def remove_container(ctx, client):
+    """Remove container.
+
+    Remove container which id is specified in ctx.runtime_properties
+    ['container'] with optional options from
+    ctx.properties['container_remove'].
+
+    Args:
+        ctx (cloudify context)
+        client (docker client)
+
+    Raises:
+        NonRecoverableError: when 'container' in ctx.runtime_properties is None
+            or when docker.errors.APIError.
+    """
     container = _get_container_or_raise(ctx, client)
     ctx.logger.info('Removing container {}'.format(container))
     container_remove = ctx.properties.get('container_remove', {})
@@ -249,7 +404,21 @@ def remove_container(ctx, client):
 
 
 def remove_image(ctx, client):
-    image = ctx.runtime_properties['image']
+    """Remove image.
+
+    Remove image which id is specified in ctx.runtime_properties['image'].
+
+    Args:
+        ctx (cloudify context)
+        client (docker client)
+
+    Raises:
+        NonRecoverableError: when 'image' in ctx.runtime_properties is None
+            or when docker.errors.APIError while removing image (for example
+            if image is used by another container).
+    """
+
+    image = _get_image_or_raise(ctx, client)
     _log_container_info(ctx, 'Removing image {}, container:'.format(image))
     try:
         client.remove_image(image)

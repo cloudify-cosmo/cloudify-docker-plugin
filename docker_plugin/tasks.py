@@ -1,3 +1,5 @@
+"""Cloudify tasks that operate docker containers using python docker api"""
+
 import docker
 
 from cloudify import exceptions
@@ -12,10 +14,39 @@ _ERR_MSG_NO_IMAGE_SRC = 'Either path or url to image must be given'
 
 @operation
 def create(ctx, *args, **kwargs):
+    """Create container.
+
+    Celery operation launched by cloudify.
+
+    Import image from ctx.properties['image_import'] with optional
+    options from ctx.properties['image_import'].
+    'src' in ctx.properties['image_import'] must be specified.
+
+    Set imported image_id in ctx.runtime_properties['image'].
+
+    Set variables from ctx.properties that are not used by cloudify plugin
+    to enviromental variables, which will be added to variables from
+    ctx.properties['container_create']['enviroment'] and relayed to container.
+
+    Create container from imported image with options from
+    ctx.properties['container_create'].
+    'command' in ctx.properties['container_create'] must be specified.
+
+    Args:
+        ctx (cloudify context)
+
+    Raises:
+        NonRecoverableError: when 'src' in ctx.properties['image_import']
+            is not specified
+            or when docker.errors.APIError during start (for example when
+            'command' is not specified in ctx.properties['container_create'].
+
+    """
     #apt_get_wrapper.launch_process(ctx)
     client = docker_wrapper.get_client(ctx)
     if ctx.properties.get('image_import', {}).get('src'):
         image = docker_wrapper.import_image(ctx, client)
+    #TODO(Zosia) Delete image_build option
     elif ctx.properties.get('image_build', {}).get('path'):
         image = docker_wrapper.build_image(ctx, client)
     else:
@@ -28,6 +59,30 @@ def create(ctx, *args, **kwargs):
 
 @operation
 def run(ctx, *args, **kwargs):
+    """Run container.
+
+    Celery operation launched by cloudify.
+
+    Run container which id is specified in ctx.runtime_properties['container']
+    with optional options from ctx.properties['container_start'].
+
+    Get ports, top and host ip information from container using containers
+    function.
+
+    Args:
+        ctx (cloudify context)
+
+    Raises:
+        NonRecoverableError: when 'container' in ctx.runtime_properties is None
+            or when docker.errors.APIError during start.
+
+    Logs:
+       Container id,
+       Container ports,
+       Container top information,
+       TODO(Michal) host ip
+
+    """
     client = docker_wrapper.get_client(ctx)
     docker_wrapper.start_container(ctx, client)
     container = docker_wrapper.get_container_info(ctx, client)
@@ -41,12 +96,49 @@ def run(ctx, *args, **kwargs):
 
 @operation
 def stop(ctx, *args, **kwargs):
+    """Stop container.
+
+    Celery operation launched by cloudify.
+
+    Stop container which id is specified in ctx.runtime_properties
+    ['container'] with optional options from ctx.properties['container_stop'].
+
+    Args:
+        ctx (cloudify context)
+
+    Raises:
+        NonRecoverableError: when 'container' in ctx.runtime_properties is None
+            or when docker.errors.APIError during stop.
+
+    """
     client = docker_wrapper.get_client(ctx)
     docker_wrapper.stop_container(ctx, client)
 
 
 @operation
 def delete(ctx, *args, **kwargs):
+    """Delete container.
+
+    Celery operation launched by cloudify.
+
+    Remove container which id is specified in ctx.runtime_properties
+    ['container'] with optional options from
+    ctx.properties['container_remove'].
+
+    If container is running stop it.
+    if ctx['container_remove']['remove_image'] is True then remove image.
+
+    Args:
+        ctx (cloudify context)
+
+    Raises:
+        NonRecoverableError: when 'container' in ctx.runtime_properties is None
+            or 'remove_image' in ctx.properties['container_remove'] is True
+            and 'image' in ctx.runtime_properties is None
+            or when docker.errors.APIError during stop, remove_container,
+            remove_image (for example if image is used by another container).
+
+    """
     client = docker_wrapper.get_client(ctx)
     container_info = docker_wrapper.inspect_container(ctx, client)
     if container_info and container_info['State']['Running']:
