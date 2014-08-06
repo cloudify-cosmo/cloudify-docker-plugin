@@ -11,6 +11,10 @@ To install run: `python setup.py install`.
 
 To upgrade only this package run: `pip install --no-deps --upgrade .`.
 
+Due to a feature (regarding package security) in `pip` (existed in ver. 1.5.6)
+`--allow-external` and `--allow-unverified` flags may be helpful while
+installing or upgrading.
+
 
 Running tests
 -------------
@@ -23,13 +27,3 @@ Currently, the `cloudify-system-tests` package does not contain anything but
 the `__init__.py` file. This issue can be easily worked around by installing
 all the requirements and copying the entire `cosmo_tester` directory into
 the plugin's root.
-
-
-Tips
-----
-
-Installing *python-apt* with *pip* on *Ubuntu 14.04* `*trusty*':
-
-    sudo apt-get purge python-apt
-    sudo apt-get install g++ python-dev ibapt-pkg-dev
-    sudo pip install python-apt
