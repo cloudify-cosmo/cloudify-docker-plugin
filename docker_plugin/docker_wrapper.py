@@ -7,6 +7,15 @@ from cloudify import exceptions
 
 _ERR_MSG_UNKNOWN_IMAGE_IMPORT = 'Unknown error during image import'
 _ERR_MSG_UNKNOWN_IMAGE_BUILD = 'Unknown error while building image'
+_NON_ENV_KEYS = [
+    'daemon_client',
+    'image_import',
+    'image_build',
+    'container_create',
+    'container_start',
+    'container_stop',
+    'container_remove'
+]
 
 
 def _is_image_id_valid(ctx, image_id):
@@ -158,17 +167,21 @@ def remove_image(ctx, client):
 
 
 def set_env_var(ctx, client):
-    env_var = {}
-    for p in ctx.properties:
-        try:
-            env_key = str(p)
-            env_val = str(ctx.properties[p])
-        except TypeError:
-            pass
-        else:
-            env_var.update({env_key: env_val})
-
-    return env_var
+    if 'environment' not in ctx.properties['container_create']:
+        ctx.properties['container_create']['environment'] = {}
+    for key in ctx.properties:
+        if (
+            key not in _NON_ENV_KEYS and
+            key not in ctx.properties['container_create']['environment']
+        ):
+            try:
+                env_key = str(key)
+                env_val = str(ctx.properties[key])
+            except TypeError:
+                pass
+            else:
+                ctx.properties['container_create']['environment'][env_key] =\
+                    env_val
 
 
 def get_top_info(ctx, client):
