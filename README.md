@@ -12,6 +12,19 @@ To install run: `python setup.py install`.
 To upgrade only this package run: `pip install --no-deps --upgrade .`.
 
 
+Running tests
+-------------
+
+Test requirements have been emplaced in `dev_*.txt` files, as `setuptools`
+do not install requirements listed in `test_requires`. You may use those files
+to force setuptools to automatically install needed packages.
+
+Currently, the `cloudify-system-tests` package does not contain anything but
+the `__init__.py` file. This issue can be easily worked around by installing
+all the requirements and copying the entire `cosmo_tester` directory into
+the plugin's root.
+
+
 Tips
 ----
 
