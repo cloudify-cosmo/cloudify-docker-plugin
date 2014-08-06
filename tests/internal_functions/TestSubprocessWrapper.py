@@ -21,6 +21,8 @@ _HUNG_UP_ON_TERMINATE_PROCESS = '{} {} {}'.format(
 )
 _HUN_UP_ON_TERMINATE_EXIT_CODE = -9
 
+_MAX_WAITING_TIME = 10
+_TIMEOUT_TERMINATE = 5
 
 _VAL1 = 'stdout 1'
 _VAL2 = 'stdout 2'
@@ -47,7 +49,9 @@ class TestSubprocessWrapper(TestWithMockupCtx):
     def _assert_process_values(self, process, expected_exit_code, values):
         return_code, stdout, stderr = subprocess_wrapper.run_process(
             self.ctx,
-            process
+            process,
+            _MAX_WAITING_TIME,
+            _TIMEOUT_TERMINATE
         )
         self.assertEqual(return_code, expected_exit_code)
         for v in values:

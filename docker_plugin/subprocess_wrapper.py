@@ -9,10 +9,6 @@ from cloudify import exceptions
 from cloudify import mocks
 
 
-_MAX_WAITING_TIME = 10
-_TIMEOUT_TERMINATE = 5
-
-
 def _get_output(ctx, pipe, stream):
     end_of_output, wait_output = False, False
     output = ''
@@ -130,8 +126,8 @@ def _clean_up(ctx, pipe, success, timeout_terminate, waiting_for_output):
 def run_process(
         ctx,
         process,
-        waiting_for_output=_MAX_WAITING_TIME,
-        timeout_terminate=_TIMEOUT_TERMINATE
+        waiting_for_output,
+        timeout_terminate
 ):
     ctx.logger.info('Starting process')
     pipe = subprocess.Popen(

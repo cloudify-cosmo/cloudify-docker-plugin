@@ -5,8 +5,8 @@ import docker
 from cloudify import exceptions
 from cloudify.decorators import operation
 
-import docker_wrapper
-import apt_get_wrapper
+import docker_plugin.apt_get_wrapper as apt_get_wrapper
+import docker_plugin.docker_wrapper as docker_wrapper
 
 
 _ERR_MSG_NO_IMAGE_SRC = 'Either path or url to image must be given'
@@ -16,7 +16,7 @@ _ERR_MSG_NO_IMAGE_SRC = 'Either path or url to image must be given'
 def create(ctx, *args, **kwargs):
     """Create container.
 
-    Celery operation launched by cloudify.
+    RPC called by Cloudify Manager.
 
     Import image from ctx.properties['image_import'] with optional
     options from ctx.properties['image_import'].
@@ -42,11 +42,10 @@ def create(ctx, *args, **kwargs):
             'command' is not specified in ctx.properties['container_create'].
 
     """
-    #apt_get_wrapper.launch_process(ctx)
+    apt_get_wrapper.install_docker(ctx)
     client = docker_wrapper.get_client(ctx)
     if ctx.properties.get('image_import', {}).get('src'):
         image = docker_wrapper.import_image(ctx, client)
-    #TODO(Zosia) Delete image_build option
     elif ctx.properties.get('image_build', {}).get('path'):
         image = docker_wrapper.build_image(ctx, client)
     else:
@@ -61,7 +60,7 @@ def create(ctx, *args, **kwargs):
 def run(ctx, *args, **kwargs):
     """Run container.
 
-    Celery operation launched by cloudify.
+    RPC called by Cloudify Manager.
 
     Run container which id is specified in ctx.runtime_properties['container']
     with optional options from ctx.properties['container_start'].
@@ -98,7 +97,7 @@ def run(ctx, *args, **kwargs):
 def stop(ctx, *args, **kwargs):
     """Stop container.
 
-    Celery operation launched by cloudify.
+    RPC called by Cloudify Manager.
 
     Stop container which id is specified in ctx.runtime_properties
     ['container'] with optional options from ctx.properties['container_stop'].
@@ -119,7 +118,7 @@ def stop(ctx, *args, **kwargs):
 def delete(ctx, *args, **kwargs):
     """Delete container.
 
-    Celery operation launched by cloudify.
+    RPC called by Cloudify Manager.
 
     Remove container which id is specified in ctx.runtime_properties
     ['container'] with optional options from

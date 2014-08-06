@@ -1,9 +1,9 @@
 """Functions that wrap docker functions.
 
 All functions take
-    ctx: cloudify context and
+    ctx: cloudify context
     client: docker client
-as a parameters.
+as parameters.
 """
 
 import re
@@ -15,6 +15,16 @@ from cloudify import exceptions
 
 _ERR_MSG_UNKNOWN_IMAGE_IMPORT = 'Unknown error during image import'
 _ERR_MSG_UNKNOWN_IMAGE_BUILD = 'Unknown error while building image'
+
+# Postision of image id in image_import result
+_IMAGE_IMPORT_ID_POSITION = 2
+# Postision of error in image_import result
+_IMAGE_IMPORT_ERROR_POSITION = 2
+# Postision of image id in image_build result
+_IMAGE_BUILD_ID_POSITION = 3
+
+# Those ctx.properties that will not be relayed to container as
+# environmental variables
 _NON_ENV_KEYS = [
     'daemon_client',
     'image_import',
@@ -31,6 +41,7 @@ def _is_image_id_valid(ctx, image_id):
 
 
 def _get_import_image_id(ctx, client, import_image_output):
+    # It is useful beacause
     # import_image returns long string where in the second line
     # after last status is image id
     try:
@@ -43,26 +54,30 @@ def _get_import_image_id(ctx, client, import_image_output):
         # in second output line
         # error message is after last 'error'
         position_of_error = output_line.rfind('error')
-        err_msg = output_line[position_of_error:].split('"')[2]
+        try:
+            err_msg = output_line[position_of_error:].\
+                split('"')[_IMAGE_IMPORT_ERROR_POSITION]
+        except IndexError as e:
+            _log_and_raise(ctx, client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
         err_msg = 'Error during image import {}'.format(err_msg)
         _log_and_raise(ctx, client, err_msg)
     try:
-        image_id = output_line[position_of_last_status:].split('"')[2]
+        image_id = output_line[position_of_last_status:].\
+            split('"')[_IMAGE_IMPORT_ID_POSITION]
     except IndexError as e:
         _log_and_raise(ctx, client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
-    if _is_image_id_valid(ctx, image_id):
-        return image_id
     else:
-        _log_and_raise(ctx, client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
+        if _is_image_id_valid(ctx, image_id):
+            return image_id
+        else:
+            _log_and_raise(ctx, client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
 
 
 def _get_build_image_id(ctx, client, stream_generator):
-    # TODO(Zosia) delete build_image
     stream = None
     for stream in stream_generator:
         pass
     # Fourth word in a string stream is an id
-    # I can't find it in docker documentation
     if stream is None:
         _log_and_raise(
             ctx,
@@ -70,7 +85,11 @@ def _get_build_image_id(ctx, client, stream_generator):
             _ERR_MSG_UNKNOWN_IMAGE_BUILD,
             exceptions.RecoverableError
         )
-    image_id = re.sub(r'[\W_]+', ' ', stream).split()[3]
+    try:
+        image_id = re.sub(r'[\W_]+', ' ', stream).\
+            split()[_IMAGE_BUILD_ID_POSITION]
+    except IndexError as e:
+        _log_and_raise(ctx, client, _ERR_MSG_UNKNOWN_IMAGE_BUILD)
     if _is_image_id_valid(ctx, image_id):
         return image_id
     else:
@@ -97,7 +116,7 @@ def _get_image_or_raise(ctx, client):
 
 def _log_container_info(ctx, message=''):
     if 'container' in ctx.runtime_properties:
-        message += ' ' + ctx.runtime_properties['container']
+        message = '{} {}'.format(message, ctx.runtime_properties['container'])
     ctx.logger.info(message)
 
 
@@ -142,7 +161,7 @@ def get_top_info(ctx, client):
 
     """
 
-    def top_table(ctx, top_dict):
+    def format_as_table(ctx, top_dict):
         top_table = ' '.join(top_dict['Titles']) + '\n'
         top_table += '\n'.join(' '.join(p) for p in top_dict['Processes'])
         return top_table
@@ -154,7 +173,7 @@ def get_top_info(ctx, client):
     except docker.errors.APIError as e:
         _log_and_raise(ctx, client, str(e))
     else:
-        return top_table(ctx, top_dict)
+        return format_as_table(ctx, top_dict)
 
 
 def get_container_info(ctx,  client):
@@ -221,6 +240,8 @@ def set_env_var(ctx, client):
                 env_key = str(key)
                 env_val = str(ctx.properties[key])
             except TypeError:
+                # Elements that can't be converted to string are not
+                # relayed as enviromental variables to container
                 pass
             else:
                 ctx.properties['container_create']['environment'][env_key] =\
@@ -252,7 +273,7 @@ def get_client(ctx):
 
 
 def import_image(ctx, client):
-    """Imports image.
+    """Import image.
 
     Import image from ctx.properties['image_import'] with optional
     options from ctx.properties['image_import'].
@@ -266,7 +287,7 @@ def import_image(ctx, client):
         image_id (str) valid docker image id
 
     Raises:
-        NonRecoverableError: when 'image' in ctx.runtime_properties is None
+        NonRecoverableError: when no 'src' in ctx.properties['image_import']
             or when there was a problem during image download.
 
     """
@@ -281,7 +302,24 @@ def import_image(ctx, client):
 
 
 def build_image(ctx, client):
-    # TODO(Zosia) delete build_image
+    """Build image.
+
+    Build image from ctx.properties['image_build'] with optional
+    options from ctx.properties['image_build'].
+    'path' in ctx.properties['image_build'] must be specified.
+
+    Args:
+        ctx (cloudify context)
+        client (docker client)
+
+    Returns:
+        image_id (str) valid docker image id
+
+    Raises:
+        NonRecoverableError: when no 'path' in ctx.properties['image_build']
+            or when there was a problem during image download.
+
+    """
     ctx.logger.info(
         'Building image from path {}'.format(
             ctx.properties['image_build']['path']
@@ -318,8 +356,8 @@ def create_container(ctx, client):
 
     """
     ctx.logger.info('Creating container')
-    container_create = ctx.properties.get('container_create', {})
     image = _get_image_or_raise(ctx, client)
+    container_create = ctx.properties.get('container_create', {})
     try:
         cont = client.create_container(image, **container_create)
     except docker.errors.APIError as e:
@@ -327,7 +365,7 @@ def create_container(ctx, client):
         _log_and_raise(ctx, client, error_msg)
     else:
         ctx.runtime_properties['container'] = cont['Id']
-    _log_container_info(ctx, 'Created container ')
+    _log_container_info(ctx, 'Created container')
 
 
 def start_container(ctx, client):
@@ -345,8 +383,8 @@ def start_container(ctx, client):
             or when docker.errors.APIError.
     """
     _log_container_info(ctx, 'Starting container')
-    container_start = ctx.properties.get('container_start', {})
     container = _get_container_or_raise(ctx, client)
+    container_start = ctx.properties.get('container_start', {})
     try:
         client.start(container, **container_start)
     except docker.errors.APIError as e:
@@ -369,8 +407,8 @@ def stop_container(ctx, client):
             or when docker.errors.APIError.
     """
     _log_container_info(ctx, 'Stopping container')
-    container_stop = ctx.properties.get('container_stop', {})
     container = _get_container_or_raise(ctx, client)
+    container_stop = ctx.properties.get('container_stop', {})
     try:
         client.stop(container, **container_stop)
     except docker.errors.APIError as e:
@@ -417,7 +455,6 @@ def remove_image(ctx, client):
             or when docker.errors.APIError while removing image (for example
             if image is used by another container).
     """
-
     image = _get_image_or_raise(ctx, client)
     _log_container_info(ctx, 'Removing image {}, container:'.format(image))
     try:
