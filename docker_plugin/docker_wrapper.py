@@ -72,6 +72,107 @@ def _get_build_image_id(ctx, client, stream_generator):
         )
 
 
+def _get_container_or_raise(ctx, client):
+    container = ctx.runtime_properties.get('container')
+    if container is None:
+        _log_and_raise(ctx, client, 'No container specified')
+    return container
+
+
+def _get_image_or_raise(ctx, client):
+    image = ctx.runtime_properties.get('image')
+    if image is None:
+        _log_and_raise(ctx, client, 'No image specified')
+    return image
+
+
+def _log_container_info(ctx, message=''):
+    if 'container' in ctx.runtime_properties:
+        message += ' ' + ctx.runtime_properties['container']
+    ctx.logger.info(message)
+
+
+def _log_and_raise(ctx,
+                   client,
+                   err_msg='',
+                   exc_class=exceptions.NonRecoverableError):
+    _log_error_container_logs(ctx, client, err_msg)
+    raise exc_class(err_msg)
+
+
+def _log_error_container_logs(ctx, client, message=''):
+    container = ctx.runtime_properties.get('container')
+    if container is not None:
+        if message:
+            message += '\n'
+        message += 'Container: {}'.format(container)
+        logs = client.logs(container)
+        if logs:
+            message += '\nLogs:\n{}'.format(logs)
+    if message:
+        ctx.logger.error(message)
+
+
+def get_top_info(ctx, client):
+
+    def top_table(ctx, top_dict):
+        top_table = ' '.join(top_dict['Titles']) + '\n'
+        top_table += '\n'.join(' '.join(p) for p in top_dict['Processes'])
+        return top_table
+
+    _log_container_info(ctx, 'getting TOP info of container')
+    container = _get_container_or_raise(ctx, client)
+    try:
+        top_dict = client.top(container)
+    except docker.errors.APIError as e:
+        _log_and_raise(ctx, client, str(e))
+    else:
+        return top_table(ctx, top_dict)
+
+
+def get_container_info(ctx,  client):
+    container = ctx.runtime_properties.get('container')
+    if container is not None:
+        for c in client.containers():
+            if container in c.itervalues():
+                return c
+    return None
+
+
+def inspect_container(ctx, client):
+    container = ctx.runtime_properties.get('container')
+    if container is not None:
+        return client.inspect_container(container)
+    return None
+
+
+def set_env_var(ctx, client):
+    if 'environment' not in ctx.properties['container_create']:
+        ctx.properties['container_create']['environment'] = {}
+    for key in ctx.properties:
+        if (
+            key not in _NON_ENV_KEYS and
+            key not in ctx.properties['container_create']['environment']
+        ):
+            try:
+                env_key = str(key)
+                env_val = str(ctx.properties[key])
+            except TypeError:
+                pass
+            else:
+                ctx.properties['container_create']['environment'][env_key] =\
+                    env_val
+
+
+def get_client(ctx):
+    daemon_client = ctx.properties.get('daemon_client', {})
+    try:
+        return docker.Client(**daemon_client)
+    except docker.errors.DockerException as e:
+        error_msg = 'Error while getting client: {}'.format(str(e))
+        _log_and_raise(ctx, client, error_msg)
+
+
 def import_image(ctx, client):
     ctx.logger.info('Importing image')
     image_id = _get_import_image_id(
@@ -98,15 +199,6 @@ def build_image(ctx, client):
         image_id = _get_build_image_id(ctx, client, image_stream)
         ctx.logger.info('Image {} has been built'.format(image_id))
         return image_id
-
-
-def get_client(ctx):
-    daemon_client = ctx.properties.get('daemon_client', {})
-    try:
-        return docker.Client(**daemon_client)
-    except docker.errors.DockerException as e:
-        error_msg = 'Error while getting client: {}'.format(str(e))
-        _log_and_raise(ctx, client, error_msg)
 
 
 def create_container(ctx, client):
@@ -164,95 +256,3 @@ def remove_image(ctx, client):
     except docker.errors.APIError as e:
         _log_and_raise(ctx, client, str(e))
     _log_container_info(ctx, 'Removed image {}, container:'.format(image))
-
-
-def set_env_var(ctx, client):
-    if 'environment' not in ctx.properties['container_create']:
-        ctx.properties['container_create']['environment'] = {}
-    for key in ctx.properties:
-        if (
-            key not in _NON_ENV_KEYS and
-            key not in ctx.properties['container_create']['environment']
-        ):
-            try:
-                env_key = str(key)
-                env_val = str(ctx.properties[key])
-            except TypeError:
-                pass
-            else:
-                ctx.properties['container_create']['environment'][env_key] =\
-                    env_val
-
-
-def get_top_info(ctx, client):
-
-    def top_table(ctx, top_dict):
-        top_table = ' '.join(top_dict['Titles']) + '\n'
-        top_table += '\n'.join(' '.join(p) for p in top_dict['Processes'])
-        return top_table
-
-    _log_container_info(ctx, 'getting TOP info of container')
-    container = _get_container_or_raise(ctx, client)
-    try:
-        top_dict = client.top(container)
-    except docker.errors.APIError as e:
-        _log_and_raise(ctx, client, str(e))
-    else:
-        return top_table(ctx, top_dict)
-
-
-def get_container_info(ctx,  client):
-    container = ctx.runtime_properties.get('container')
-    if container is not None:
-        for c in client.containers():
-            if container in c.itervalues():
-                return c
-    return None
-
-
-def inspect_container(ctx, client):
-    container = ctx.runtime_properties.get('container')
-    if container is not None:
-        return client.inspect_container(container)
-    return None
-
-
-def _get_container_or_raise(ctx, client):
-    container = ctx.runtime_properties.get('container')
-    if container is None:
-        _log_and_raise(ctx, client, 'No container specified')
-    return container
-
-
-def _get_image_or_raise(ctx, client):
-    image = ctx.runtime_properties.get('image')
-    if image is None:
-        _log_and_raise(ctx, client, 'No image specified')
-    return image
-
-
-def _log_container_info(ctx, message=''):
-    if 'container' in ctx.runtime_properties:
-        message += ' ' + ctx.runtime_properties['container']
-    ctx.logger.info(message)
-
-
-def _log_and_raise(ctx,
-                   client,
-                   err_msg='',
-                   exc_class=exceptions.NonRecoverableError):
-    _log_error_container_logs(ctx, client, err_msg)
-    raise exc_class(err_msg)
-
-
-def _log_error_container_logs(ctx, client, message=''):
-    container = ctx.runtime_properties.get('container')
-    if container is not None:
-        if message:
-            message += '\n'
-        message += 'Container: {}'.format(container)
-        logs = client.logs(container)
-        if logs:
-            message += '\nLogs:\n{}'.format(logs)
-    if message:
-        ctx.logger.error(message)
