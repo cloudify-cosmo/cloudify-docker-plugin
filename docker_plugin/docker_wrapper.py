@@ -157,6 +157,20 @@ def remove_image(ctx, client):
     _log_container_info(ctx, 'Removed image {}, container:'.format(image))
 
 
+def set_env_var(ctx, client):
+    env_var = {}
+    for p in ctx.properties:
+        try:
+            env_key = str(p)
+            env_val = str(ctx.properties[p])
+        except TypeError:
+            pass
+        else:
+            env_var.update({env_key: env_val})
+
+    return env_var
+
+
 def get_top_info(ctx, client):
 
     def top_table(ctx, top_dict):

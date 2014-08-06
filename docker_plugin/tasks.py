@@ -22,6 +22,7 @@ def create(ctx, *args, **kwargs):
         ctx.logger.error(_ERR_MSG_NO_IMAGE_SRC)
         raise exceptions.NonRecoverableError(_ERR_MSG_NO_IMAGE_SRC)
     ctx.runtime_properties['image'] = image
+    docker_wrapper.set_env_var(ctx, client)
     docker_wrapper.create_container(ctx, client)
 
 
