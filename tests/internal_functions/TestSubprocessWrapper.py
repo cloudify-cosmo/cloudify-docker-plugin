@@ -21,19 +21,21 @@ from tests.TestWithMockupCtx import TestWithMockupCtx
 from docker_plugin import subprocess_wrapper
 
 
-_VALID_PROCESS = 'tests/internal_functions/basic_script.sh'
+_TEST_SCRIPT = 'tests/internal_functions/basic_script.sh'
+
+_VALID_PROCESS = [_TEST_SCRIPT]
 _SUCCESS_EXIT_CODE = 0
 
-_HUNG_UP_SLEEP_TIME = 100
-_HUNG_UP_PROCESS = '{} {}'.format(_VALID_PROCESS, _HUNG_UP_SLEEP_TIME)
+_HUNG_UP_SLEEP_TIME = '100'
+_HUNG_UP_PROCESS = [_TEST_SCRIPT, _HUNG_UP_SLEEP_TIME]
 _HUNG_UP_EXIT_CODE = 10
 
-_HUNG_UP_ON_TERMINATE = 100
-_HUNG_UP_ON_TERMINATE_PROCESS = '{} {} {}'.format(
-    _VALID_PROCESS,
+_HUNG_UP_ON_TERMINATE = '100'
+_HUNG_UP_ON_TERMINATE_PROCESS = [
+    _TEST_SCRIPT,
     _HUNG_UP_SLEEP_TIME,
     _HUNG_UP_ON_TERMINATE
-)
+]
 _HUN_UP_ON_TERMINATE_EXIT_CODE = -9
 
 _MAX_WAITING_TIME = 10

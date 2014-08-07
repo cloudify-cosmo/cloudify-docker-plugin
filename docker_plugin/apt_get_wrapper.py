@@ -18,7 +18,7 @@ import docker_plugin.subprocess_wrapper as subprocess_wrapper
 from cloudify import exceptions
 
 
-_DOCKER_INSTALLATION_CMD = 'install_docker.sh'
+_DOCKER_INSTALLATION_CMD = ['install_docker.sh']
 _MAX_WAITING_TIME = 10
 _TIMEOUT_TERMINATE = 5
 

@@ -100,13 +100,13 @@ def _clean_up(ctx, pipe, success, waiting_for_output, timeout_terminate):
 
 def run_process(
         ctx,
-        process,
+        command,
         waiting_for_output,
         timeout_terminate
 ):
     ctx.logger.info('Starting process')
     pipe = subprocess.Popen(
-        process.split(' '),
+        command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
