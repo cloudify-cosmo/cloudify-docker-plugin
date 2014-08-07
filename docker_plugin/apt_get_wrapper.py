@@ -30,13 +30,15 @@ def install_docker(ctx):
         waiting_for_output=_MAX_WAITING_TIME,
         timeout_terminate=_TIMEOUT_TERMINATE,
     )
-    if stdout is not None:
-        ctx.logger.debug('Docker installation stdout:\n{}'.format(stdout))
-    if stderr is not None:
-        ctx.logger.error(
-            'Problems with docker installation, stderr:\n{}'.format(stderr)
+    if stdout != '':
+        ctx.logger.debug(
+            'Docker installation\'s stdout:\n{}\n'.format(stdout)
         )
     if return_code != 0:
+        if stderr != '':
+            ctx.logger.error(
+                'Docker installation\'s stderr:\n{}\n'.format(stderr)
+            )
         raise exceptions.NonRecoverableError(
             'Error during docker installation'
         )
