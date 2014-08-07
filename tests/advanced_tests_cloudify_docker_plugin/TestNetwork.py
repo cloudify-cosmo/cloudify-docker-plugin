@@ -3,6 +3,7 @@ import copy
 from docker_plugin import tasks
 from tests.TestCaseBase import TestCaseBase
 
+from cloudify import exceptions
 from cloudify import mocks
 
 
@@ -14,12 +15,12 @@ _BROADCASTER_NAME = 'broadcaster'
 
 
 class TestNetwork(TestCaseBase):
-    def _start_container_with_network(self, command, net_mode, name):
+    def _start_container_with_network(self, command, net_mode):
         ctx = mocks.MockCloudifyContext(
             properties=copy.deepcopy(self.ctx.properties)
         )
         ctx.properties['container_create'].update(
-            {'command': command, 'name': name}
+            {'command': command}
         )
         tasks.create(ctx)
         ctx.properties['container_start'].update({'network_mode': net_mode})
@@ -29,13 +30,11 @@ class TestNetwork(TestCaseBase):
     def test_network(self):
         self.broadcaster = self._start_container_with_network(
             _CMD_CONTAINER_BROADCASTER,
-            'bridge',
-            _BROADCASTER_NAME
+            'bridge'
         )
         self.listener = self._start_container_with_network(
             _CMD_CONTAINER_LISTENER,
-            'container:{}'.format(_BROADCASTER_NAME),
-            'listener'
+            'container:{}'.format(self.broadcaster.runtime_properties['container'])
         )
         try:
             tasks.stop(self.listener)

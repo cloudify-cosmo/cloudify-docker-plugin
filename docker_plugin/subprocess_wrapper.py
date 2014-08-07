@@ -43,7 +43,7 @@ def _read_streams(ctx, pipe, timeout):
     )
 
 
-def _manually_clean_up(ctx, pipe, timeout_terminate, waiting_for_output):
+def _manually_clean_up(ctx, pipe, waiting_for_output, timeout_terminate):
     ctx.logger.info('Terminating process')
     pipe.terminate()
     time_no_terminate = 0
@@ -68,7 +68,7 @@ def _manually_clean_up(ctx, pipe, timeout_terminate, waiting_for_output):
     return stdout, stderr
 
 
-def _clean_up(ctx, pipe, success, timeout_terminate, waiting_for_output):
+def _clean_up(ctx, pipe, success, waiting_for_output, timeout_terminate):
     ctx.logger.info('Cleaning up')
     stdout, stderr = '', ''
     if success:
@@ -77,8 +77,8 @@ def _clean_up(ctx, pipe, success, timeout_terminate, waiting_for_output):
         stdout, stderr = _manually_clean_up(
             ctx,
             pipe,
+            waiting_for_output,
             timeout_terminate,
-            waiting_for_output
         )
     pipe.stdout.close()
     pipe.stderr.close()
@@ -103,8 +103,8 @@ def run_process(
         ctx,
         pipe,
         success,
-        timeout_terminate,
-        waiting_for_output
+        waiting_for_output,
+        timeout_terminate
     )
     stdout += new_stdout
     stderr += new_stderr
