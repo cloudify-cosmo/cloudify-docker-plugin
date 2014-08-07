@@ -44,7 +44,7 @@ get_package_state(){
   if [ $r -eq 0 ]; then
     echo -e "\napt-cache show \"$1\" | grep Version | head -n1 | awk '{print \$2}'"
     declare -r latest_version=`apt-cache show "$1" | grep Version | head -n1 | awk '{print $2}'`
-    declare -r installed_version=`cat "${tmp} | awk '{print \$2}'"`
+    declare -r installed_version=`cat "${tmp}" | awk '{print $2}'`
     if [ x"${installed_version}" = x"${latest_version}" ]; then
       rm "${tmp}"
       return ${GET_PACKAGE_STATE__INSTALLED_OK}
