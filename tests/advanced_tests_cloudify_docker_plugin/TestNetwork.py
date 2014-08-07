@@ -11,7 +11,6 @@ _PORT = 1000
 _MSG = 'Hello'
 _CMD_CONTAINER_BROADCASTER = 'nc -l {}'.format(_PORT)
 _CMD_CONTAINER_LISTENER = 'nc -z 127.0.0.1 1000'
-_BROADCASTER_NAME = 'broadcaster'
 
 
 class TestNetwork(TestCaseBase):
