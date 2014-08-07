@@ -31,7 +31,7 @@ get_package_state(){
   if [ $r -eq 0 ]; then
     echo -e "\napt-cache show \"$1\" | grep Version | head -n1 | awk '{print \$2}'"
     declare -r latest_version=`apt-cache show "$1" | grep Version | head -n1 | awk '{print $2}'`
-    declare -r installed_version=`cat "${tmp}"`
+    declare -r installed_version=`cat "${tmp} | awk '{print \$2}'"`
     if [ x"${installed_version}" = x"${latest_version}" ]; then
       rm "${tmp}"
       return ${GET_PACKAGE_STATE__INSTALLED_OK}
@@ -61,7 +61,7 @@ receive_signing_key(){
   sudo apt-key adv --list-keys "$1"
   case $? in
     0)
-      echo -n "\nKey $1 already imported. Nothing to do."
+      echo -e "\nKey $1 already imported. Nothing to do."
       return
       ;;
     2) ;; # key import required
@@ -181,7 +181,7 @@ case $? in
   ${GET_PACKAGE_STATE__UPGRADE})
     echo -e "\nThere are upgrades to the package \`${PACKAGE}'. Upgrading."
     install_package "${PACKAGE}"
-    echo -n "\nSuccessfully upgraded the package \`${PACKAGE}'."
+    echo -e "\nSuccessfully upgraded the package \`${PACKAGE}'."
     ;;
   ${GET_PACKAGE_STATE__NOT_INSTALLED})
     echo -e "\nPackage \`${PACKAGE}' not installed. Installing."
@@ -190,7 +190,7 @@ case $? in
     install_package "${PACKAGE}"
     echo -e "\nsudo usermod -a -G docker \$USER"
     sudo usermod -a -G docker "$USER" || _error
-    echo -n "\nSuccessfully finished installing the package \`${PACKAGE}'."
+    echo -e "\nSuccessfully finished installing the package \`${PACKAGE}'."
     ;;
   *) _error ;;
 esac
