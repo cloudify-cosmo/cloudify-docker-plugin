@@ -28,5 +28,3 @@ class TestWithMockupCtx(unittest.TestCase):
     def setUp(self):
         self.client = docker.Client()
         self.ctx = mocks.MockCloudifyContext(properties={})
-        # TODO(Zosia) temporary debug help
-        self.ctx.logger.info('\n'+str(self.id)+'\n')

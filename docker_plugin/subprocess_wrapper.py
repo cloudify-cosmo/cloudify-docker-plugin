@@ -18,9 +18,6 @@ import select
 import subprocess
 import time
 
-from cloudify import exceptions
-from cloudify import mocks
-
 
 def _read_streams(ctx, pipe, timeout):
     ctx.logger.info('Waiting for subprocess to finish...')

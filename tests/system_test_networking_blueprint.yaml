@@ -45,7 +45,8 @@ blueprint:
                 daemon_client: {}
                 image_build: {}
                 image_import:
-                    src: http://11.0.0.1/ubuntu.tar.xz
+                    #TODO fix URL
+                    src: http://insert/url/to/image/here
                 container_create:
                     ports: [1000]
                     command: /bin/bash -c 'while [ 1 ]; do echo | nc -nvl 1000; done'

@@ -1,8 +1,0 @@
-cloudify-rest-client>=3.0
-cloudify-plugins-common>=3.0
-cloudify-cli>=3.0
-cloudify-openstack-provider>=1.0
-cloudify-system-tests>=3.0
-docker-py
-psutil
-nose

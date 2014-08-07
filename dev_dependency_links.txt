@@ -1,5 +1,0 @@
-https://github.com/cloudify-cosmo/cloudify-rest-client/tarball/3.0rc1#egg=cloudify-rest-client-3.0.0
-https://github.com/cloudify-cosmo/cloudify-plugins-common/tarball/3.0rc1#egg=cloudify-plugins-common-3.0.0
-https://github.com/cloudify-cosmo/cloudify-cli/tarball/3.0rc1#egg=cloudify-cli-3.0.0
-https://github.com/cloudify-cosmo/cloudify-openstack-provider/tarball/1.0rc1#egg=cloudify-openstack-provider-1.0.0
-https://github.com/cloudify-cosmo/cloudify-system-tests/tarball/3.0rc1#egg=cloudify-system-tests-3.0.0
