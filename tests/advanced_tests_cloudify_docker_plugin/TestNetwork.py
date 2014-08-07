@@ -48,7 +48,9 @@ class TestNetwork(TestCaseBase):
         )
         self.listener = self._start_container_with_network(
             _CMD_CONTAINER_LISTENER,
-            'container:{}'.format(self.broadcaster.runtime_properties['container'])
+            'container:{}'.format(
+                self.broadcaster.runtime_properties['container']
+            )
         )
         try:
             tasks.stop(self.listener)

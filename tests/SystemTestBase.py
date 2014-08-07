@@ -37,7 +37,7 @@ class SystemTestBase(unittest.TestCase):
         except KeyError:
             print(
                 ('`{}\' environment variable must be set in order to execute'
-                ' this test.'.format(CLOUDIFY_TEST_MANAGEMENT_IP)),
+                 ' this test.'.format(CLOUDIFY_TEST_MANAGEMENT_IP)),
                 file=sys.stderr
             )
             raise
@@ -70,12 +70,13 @@ class SystemTestBase(unittest.TestCase):
         self.deployments = []
         super(SystemTestBase, self).tearDown()
 
-    def _generate_id(self,
+    def _generate_id(
+        self,
         prefix,
         separator1='_',
         separator2='_',
         separator3='_',
-        suffix = 'test'
+        suffix='test'
     ):
         return '{}{}{}{}{}{}{}'.format(
             prefix,
