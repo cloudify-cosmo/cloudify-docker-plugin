@@ -1,1 +1,0 @@
-https://github.com/cloudify-cosmo/cloudify-plugins-common/tarball/3.0rc1#egg=cloudify-plugins-common-3.0.0
