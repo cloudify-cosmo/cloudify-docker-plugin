@@ -13,6 +13,8 @@
 #    under the License.
 
 
+import logging
+
 from cloudify import exceptions
 
 from docker_plugin import tasks
@@ -31,6 +33,23 @@ class TestCaseBase(TestWithMockupCtx):
             self.client.inspect_container(
                 self.ctx.runtime_properties['container']
             )['State']['Running']
+        )
+
+    def _try_calling(self, function, args=[], kwargs={}, max_retries_number=5):
+        errors = ''
+        for i in range(max_retries_number):
+            try:
+                result = function(*args, **kwargs)
+            except exceptions.RecoverableError as e:
+                errors = '{}\n{}.{}'.format(errors, i+1, e)
+                logging.debug(
+                    'During {}, for {} time caught recoverable error: {}'
+                    .format(function.__name__, i+1, e)
+                )
+            else:
+                return result
+        raise exceptions.NonRecoverableError(
+            'Max number of recoverable errors exceeded :{}'.format(errors)
         )
 
     def setUp(self):
@@ -55,6 +74,6 @@ class TestCaseBase(TestWithMockupCtx):
         # Try to delete container,
         # if it fails, because it doesnt exist, do nothing
         try:
-            tasks.delete(self.ctx)
+            self._try_calling(tasks.delete, [self.ctx])
         except exceptions.NonRecoverableError:
             pass

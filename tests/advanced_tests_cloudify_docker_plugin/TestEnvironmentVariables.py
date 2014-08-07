@@ -60,8 +60,8 @@ _NON_ENV_KEYS = [
 
 class TestEnvironmentVariables(TestCaseBase):
     def _check_env(self, env_set):
-        tasks.create(self.ctx)
-        tasks.run(self.ctx)
+        self._try_calling(tasks.create, [self.ctx])
+        self._try_calling(tasks.run, [self.ctx])
         inspect_dict = docker_wrapper.inspect_container(self.ctx, self.client)
         self.assertTrue(env_set.issubset(set(inspect_dict['Config']['Env'])))
         return inspect_dict

@@ -57,7 +57,7 @@ def create(ctx, *args, **kwargs):
             'command' is not specified in ctx.properties['container_create'].
 
     """
-    apt_get_wrapper.install_docker(ctx)
+    #apt_get_wrapper.install_docker(ctx)
     client = docker_wrapper.get_client(ctx)
     if ctx.properties.get('image_import', {}).get('src'):
         image = docker_wrapper.import_image(ctx, client)

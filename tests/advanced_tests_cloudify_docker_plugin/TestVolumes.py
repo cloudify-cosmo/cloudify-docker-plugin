@@ -31,8 +31,8 @@ _CMD = 'sh -c \'/bin/cat {}; sleep 1\''.format(_CONT_FILE_PATH)
 class TestVolumes(TestCaseBase):
 
     def test_volumes(self):
-        tasks.create(self.ctx)
-        tasks.run(self.ctx)
+        self._try_calling(tasks.create, [self.ctx])
+        self._try_calling(tasks.run, [self.ctx])
         logs = self.client.logs(self.ctx.runtime_properties['container'])
         self.assertEqual(logs, _TEXT)
 

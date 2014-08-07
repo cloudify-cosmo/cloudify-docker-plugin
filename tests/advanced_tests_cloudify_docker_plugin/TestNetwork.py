@@ -14,6 +14,7 @@
 
 
 import copy
+import time
 
 from docker_plugin import tasks
 from tests.TestCaseBase import TestCaseBase
@@ -36,9 +37,9 @@ class TestNetwork(TestCaseBase):
         ctx.properties['container_create'].update(
             {'command': command}
         )
-        tasks.create(ctx)
+        self._try_calling(tasks.create, [ctx])
         ctx.properties['container_start'].update({'network_mode': net_mode})
-        tasks.run(ctx)
+        self._try_calling(tasks.run, [ctx])
         return ctx
 
     def test_network(self):
@@ -46,6 +47,7 @@ class TestNetwork(TestCaseBase):
             _CMD_CONTAINER_BROADCASTER,
             'bridge'
         )
+        time.sleep(5)
         self.listener = self._start_container_with_network(
             _CMD_CONTAINER_LISTENER,
             'container:{}'.format(
@@ -53,7 +55,7 @@ class TestNetwork(TestCaseBase):
             )
         )
         try:
-            tasks.stop(self.listener)
+            self._try_calling(tasks.stop, [self.listener])
         except exceptions.NonRecoverableError:
             pass
         self.assertEqual(
@@ -66,7 +68,7 @@ class TestNetwork(TestCaseBase):
     def tearDown(self):
         def _delete(ctx):
             try:
-                tasks.delete(ctx)
+                self._try_calling(tasks.delete, [ctx])
             except exceptions.NonRecoverableError:
                 pass
 

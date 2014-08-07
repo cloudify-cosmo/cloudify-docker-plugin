@@ -28,30 +28,27 @@ _MNT_DIR = 'wrong_mnt'
 class TestExceptions(TestCaseBase):
     def test_wrong_path_to_image(self):
         self.ctx.properties['image_build'].update({'path': _WRONG_PATH})
-        self.assertRaises(
-            exceptions.NonRecoverableError,
-            tasks.create,
-            self.ctx
-        )
-        self.assertRaises(exceptions.NonRecoverableError, tasks.run, self.ctx)
+        with self.assertRaises(exceptions.NonRecoverableError):
+            self._try_calling(tasks.create, [self.ctx])
+        with self.assertRaises(exceptions.NonRecoverableError):
+            self._try_calling(tasks.run, [self.ctx])
 
     def test_wrong_command(self):
         self.ctx.properties['container_create'].update({'command': _WRONG_CMD})
-        tasks.create(self.ctx)
-        self.assertRaises(exceptions.NonRecoverableError, tasks.run, self.ctx)
+        self._try_calling(tasks.create, [self.ctx])
+        with self.assertRaises(exceptions.NonRecoverableError):
+            self._try_calling(tasks.run, [self.ctx])
 
     def test_wrong_volumes(self):
-        tasks.create(self.ctx)
+        self._try_calling(tasks.create, [self.ctx])
         self.ctx.properties['container_start'].update(
             {'binds': {_DIR: {'bind': _MNT_DIR}}}
         )
-        self.assertRaises(exceptions.NonRecoverableError, tasks.run, self.ctx)
+        with self.assertRaises(exceptions.NonRecoverableError):
+            self._try_calling(tasks.run, [self.ctx])
 
     def test_no_image_path(self):
         image = self.ctx.properties.pop('image_build')
         image = self.ctx.properties.pop('image_import')
-        self.assertRaises(
-            exceptions.NonRecoverableError,
-            tasks.create,
-            self.ctx
-        )
+        with self.assertRaises(exceptions.NonRecoverableError):
+            self._try_calling(tasks.create, [self.ctx])
