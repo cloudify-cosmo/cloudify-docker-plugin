@@ -17,10 +17,8 @@
 exposed and tests connectivity.'''
 
 
-from __future__ import print_function
-
+import logging
 import socket
-import sys
 
 from tests.SystemTestBase import SystemTestBase
 
@@ -37,19 +35,17 @@ class TestPluginNetworking(SystemTestBase):
 
     def runTest(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            print(
-                '\nconnecting to {}:{}...'.format(
-                    self.cfy_helper.get_management_ip(),
-                    _PORT
-                ),
-                end=''
+        logging.debug(
+            'Connecting to {}:{}...'.format(
+                self.cfy_helper.get_management_ip(),
+                _PORT
             )
+        )
+        try:
             sock.connect((self.cfy_helper.get_management_ip(), _PORT))
         except socket.error as e:
-            print()
-            print('error: {}'.format(str(e)), file=sys.stderr)
+            logging.error('error: {}'.format(str(e)))
             raise AssertionError(e)
         else:
-            print(' OK\n')
+            logging.debug('Socket connect succeeded')
             sock.close()

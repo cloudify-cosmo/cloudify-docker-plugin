@@ -16,9 +16,8 @@
 '''A wrapper test case class for simple Cloudify system tests.'''
 
 
-from __future__ import print_function
-
 import datetime
+import logging
 import os
 import random
 import string
@@ -35,10 +34,9 @@ class SystemTestBase(unittest.TestCase):
         try:
             management_ip = os.environ[CLOUDIFY_TEST_MANAGEMENT_IP]
         except KeyError:
-            print(
-                ('`{}\' environment variable must be set in order to execute'
-                 ' this test.'.format(CLOUDIFY_TEST_MANAGEMENT_IP)),
-                file=sys.stderr
+            logging.error(
+                '`{}\' environment variable must be set in order to execute'
+                ' this test.'.format(CLOUDIFY_TEST_MANAGEMENT_IP)
             )
             raise
         self.blueprint_path = None
