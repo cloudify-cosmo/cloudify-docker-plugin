@@ -21,7 +21,6 @@ import docker_plugin
 LICENCE = open('LICENSE').read()
 README = open('README.md').read()
 REQUIREMENTS = open('requirements.txt').read().split('\n')
-DEPENDENCY_LINKS = open('dependency_links.txt').read().split('\n')
 
 
 setuptools.setup(author='Michał Soczewka',
@@ -31,7 +30,6 @@ setuptools.setup(author='Michał Soczewka',
                  description=docker_plugin.__doc__,
                  license=LICENCE,
                  long_description=README,
-                 dependency_links=DEPENDENCY_LINKS,
                  install_requires=REQUIREMENTS,
                  packages=setuptools.find_packages(),
                  zip_safe=False,

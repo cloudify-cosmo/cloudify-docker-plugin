@@ -24,7 +24,13 @@ import string
 import unittest
 
 from cosmo_tester.framework.cfy_helper import CfyHelper
-from cosmo_tester.framework.testenv import CLOUDIFY_TEST_MANAGEMENT_IP
+
+
+# TODO Instead of this constant the following import can be used:
+#   `from cosmo_tester.framework.testenv import CLOUDIFY_TEST_MANAGEMENT_IP`
+#   hovewer system test installation 100% reliable - the constant remains
+#   for now.
+CLOUDIFY_TEST_MANAGEMENT_IP = 'CLOUDIFY_TEST_MANAGEMENT_IP'
 
 
 class SystemTestBase(unittest.TestCase):
