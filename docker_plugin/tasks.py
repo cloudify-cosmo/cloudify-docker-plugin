@@ -79,12 +79,11 @@ def run(ctx, *args, **kwargs):
     Run container which id is specified in ctx.runtime_properties['container']
     with optional options from ctx.properties['container_start'].
 
-    Get ports, top and host ip information from container using containers
-    function and log them.
-    Set in ctx.runtime_properties:
-        host_ip (string)
-        ports (list)
-        networkSettings (dictionary)
+    Retreives host IP, forwarded ports and top info about the container
+    from the Docker and log it. Additionally sets in ctx.runtime_properties:
+    -   host_ip (string)
+    -   forwarded ports (list)
+    -   Docker's networkSettings (dictionary)
 
     Args:
         ctx (cloudify context)
@@ -107,9 +106,11 @@ def run(ctx, *args, **kwargs):
     # TODO(Zosia) change to real host_ip
     ctx.runtime_properties['host_ip'] = 'host_ip'
     ctx.runtime_properties['ports'] = container['Ports']
-    ctx.runtime_properties['networkSettings'] =\
+    ctx.runtime_properties['networkSettings'] = \
         container_inspect['NetworkSettings']
-    log_msg = 'Container: {}\nHost IP: {}\nPorts: {}\nTop: {}'.format(
+    log_msg = (
+        'Container: {}\nHost IP: {}\nForwarded ports: {}\nTop: {}'
+    ).format(
         container['Id'],
         'host_ip',
         str(container['Ports']),
