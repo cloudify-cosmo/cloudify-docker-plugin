@@ -61,7 +61,7 @@ def _get_import_image_id(ctx, client, import_image_output):
     # after last status is image id
     try:
         output_line = import_image_output.split('\n')[-2]
-    except IndexError as e:
+    except IndexError:
         _log_and_raise(ctx, client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
     position_of_last_status = output_line.rfind('status')
     if position_of_last_status < 0:
@@ -72,14 +72,14 @@ def _get_import_image_id(ctx, client, import_image_output):
         try:
             err_msg = output_line[position_of_error:].\
                 split('"')[_IMAGE_IMPORT_ERROR_POSITION]
-        except IndexError as e:
+        except IndexError:
             _log_and_raise(ctx, client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
         err_msg = 'Error during image import {}'.format(err_msg)
         _log_and_raise(ctx, client, err_msg)
     try:
         image_id = output_line[position_of_last_status:].\
             split('"')[_IMAGE_IMPORT_ID_POSITION]
-    except IndexError as e:
+    except IndexError:
         _log_and_raise(ctx, client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
     else:
         if _is_image_id_valid(ctx, image_id):
@@ -103,7 +103,7 @@ def _get_build_image_id(ctx, client, stream_generator):
     try:
         image_id = re.sub(r'[\W_]+', ' ', stream).\
             split()[_IMAGE_BUILD_ID_POSITION]
-    except IndexError as e:
+    except IndexError:
         _log_and_raise(ctx, client, _ERR_MSG_UNKNOWN_IMAGE_BUILD)
     if _is_image_id_valid(ctx, image_id):
         return image_id
@@ -284,7 +284,7 @@ def get_client(ctx):
         return docker.Client(**daemon_client)
     except docker.errors.DockerException as e:
         error_msg = 'Error while getting client: {}'.format(str(e))
-        _log_and_raise(ctx, client, error_msg)
+        _log_and_raise(ctx, daemon_client, error_msg)
 
 
 def import_image(ctx, client):

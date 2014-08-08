@@ -13,9 +13,6 @@
 #    under the License.
 
 
-import os
-import time
-
 import setuptools
 
 import docker_plugin

@@ -48,7 +48,7 @@ class TestExceptions(TestCaseBase):
             self._try_calling(tasks.run, [self.ctx])
 
     def test_no_image_path(self):
-        image = self.ctx.properties.pop('image_build')
-        image = self.ctx.properties.pop('image_import')
+        self.ctx.properties.pop('image_build')
+        self.ctx.properties.pop('image_import')
         with self.assertRaises(exceptions.NonRecoverableError):
             self._try_calling(tasks.create, [self.ctx])

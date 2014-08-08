@@ -13,10 +13,6 @@
 #    under the License.
 
 
-from cloudify import exceptions
-
-from docker_plugin import docker_wrapper
-
 from tests.TestWithMockupCtx import TestWithMockupCtx
 from docker_plugin import subprocess_wrapper
 
