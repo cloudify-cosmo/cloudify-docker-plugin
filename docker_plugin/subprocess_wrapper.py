@@ -19,16 +19,19 @@ import subprocess
 import time
 
 
-def _read_streams(ctx, pipe, timeout):
+_DELAY_STEP = 1
+
+
+def _read_fds(ctx, process, timeout):
     ctx.logger.info('Waiting for subprocess to finish...')
     fds = {
-        pipe.stdout.fileno(): {
-            'file': pipe.stdout,
+        process.stdout.fileno(): {
+            'file': process.stdout,
             'output': '',
             'eof': False
         },
-        pipe.stderr.fileno(): {
-            'file': pipe.stderr,
+        process.stderr.fileno(): {
+            'file': process.stderr,
             'output': '',
             'eof': False
         }
@@ -49,51 +52,51 @@ def _read_streams(ctx, pipe, timeout):
             hung_up = False
             break
     return (
-        fds[pipe.stdout.fileno()]['output'],
-        fds[pipe.stderr.fileno()]['output'],
+        fds[process.stdout.fileno()]['output'],
+        fds[process.stderr.fileno()]['output'],
         not hung_up
     )
 
 
-def _manually_clean_up(ctx, pipe, waiting_for_output, timeout_terminate):
+def _manually_clean_up(ctx, process, waiting_for_output, timeout_terminate):
     ctx.logger.info('Terminating process')
-    pipe.terminate()
+    process.terminate()
     time_no_terminate = 0
-    process = psutil.Process(pipe.pid)
+    p = psutil.Process(process.pid)
     while (
             time_no_terminate < timeout_terminate and
-            process.status() != psutil.STATUS_ZOMBIE
+            p.status() != psutil.STATUS_ZOMBIE
     ):
-        time.sleep(1)
-        process = psutil.Process(pipe.pid)
+        time.sleep(_DELAY_STEP)
         time_no_terminate += 1
+        p = psutil.Process(process.pid)
 
-    stdout, stderr, success = _read_streams(ctx, pipe, waiting_for_output)
-    if process.status() == psutil.STATUS_ZOMBIE:
+    stdout, stderr, success = _read_fds(ctx, process, waiting_for_output)
+    if p.status() == psutil.STATUS_ZOMBIE:
         ctx.logger.info('Process terminated')
     else:
         ctx.logger.info('Killing process')
-        pipe.kill()
-        stdout += pipe.stdout.read()
-        stderr += pipe.stderr.read()
-    pipe.wait()
+        process.kill()
+        stdout += process.stdout.read()
+        stderr += process.stderr.read()
+    process.wait()
     return stdout, stderr
 
 
-def _clean_up(ctx, pipe, success, waiting_for_output, timeout_terminate):
+def _clean_up(ctx, process, success, waiting_for_output, timeout_terminate):
     ctx.logger.info('Cleaning up')
     stdout, stderr = '', ''
     if success:
-        pipe.wait()
+        process.wait()
     else:
         stdout, stderr = _manually_clean_up(
             ctx,
-            pipe,
+            process,
             waiting_for_output,
             timeout_terminate,
         )
-    pipe.stdout.close()
-    pipe.stderr.close()
+    process.stdout.close()
+    process.stderr.close()
     ctx.logger.info('Cleaned up')
     return stdout, stderr
 
@@ -105,15 +108,15 @@ def run_process(
         timeout_terminate
 ):
     ctx.logger.info('Starting process')
-    pipe = subprocess.Popen(
+    process = subprocess.Popen(
         command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    stdout, stderr, success = _read_streams(ctx, pipe, waiting_for_output)
+    stdout, stderr, success = _read_fds(ctx, process, waiting_for_output)
     new_stdout, new_stderr = _clean_up(
         ctx,
-        pipe,
+        process,
         success,
         waiting_for_output,
         timeout_terminate
@@ -121,4 +124,4 @@ def run_process(
     stdout += new_stdout
     stderr += new_stderr
     ctx.logger.info('Finishing process')
-    return pipe.returncode, stdout, stderr
+    return process.returncode, stdout, stderr
