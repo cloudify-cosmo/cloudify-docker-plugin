@@ -80,7 +80,11 @@ def run(ctx, *args, **kwargs):
     with optional options from ctx.properties['container_start'].
 
     Get ports, top and host ip information from container using containers
-    function.
+    function and log them.
+    Set in ctx.runtime_properties:
+        host_ip (string)
+        ports (list)
+        networkSettings (dictionary)
 
     Args:
         ctx (cloudify context)
@@ -99,8 +103,15 @@ def run(ctx, *args, **kwargs):
     client = docker_wrapper.get_client(ctx)
     docker_wrapper.start_container(ctx, client)
     container = docker_wrapper.get_container_info(ctx, client)
-    log_msg = 'Container: {}\nPorts: {}\nTop: {}'.format(
+    container_inspect = docker_wrapper.inspect_container(ctx, client)
+    # TODO(Zosia) change to real host_ip
+    ctx.runtime_properties['host_ip'] = 'host_ip'
+    ctx.runtime_properties['ports'] = container['Ports']
+    ctx.runtime_properties['networkSettings'] =\
+        container_inspect['NetworkSettings']
+    log_msg = 'Container: {}\nHost IP: {}\nPorts: {}\nTop: {}'.format(
         container['Id'],
+        'host_ip',
         str(container['Ports']),
         docker_wrapper.get_top_info(ctx, client)
     )

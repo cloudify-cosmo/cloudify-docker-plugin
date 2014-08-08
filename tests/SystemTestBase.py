@@ -21,7 +21,6 @@ import logging
 import os
 import random
 import string
-import sys
 import unittest
 
 from cosmo_tester.framework.cfy_helper import CfyHelper
