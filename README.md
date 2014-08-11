@@ -154,16 +154,22 @@ Create task:
     Either `src` in `image_import` dictionary or `path` in `image_build` 
     must be specified.
 
-* Creates container using the image created in previous step and options from
+
+Configure task:
+
+* Adds `docker_env_var` from context runtime propertieis with 
+  context properties `container_create``environment` as environmental 
+  variables in container.
+
+* Creates container using the image from `runtime_properties` and options from
   context propertieis `container_create`. `command` in `container_create` must
   be specified.
-
 
 Run task:
 
 * Starts conatiner with `container_start` dictionary as options.
   
-* Logs containers id, host_ip, ports, and top information.
+* Logs containers id, host ip, ports, and top information.
 
 Stop task:
 
