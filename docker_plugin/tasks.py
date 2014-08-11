@@ -24,6 +24,9 @@ import docker_plugin.docker_wrapper as docker_wrapper
 
 
 _ERR_MSG_NO_IMAGE_SRC = 'Either path or url to image must be given'
+_ERR_MSG_TWO_IMAGE_SRC = ('Image import url and image build path specified'
+                          ' There can only be one image source')
+
 
 
 @operation
@@ -56,11 +59,16 @@ def create(ctx, *args, **kwargs):
             'command' is not specified in ctx.properties['container_create'].
 
     """
-    apt_get_wrapper.install_docker(ctx)
+    #apt_get_wrapper.install_docker(ctx)
     client = docker_wrapper.get_client(ctx)
-    if ctx.properties.get('image_import', {}).get('src'):
+    image_import = ctx.properties.get('image_import', {}).get('src')
+    image_build = ctx.properties.get('image_build', {}).get('path')
+    if image_import and image_build:
+        ctx.logger.error(_ERR_MSG_TWO_IMAGE_SRC)
+        raise exceptions.NonRecoverableError(_ERR_MSG_TWO_IMAGE_SRC)
+    elif image_import:
         image = docker_wrapper.import_image(ctx, client)
-    elif ctx.properties.get('image_build', {}).get('path'):
+    elif image_build:
         image = docker_wrapper.build_image(ctx, client)
     else:
         ctx.logger.error(_ERR_MSG_NO_IMAGE_SRC)

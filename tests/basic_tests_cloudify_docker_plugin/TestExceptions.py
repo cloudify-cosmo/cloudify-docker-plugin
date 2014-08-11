@@ -23,6 +23,7 @@ _WRONG_PATH = 'wrong path'
 _WRONG_CMD = 'wrong command'
 _DIR = 'wrong_directory'
 _MNT_DIR = 'wrong_mnt'
+_IMG_SRC = 'image_source'
 
 
 class TestExceptions(TestCaseBase):
@@ -50,5 +51,10 @@ class TestExceptions(TestCaseBase):
     def test_no_image_path(self):
         self.ctx.properties.pop('image_build')
         self.ctx.properties.pop('image_import')
+        with self.assertRaises(exceptions.NonRecoverableError):
+            self._try_calling(tasks.create, [self.ctx])
+
+    def test_two_image_sources(self):
+        self.ctx.properties['image_import'].update({'src': _IMG_SRC})
         with self.assertRaises(exceptions.NonRecoverableError):
             self._try_calling(tasks.create, [self.ctx])

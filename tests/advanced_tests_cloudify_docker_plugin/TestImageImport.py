@@ -39,6 +39,7 @@ class TestImageImport(TestCaseBase):
         httpd = SocketServer.TCPServer((_HOST, _PORT), Handler)
         request_thread = threading.Thread(target=_get_request, args=(httpd,))
         request_thread.start()
+        self.ctx.properties.pop('image_build')
         self.ctx.properties['image_import'].update({'src': _IMAGE})
         self.ctx.properties['container_remove'].update({'remove_image': True})
         self._try_calling(tasks.create, [self.ctx])
