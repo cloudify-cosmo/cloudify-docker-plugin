@@ -37,8 +37,12 @@ def _read_fds(ctx, process, timeout):
         }
     }
     while True:
-        read_fds = [fds[fd]['file'] for fd in fds]
-        read_fds, _, _ = select.select(read_fds, [], [], timeout)
+        read_fds, _, _ = select.select(
+            [fds[fd]['file'] for fd in fds if not fds[fd]['eof']],
+            [],
+            [],
+            timeout
+        )
         if not read_fds:
             ctx.logger.error('Subprocess hung up')
             hung_up = True
