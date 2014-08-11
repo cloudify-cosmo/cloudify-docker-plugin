@@ -27,6 +27,7 @@ types:
         interfaces:
             cloudify.interfaces.lifecycle:
                 - create: docker_plugin.tasks.create
+                - configure: docker_plugin.tasks.configure
                 - start: docker_plugin.tasks.run
                 - stop: docker_plugin.tasks.stop
                 - delete: docker_plugin.tasks.delete
@@ -44,6 +45,7 @@ types:
         interfaces:
             cloudify.interfaces.lifecycle:
                 - create: docker_plugin.tasks.create
+                - configure: docker_plugin.tasks.configure
                 - start: docker_plugin.tasks.run
                 - stop: docker_plugin.tasks.stop
                 - delete: docker_plugin.tasks.delete
@@ -61,6 +63,7 @@ types:
         interfaces:
             cloudify.interfaces.lifecycle:
                 - create: docker_plugin.tasks.create
+                - configure: docker_plugin.tasks.configure
                 - start: docker_plugin.tasks.run
                 - stop: docker_plugin.tasks.stop
                 - delete: docker_plugin.tasks.delete
@@ -78,6 +81,7 @@ types:
         interfaces:
             cloudify.interfaces.lifecycle:
                 - create: docker_plugin.tasks.create
+                - configure: docker_plugin.tasks.configure
                 - start: docker_plugin.tasks.run
                 - stop: docker_plugin.tasks.stop
                 - delete: docker_plugin.tasks.delete
@@ -95,6 +99,7 @@ types:
         interfaces:
             cloudify.interfaces.lifecycle:
                 - create: docker_plugin.tasks.create
+                - configure: docker_plugin.tasks.configure
                 - start: docker_plugin.tasks.run
                 - stop: docker_plugin.tasks.stop
                 - delete: docker_plugin.tasks.delete

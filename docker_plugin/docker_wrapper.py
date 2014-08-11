@@ -249,21 +249,12 @@ def set_env_var(ctx, client):
     """
     if 'environment' not in ctx.properties['container_create']:
         ctx.properties['container_create']['environment'] = {}
-    for key in ctx.properties:
-        if (
-            key not in _NON_ENV_KEYS and
-            key not in ctx.properties['container_create']['environment']
-        ):
-            try:
-                env_key = str(key)
-                env_val = str(ctx.properties[key])
-            except TypeError:
-                # Elements that can't be converted to string are not
-                # relayed as enviromental variables to container
-                pass
-            else:
-                ctx.properties['container_create']['environment'][env_key] =\
-                    env_val
+    for key in ctx.runtime_properties.get('docker_env_var', {}):
+        if key not in ctx.properties['container_create']['environment']:
+            env_key = str(key)
+            env_val = str(ctx.runtime_properties['docker_env_var'][key])
+            ctx.properties['container_create']['environment'][env_key] =\
+                env_val
 
 
 def get_client(ctx):

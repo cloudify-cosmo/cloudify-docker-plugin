@@ -38,6 +38,7 @@ class TestNetwork(TestCaseBase):
             {'command': command}
         )
         self._try_calling(tasks.create, [ctx])
+        self._try_calling(tasks.configure, [self.ctx])
         ctx.properties['container_start'].update({'network_mode': net_mode})
         self._try_calling(tasks.run, [ctx])
         return ctx

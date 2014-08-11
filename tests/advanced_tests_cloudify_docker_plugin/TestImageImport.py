@@ -43,6 +43,7 @@ class TestImageImport(TestCaseBase):
         self.ctx.properties['image_import'].update({'src': _IMAGE})
         self.ctx.properties['container_remove'].update({'remove_image': True})
         self._try_calling(tasks.create, [self.ctx])
+        self._try_calling(tasks.configure, [self.ctx])
         self.assertIsNotNone(
             self.client.inspect_image(self.ctx.runtime_properties['image'])
         )

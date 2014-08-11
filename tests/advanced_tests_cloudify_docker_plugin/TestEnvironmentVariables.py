@@ -61,24 +61,25 @@ _NON_ENV_KEYS = [
 class TestEnvironmentVariables(TestCaseBase):
     def _check_env(self, env_set):
         self._try_calling(tasks.create, [self.ctx])
+        self._try_calling(tasks.configure, [self.ctx])
         self._try_calling(tasks.run, [self.ctx])
         inspect_dict = docker_wrapper.inspect_container(self.ctx, self.client)
         self.assertTrue(env_set.issubset(set(inspect_dict['Config']['Env'])))
         return inspect_dict
 
     def test_basic(self):
-        self.ctx.properties.update(_ENV_VAR)
+        self.ctx.runtime_properties['docker_env_var'] = _ENV_VAR
         self._check_env(set(_ENV_LIST))
 
     def test_with_additional_env(self):
-        self.ctx.properties.update(_ENV_VAR)
+        self.ctx.runtime_properties['docker_env_var'] = _ENV_VAR
         self.ctx.properties['container_create'].update(
             {'environment': _ADDITIONAL_ENV}
         )
         self._check_env(set(_ADDITIONAL_ENV_LIST))
 
     def test_no_non_env_keys(self):
-        self.ctx.properties.update(_ENV_VAR)
+        self.ctx.runtime_properties['docker_env_var'] = _ENV_VAR
         inspect_dict = self._check_env(set(_ENV_LIST))
         for non_env in _NON_ENV_KEYS:
             for env in inspect_dict['Config']['Env']:

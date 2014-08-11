@@ -30,6 +30,7 @@ class TestPortsConfig(TestCaseBase):
 
     def test_ports_config(self):
         self._try_calling(tasks.create, [self.ctx])
+        self._try_calling(tasks.configure, [self.ctx])
         self._try_calling(tasks.run, [self.ctx])
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:

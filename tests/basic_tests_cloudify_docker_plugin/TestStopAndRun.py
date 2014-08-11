@@ -20,6 +20,7 @@ from tests.TestCaseBase import TestCaseBase
 class TestStopAndRun(TestCaseBase):
     def test_stop_and_run(self):
         self._try_calling(tasks.create, [self.ctx])
+        self._try_calling(tasks.configure, [self.ctx])
         self._try_calling(tasks.run, [self.ctx])
         self._assert_container_running(self.assertTrue)
         self._try_calling(tasks.stop, [self.ctx])

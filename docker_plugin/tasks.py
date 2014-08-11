@@ -28,16 +28,17 @@ _ERR_MSG_TWO_IMAGE_SRC = ('Image import url and image build path specified'
                           ' There can only be one image source')
 
 
-
 @operation
 def create(ctx, *args, **kwargs):
-    """Create container.
+    """Create image.
 
     RPC called by Cloudify Manager.
 
-    Import image from ctx.properties['image_import'] with optional
-    options from ctx.properties['image_import'].
-    'src' in ctx.properties['image_import'] must be specified.
+    If 'src' is specified in 'import_image' then
+    Import image using ctx.properties['image_build'] as options.
+    Otherwise If 'path' is specified in 'build_image' then
+    Build image using ctx.properties['image_build'] as options.
+    Otherwise error is raised.
 
     Set imported image_id in ctx.runtime_properties['image'].
 
@@ -54,9 +55,8 @@ def create(ctx, *args, **kwargs):
 
     Raises:
         NonRecoverableError: when 'src' in ctx.properties['image_import']
-            is not specified
-            or when docker.errors.APIError during start (for example when
-            'command' is not specified in ctx.properties['container_create'].
+            and 'path' in ctx.properties are both not specified
+            or are both specified.
 
     """
     #apt_get_wrapper.install_docker(ctx)
@@ -74,6 +74,32 @@ def create(ctx, *args, **kwargs):
         ctx.logger.error(_ERR_MSG_NO_IMAGE_SRC)
         raise exceptions.NonRecoverableError(_ERR_MSG_NO_IMAGE_SRC)
     ctx.runtime_properties['image'] = image
+
+
+@operation
+def configure(ctx, *args, **kwargs):
+    """Create container using image from ctx.runtime_properties.
+
+    RPC called by Cloudify Manager.
+
+    Add variables from ctx.runtime_properties['docker_env_var'] to variables
+    from ctx.properties['container_create']['enviroment'] and
+    relayed to container as enviromental variables.
+
+    Create container from image from ctx.runtime_properties with options from
+    ctx.properties['container_create'].
+    'command' in ctx.properties['container_create'] must be specified.
+
+    Args:
+        ctx (cloudify context)
+
+    Raises:
+        NonRecoverableError: when docker.errors.APIError during start
+            (for example when 'command' is not specified in
+            ctx.properties['container_create']).
+
+    """
+    client = docker_wrapper.get_client(ctx)
     docker_wrapper.set_env_var(ctx, client)
     docker_wrapper.create_container(ctx, client)
 

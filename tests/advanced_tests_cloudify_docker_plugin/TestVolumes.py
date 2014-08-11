@@ -32,6 +32,7 @@ class TestVolumes(TestCaseBase):
 
     def test_volumes(self):
         self._try_calling(tasks.create, [self.ctx])
+        self._try_calling(tasks.configure, [self.ctx])
         self._try_calling(tasks.run, [self.ctx])
         logs = self.client.logs(self.ctx.runtime_properties['container'])
         self.assertEqual(logs, _TEXT)

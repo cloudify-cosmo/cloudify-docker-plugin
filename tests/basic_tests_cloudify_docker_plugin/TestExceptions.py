@@ -32,16 +32,20 @@ class TestExceptions(TestCaseBase):
         with self.assertRaises(exceptions.NonRecoverableError):
             self._try_calling(tasks.create, [self.ctx])
         with self.assertRaises(exceptions.NonRecoverableError):
+            self._try_calling(tasks.configure, [self.ctx])
+        with self.assertRaises(exceptions.NonRecoverableError):
             self._try_calling(tasks.run, [self.ctx])
 
     def test_wrong_command(self):
         self.ctx.properties['container_create'].update({'command': _WRONG_CMD})
         self._try_calling(tasks.create, [self.ctx])
+        self._try_calling(tasks.configure, [self.ctx])
         with self.assertRaises(exceptions.NonRecoverableError):
             self._try_calling(tasks.run, [self.ctx])
 
     def test_wrong_volumes(self):
         self._try_calling(tasks.create, [self.ctx])
+        self._try_calling(tasks.configure, [self.ctx])
         self.ctx.properties['container_start'].update(
             {'binds': {_DIR: {'bind': _MNT_DIR}}}
         )
