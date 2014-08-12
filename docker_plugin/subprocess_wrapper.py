@@ -23,7 +23,7 @@ import time
 import psutil
 
 
-_DELAY_STEP = 1
+_DELAY_STEP = 0.4
 
 
 def _set_ononblock(fd):
