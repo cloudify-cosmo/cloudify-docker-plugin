@@ -146,9 +146,9 @@ def run(ctx, *args, **kwargs):
 
     Logs:
        Container id,
-       List of network interfaces with IPs
+       List of network interfaces with IPs,
        Container ports,
-       Container top information,
+       Container top information
 
     """
 
