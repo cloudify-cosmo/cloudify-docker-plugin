@@ -33,13 +33,17 @@ from cosmo_tester.framework.cfy_helper import CfyHelper
 CLOUDIFY_TEST_MANAGEMENT_IP = 'CLOUDIFY_TEST_MANAGEMENT_IP'
 
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.Debug)
+
+
 class SystemTestBase(unittest.TestCase):
 
     def __init__(self, test_function_name):
         try:
             management_ip = os.environ[CLOUDIFY_TEST_MANAGEMENT_IP]
         except KeyError:
-            logging.error(
+            logger.error(
                 '`{}\' environment variable must be set in order to execute'
                 ' this test.'.format(CLOUDIFY_TEST_MANAGEMENT_IP)
             )

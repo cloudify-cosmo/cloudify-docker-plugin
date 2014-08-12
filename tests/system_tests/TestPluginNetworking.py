@@ -27,6 +27,10 @@ _BLUEPRINT = 'tests/system_test_networking_blueprint.yaml'
 _PORT = 1000
 
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.Debug)
+
+
 class TestPluginNetworking(SystemTestBase):
 
     def setUp(self):
@@ -35,7 +39,7 @@ class TestPluginNetworking(SystemTestBase):
 
     def runTest(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        logging.debug(
+        logger.debug(
             'Connecting to {}:{}...'.format(
                 self.cfy_helper.get_management_ip(),
                 _PORT
@@ -44,8 +48,8 @@ class TestPluginNetworking(SystemTestBase):
         try:
             sock.connect((self.cfy_helper.get_management_ip(), _PORT))
         except socket.error as e:
-            logging.error('error: {}'.format(str(e)))
+            logger.error('error: {}'.format(str(e)))
             raise AssertionError(e)
         else:
-            logging.debug('Socket connect succeeded')
+            logger.debug('Socket connect succeeded')
             sock.close()
