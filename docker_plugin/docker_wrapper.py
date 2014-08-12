@@ -21,6 +21,7 @@ All functions take
 as parameters.
 """
 
+
 import re
 
 import docker
@@ -208,6 +209,7 @@ def get_container_info(ctx,  client):
         container_info (dictionary)
 
     """
+
     container = ctx.runtime_properties.get('container')
     if container is not None:
         for c in client.containers():
@@ -229,6 +231,7 @@ def inspect_container(ctx, client):
         container_info (dictionary)
 
     """
+
     container = ctx.runtime_properties.get('container')
     if container is not None:
         return client.inspect_container(container)
@@ -247,6 +250,7 @@ def set_env_var(ctx, client):
         client (docker client)
 
     """
+
     if 'environment' not in ctx.properties['container_create']:
         ctx.properties['container_create']['environment'] = {}
     for key in ctx.runtime_properties.get('docker_env_var', {}):
@@ -273,6 +277,7 @@ def get_client(ctx):
         client (docker client)
 
     """
+
     daemon_client = ctx.properties.get('daemon_client', {})
     try:
         return docker.Client(**daemon_client)
@@ -300,6 +305,7 @@ def import_image(ctx, client):
             or when there was a problem during image download.
 
     """
+
     ctx.logger.info('Importing image')
     image_id = _get_import_image_id(
         ctx,
@@ -329,6 +335,7 @@ def build_image(ctx, client):
             or when there was a problem during image download.
 
     """
+
     ctx.logger.info(
         'Building image from path {}'.format(
             ctx.properties['image_build']['path']
@@ -364,6 +371,7 @@ def create_container(ctx, client):
             not specified in ctx.properties['container_create'].
 
     """
+
     ctx.logger.info('Creating container')
     image = _get_image_or_raise(ctx, client)
     container_create = ctx.properties.get('container_create', {})
@@ -391,6 +399,7 @@ def start_container(ctx, client):
         NonRecoverableError: when 'container' in ctx.runtime_properties is None
             or when docker.errors.APIError.
     """
+
     _log_container_info(ctx, 'Starting container')
     container = _get_container_or_raise(ctx, client)
     container_start = ctx.properties.get('container_start', {})
@@ -415,6 +424,7 @@ def stop_container(ctx, client):
         NonRecoverableError: when 'container' in ctx.runtime_properties is None
             or when docker.errors.APIError.
     """
+
     _log_container_info(ctx, 'Stopping container')
     container = _get_container_or_raise(ctx, client)
     container_stop = ctx.properties.get('container_stop', {})
@@ -440,6 +450,7 @@ def remove_container(ctx, client):
         NonRecoverableError: when 'container' in ctx.runtime_properties is None
             or when docker.errors.APIError.
     """
+
     container = _get_container_or_raise(ctx, client)
     ctx.logger.info('Removing container {}'.format(container))
     container_remove = ctx.properties.get('container_remove', {})
@@ -464,6 +475,7 @@ def remove_image(ctx, client):
             or when docker.errors.APIError while removing image (for example
             if image is used by another container).
     """
+
     image = _get_image_or_raise(ctx, client)
     _log_container_info(ctx, 'Removing image {}, container:'.format(image))
     try:

@@ -27,4 +27,4 @@ class TestWithMockupCtx(unittest.TestCase):
 
     def setUp(self):
         self.client = docker.Client()
-        self.ctx = mocks.MockCloudifyContext(properties={})
+        self.ctx = mocks.MockCloudifyContext()

@@ -16,6 +16,8 @@
 """Cloudify tasks that operate docker containers using python docker api"""
 
 
+import netifaces
+
 from cloudify import exceptions
 from cloudify.decorators import operation
 
@@ -26,6 +28,20 @@ import docker_plugin.docker_wrapper as docker_wrapper
 _ERR_MSG_NO_IMAGE_SRC = 'Either path or url to image must be given'
 _ERR_MSG_TWO_IMAGE_SRC = ('Image import url and image build path specified'
                           ' There can only be one image source')
+_LOOPBACK_INTERFACE = 'lo'
+_ADDRESS = 'addr'
+
+
+def _get_host_ips():
+    host_ips = {}
+    for i in netifaces.interfaces():
+        ifaddresses = netifaces.ifaddresses(i)
+        if (
+            i != _LOOPBACK_INTERFACE and
+            netifaces.AF_INET in ifaddresses
+        ):
+            host_ips.update({i: ifaddresses[netifaces.AF_INET][0][_ADDRESS]})
+    return host_ips
 
 
 @operation
@@ -59,6 +75,7 @@ def create(ctx, *args, **kwargs):
             or are both specified.
 
     """
+
     #apt_get_wrapper.install_docker(ctx)
     client = docker_wrapper.get_client(ctx)
     image_import = ctx.properties.get('image_import', {}).get('src')
@@ -99,6 +116,7 @@ def configure(ctx, *args, **kwargs):
             ctx.properties['container_create']).
 
     """
+
     client = docker_wrapper.get_client(ctx)
     docker_wrapper.set_env_var(ctx, client)
     docker_wrapper.create_container(ctx, client)
@@ -115,7 +133,7 @@ def run(ctx, *args, **kwargs):
 
     Retreives host IP, forwarded ports and top info about the container
     from the Docker and log it. Additionally sets in ctx.runtime_properties:
-    -   host_ip (string)
+    -   host_ip (dictionary of strings)
     -   forwarded ports (list)
     -   Docker's networkSettings (dictionary)
 
@@ -128,26 +146,26 @@ def run(ctx, *args, **kwargs):
 
     Logs:
        Container id,
+       List of network interfaces with IPs
        Container ports,
        Container top information,
-       TODO(Michal) host ip
 
     """
+
     client = docker_wrapper.get_client(ctx)
     docker_wrapper.start_container(ctx, client)
     container = docker_wrapper.get_container_info(ctx, client)
     container_inspect = docker_wrapper.inspect_container(ctx, client)
-    # TODO(Zosia) change to real host_ip
-    ctx.runtime_properties['host_ip'] = 'host_ip'
+    ctx.runtime_properties['host_ips'] = _get_host_ips()
     ctx.runtime_properties['ports'] = container['Ports']
     ctx.runtime_properties['networkSettings'] = \
         container_inspect['NetworkSettings']
     log_msg = (
-        'Container: {}\nHost IP: {}\nForwarded ports: {}\nTop: {}'
+        'Container: {}\nHost IPs: {}\nForwarded ports: {}\nTop: {}'
     ).format(
         container['Id'],
-        'host_ip',
-        str(container['Ports']),
+        ctx.runtime_properties['host_ips'],
+        str(ctx.runtime_properties['ports']),
         docker_wrapper.get_top_info(ctx, client)
     )
     ctx.logger.info(log_msg)
@@ -170,6 +188,7 @@ def stop(ctx, *args, **kwargs):
             or when docker.errors.APIError during stop.
 
     """
+
     client = docker_wrapper.get_client(ctx)
     docker_wrapper.stop_container(ctx, client)
 
@@ -198,6 +217,7 @@ def delete(ctx, *args, **kwargs):
             remove_image (for example if image is used by another container).
 
     """
+
     client = docker_wrapper.get_client(ctx)
     container_info = docker_wrapper.inspect_container(ctx, client)
     if container_info and container_info['State']['Running']:
