@@ -26,7 +26,7 @@ all the requirements and copying the entire `cosmo_tester` directory into
 the plugin's root.
 
 
-###UnitTests
+### UnitTests ###
 We recommend using nose to run tests.
 
 Tests are divided into three directories. 
@@ -50,9 +50,9 @@ ID is valid docker ID.
 
 To run tests on specific group use `nosetests tests/[directory]`.
 
-###System Test
-System Test behaves just like python UnitTest. It uses Cloudify to launch
-application on docker container.
+### System Test ###
+System Test behaves just like python UnitTest. It uses Cloudify to check if
+execution of a test deployment works on a docker container.
 
 Before running it, set the environmental variable `CLOUDIFY_TEST_MANAGEMENT_IP`.
 Then launch it using nose: `nosetests tests/system_tests`.
@@ -61,15 +61,74 @@ Then launch it using nose: `nosetests tests/system_tests`.
 Blueprints
 ----------
 
-TODO(Zosia) Examples and info
+In plugin.yaml there are defined several types: 
 
-###Properties:
+* `cloudify.types.docker.web_server`
+
+* `cloudify.types.docker.app_server`
+
+* `cloudify.types.docker.db_server`
+
+* `cloudify.types.docker.message_bus_server`
+
+* `cloudify.types.docker.app_module`
+
+All of the types have the same properties:
+
+* `daemon_client`
+
+* `image_import`
+
+* `image_build`
+
+* `container_create`
+
+* `container_start`
+
+* `container_stop`
+
+* `container_remove`
+
+Which are described in `Properties` section.
+
+An example node specification:
+
+```
+
+    name: server
+
+    type: cloudify.types.docker.db_server
+
+    properties:
+
+        daemon_client: {}
+        
+        image_build: {}
+        
+        image_import:
+        
+            src: http://insert/url/to/image/here
+        
+        container_create:
+        
+            command: /bin/echo hello
+        
+        container_start: {}
+        
+        container_stop: {}
+        
+        container_remove: {}
+
+```
+
+### Properties: ###
 Properties in blueprints are dictionaries. Dictionaries correspond
 to parameters used in 
 [an api client for docker.](https://github.com/docker/docker-py)
 
-If there is a lack of description of certain parameters, more details can be
-found in [docker command line documentation.](https://docs.docker.com/reference/commandline/cli/)
+If there is a lack of description of certain parameters, 
+more details can be found in 
+[docker command line documentation.](https://docs.docker.com/reference/commandline/cli/)
 
 Here are listed all dictionaries and some of the keys:
 
