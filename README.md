@@ -25,7 +25,37 @@ the `__init__.py` file. This issue can be easily worked around by installing
 all the requirements and copying the entire `cosmo_tester` directory into
 the plugin's root.
 
-TODO(Zosia) How to run tests and the system test.
+
+###UnitTests
+We recommend using nose to run tests.
+
+Tests are divided into three directories. 
+
+* `tests/basic_tests_cloudify_docker_plugin` 
+
+Consists of short tests that test only basic functionalities, like creating,
+running and removing containers.
+
+* `tests/advanced_tests_cloudify_docker_plugin` 
+
+Consits of more complicated tests that sometimes take longer time to complete.
+They test if advanced options are working, like networks or ports
+configuration in containers.
+
+* `tests/internal_functions`
+
+Consits of tests that don't use docker containers and only test more 
+complicated internal functions. For example the  function that checks if given
+ID is valid docker ID.
+
+To run tests on specific group use `nosetests tests/[directory]`.
+
+###System Test
+System Test behaves just like python UnitTest. It uses Cloudify to launch
+application on docker container.
+
+Before running it, set the environmental variable `CLOUDIFY_TEST_MANAGEMENT_IP`.
+Then launch it using nose: `nosetests tests/system_tests`.
 
 
 Blueprints
@@ -162,7 +192,8 @@ Run task:
 
 * Starts conatiner with `container_start` dictionary as options.
   
-* Logs containers id, host ip, ports, and top information.
+* Logs containers id, list of network interfaces with IPs, ports, 
+  and top information.
 
 Stop task:
 
