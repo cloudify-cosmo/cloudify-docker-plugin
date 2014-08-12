@@ -16,10 +16,11 @@
 import errno
 import fcntl
 import os
-import psutil
 import select
 import subprocess
 import time
+
+import psutil
 
 
 _DELAY_STEP = 1
