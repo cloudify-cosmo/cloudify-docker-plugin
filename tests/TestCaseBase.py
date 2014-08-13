@@ -27,10 +27,6 @@ _CMD = ('sh -c \'i=0; while [ 1 ]; do i=`expr $i + 1`;'
 _TEST_PATH = 'tests'
 
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-
 class TestCaseBase(TestWithMockupCtx):
     def _assert_container_running(self, assert_fun):
         assert_fun(
@@ -46,7 +42,7 @@ class TestCaseBase(TestWithMockupCtx):
                 result = function(*args, **kwargs)
             except exceptions.RecoverableError as e:
                 errors = '{}\n{}.{}'.format(errors, i+1, e)
-                logger.debug(
+                logging.debug(
                     'During {}, for {} time caught recoverable error: {}'
                     .format(function.__name__, i+1, e)
                 )
