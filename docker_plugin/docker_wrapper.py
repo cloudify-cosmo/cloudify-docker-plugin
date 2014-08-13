@@ -154,8 +154,9 @@ def _log_error_container_logs(ctx, client, message=''):
             logs = client.logs(container)
         except docker.errors.APIError as e:
             ctx.logger.error(str(e))
-        if logs:
-            message += '\nLogs:\n{}'.format(logs)
+        else:
+            if logs:
+                message += '\nLogs:\n{}'.format(logs)
     if message:
         ctx.logger.error(message)
 
