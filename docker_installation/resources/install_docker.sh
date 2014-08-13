@@ -201,9 +201,18 @@ case $? in
     receive_signing_key "${KEY_FINGERPRINT}" "${KEYSERVER}"
     update_sources_list "${SOURCES_LIST_ENTRY}" "${SOURCES_LIST_FILE}"
     install_package "${PACKAGE}"
-    echo -e "\nsudo usermod -a -G docker \$USER"
     user=`ps --no-headers -ouser -p$$`
-    sudo usermod -a -G docker "${user}" || _error
+    succ=0
+    for i in {1..30}; do
+      echo -e "\nsudo usermod -a -G docker ${user}"
+      sudo usermod -a -G docker "${user}"
+      [ $? -eq 0 ] && {
+        succ=1
+        break
+      }
+      sleep 1;
+    done
+    [ $succ -eq 1 ] || _error
     echo -e "\nSuccessfully finished installing the package \`${PACKAGE}'."
     ;;
   *) _error ;;
