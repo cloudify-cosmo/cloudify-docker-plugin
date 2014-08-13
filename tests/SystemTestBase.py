@@ -34,7 +34,7 @@ CLOUDIFY_TEST_MANAGEMENT_IP = 'CLOUDIFY_TEST_MANAGEMENT_IP'
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.Debug)
+logger.setLevel(logging.DEBUG)
 
 
 class SystemTestBase(unittest.TestCase):

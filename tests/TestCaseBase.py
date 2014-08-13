@@ -28,7 +28,7 @@ _TEST_PATH = 'tests'
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.Debug)
+logger.setLevel(logging.DEBUG)
 
 
 class TestCaseBase(TestWithMockupCtx):
