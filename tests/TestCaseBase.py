@@ -42,6 +42,7 @@ class TestCaseBase(TestWithMockupCtx):
                 result = function(*args, **kwargs)
             except exceptions.RecoverableError as e:
                 errors = '{}\n{}.{}'.format(errors, i+1, e)
+                logging.basicConfig(level=logging.DEBUG)
                 logging.debug(
                     'During {}, for {} time caught recoverable error: {}'
                     .format(function.__name__, i+1, e)

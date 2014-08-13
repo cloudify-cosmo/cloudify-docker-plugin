@@ -35,6 +35,7 @@ class TestPluginNetworking(SystemTestBase):
 
     def runTest(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        logging.basicConfig(level=logging.INFO)
         logging.info(
             'Connecting to {}:{}...'.format(
                 self.cfy_helper.get_management_ip(),
