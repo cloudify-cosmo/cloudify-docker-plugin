@@ -13,8 +13,9 @@
 #    under the License.
 
 
-from tests.TestWithMockupCtx import TestWithMockupCtx
-from docker_plugin import subprocess_wrapper
+import unittest
+
+from docker_installation import subprocess_wrapper
 
 
 _TEST_SCRIPT = 'tests/internal_functions/basic_script.sh'
@@ -58,10 +59,9 @@ _INVALID_VALUES = [
 ]
 
 
-class TestSubprocessWrapper(TestWithMockupCtx):
+class TestSubprocessWrapper(unittest.TestCase):
     def _assert_process_values(self, process, expected_exit_code, values):
         return_code, stdout, stderr = subprocess_wrapper.run_process(
-            self.ctx,
             process,
             _MAX_WAITING_TIME,
             _TIMEOUT_TERMINATE

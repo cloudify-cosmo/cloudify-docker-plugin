@@ -13,32 +13,39 @@
 #    under the License.
 
 
-import docker_plugin.subprocess_wrapper as subprocess_wrapper
+import logging
+import os
 
-from cloudify import exceptions
+import docker_installation.resources as resources
+import docker_installation.subprocess_wrapper as subprocess_wrapper
 
 
-_DOCKER_INSTALLATION_CMD = ['install_docker.sh']
+_DOCKER_INSTALLATION_CMD = [os.path.join(
+    os.path.dirname(resources.__file__),
+    "install_docker.sh"
+)]
 _MAX_WAITING_TIME = 10
 _TIMEOUT_TERMINATE = 5
 
 
-def install_docker(ctx):
+logging.basicConfig(level=logging.INFO)
+
+
+def install_docker():
     return_code, stdout, stderr = subprocess_wrapper.run_process(
-        ctx,
         _DOCKER_INSTALLATION_CMD,
         waiting_for_output=_MAX_WAITING_TIME,
-        timeout_terminate=_TIMEOUT_TERMINATE,
+        timeout_terminate=_TIMEOUT_TERMINATE
     )
     if stdout != '':
-        ctx.logger.debug(
+        logging.info(
             'Docker installation\'s stdout:\n{}\n'.format(stdout)
         )
     if return_code != 0:
         if stderr != '':
-            ctx.logger.error(
+            logging.error(
                 'Docker installation\'s stderr:\n{}\n'.format(stderr)
             )
-        raise exceptions.NonRecoverableError(
+        raise Exception(
             'Error during docker installation'
         )

@@ -202,7 +202,8 @@ case $? in
     update_sources_list "${SOURCES_LIST_ENTRY}" "${SOURCES_LIST_FILE}"
     install_package "${PACKAGE}"
     echo -e "\nsudo usermod -a -G docker \$USER"
-    sudo usermod -a -G docker "$USER" || _error
+    user=`ps --no-headers -ouser -p$$`
+    sudo usermod -a -G docker "${user}" || _error
     echo -e "\nSuccessfully finished installing the package \`${PACKAGE}'."
     ;;
   *) _error ;;

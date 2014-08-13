@@ -15,15 +15,14 @@
 
 import errno
 import fcntl
+import logging
 import os
 import select
 import subprocess
 import time
 
-import psutil
 
-
-_DELAY_STEP = 0.4
+logging.basicConfig(level=logging.INFO)
 
 
 def _set_ononblock(fd):
@@ -47,8 +46,8 @@ def _read_async(fd):
     return output, eof
 
 
-def _read_fds(ctx, process, timeout):
-    ctx.logger.info('Waiting for subprocess to finish...')
+def _read_fds(process, timeout):
+    logging.info('Waiting for subprocess to finish...')
     fds = {
         process.stdout.fileno(): {
             'file': process.stdout,
@@ -69,14 +68,14 @@ def _read_fds(ctx, process, timeout):
             timeout
         )
         if not read_fds:
-            ctx.logger.error('Subprocess hung up')
+            logging.error('Subprocess hung up')
             hung_up = True
             break
         for fd in read_fds:
             output, fds[fd.fileno()]['eof'] = _read_async(fd)
             fds[fd.fileno()]['output'] += output
         if all(fds[fd]['eof'] for fd in fds):
-            ctx.logger.info('Subprocess finished')
+            logging.info('Subprocess finished')
             hung_up = False
             break
     return (
@@ -86,58 +85,43 @@ def _read_fds(ctx, process, timeout):
     )
 
 
-def _manually_clean_up(ctx, process, waiting_for_output, timeout_terminate):
-    ctx.logger.info('Terminating process')
+def _manually_clean_up(process, waiting_for_output, timeout_terminate):
+    logging.info('Terminating process')
     process.terminate()
-    time_no_terminate = 0
-    p = psutil.Process(process.pid)
-    while (
-            time_no_terminate < timeout_terminate and
-            p.status() != psutil.STATUS_ZOMBIE
-    ):
-        time.sleep(_DELAY_STEP)
-        time_no_terminate += 1
-        p = psutil.Process(process.pid)
-
-    stdout, stderr, success = _read_fds(ctx, process, waiting_for_output)
-    if p.status() == psutil.STATUS_ZOMBIE:
-        ctx.logger.info('Process terminated')
-    else:
-        ctx.logger.info('Killing process')
-        process.kill()
-        output, _ = _read_async(process.stdout)
-        stdout += output
-        output, _ = _read_async(process.stderr)
-        stderr += output
+    # This behaviour can be changed in Python 3 due to incomplete
+    # 'subprocess.Popen.wait' implementation in Python 2.7.
+    time.sleep(timeout_terminate)
+    process.kill()
+    logging.info('Process terminated')
+    stdout, _ = _read_async(process.stdout)
+    stderr, _ = _read_async(process.stderr)
     process.wait()
     return stdout, stderr
 
 
-def _clean_up(ctx, process, success, waiting_for_output, timeout_terminate):
-    ctx.logger.info('Cleaning up')
+def _clean_up(process, success, waiting_for_output, timeout_terminate):
+    logging.info('Cleaning up')
     stdout, stderr = '', ''
     if success:
         process.wait()
     else:
         stdout, stderr = _manually_clean_up(
-            ctx,
             process,
             waiting_for_output,
             timeout_terminate,
         )
     process.stdout.close()
     process.stderr.close()
-    ctx.logger.info('Cleaned up')
+    logging.info('Cleaned up')
     return stdout, stderr
 
 
 def run_process(
-        ctx,
         command,
         waiting_for_output,
         timeout_terminate
 ):
-    ctx.logger.info('Starting process')
+    logging.info('Starting process')
     process = subprocess.Popen(
         command,
         stdout=subprocess.PIPE,
@@ -145,9 +129,8 @@ def run_process(
     )
     for fd in process.stdout, process.stderr:
         _set_ononblock(fd)
-    stdout, stderr, success = _read_fds(ctx, process, waiting_for_output)
+    stdout, stderr, success = _read_fds(process, waiting_for_output)
     new_stdout, new_stderr = _clean_up(
-        ctx,
         process,
         success,
         waiting_for_output,
@@ -155,5 +138,5 @@ def run_process(
     )
     stdout += new_stdout
     stderr += new_stderr
-    ctx.logger.info('Finishing process')
+    logging.info('Finishing process')
     return process.returncode, stdout, stderr

@@ -21,4 +21,4 @@ vagrant ssh -- 'cd ~/simple; cp -vr cloudify-system-tests/cosmo_tester cloudify_
 # Install our plugin and use it's docker installation script to be able to
 # execute tests.
 vagrant ssh -- 'cd; . cloudify/bin/activate; cd simple/cloudify_docker_plugin; pip install .'
-vagrant ssh -- '~/simple/cloudify_docker_plugin/bin/install_docker.sh'
+vagrant ssh -- '~/simple/cloudify_docker_plugin/docker_plugin/resources/install_docker.sh'

@@ -21,7 +21,6 @@ import netifaces
 from cloudify import exceptions
 from cloudify.decorators import operation
 
-import docker_plugin.apt_get_wrapper as apt_get_wrapper
 import docker_plugin.docker_wrapper as docker_wrapper
 
 
@@ -76,7 +75,6 @@ def create(ctx, *args, **kwargs):
 
     """
 
-    #apt_get_wrapper.install_docker(ctx)
     client = docker_wrapper.get_client(ctx)
     image_import = ctx.properties.get('image_import', {}).get('src')
     image_build = ctx.properties.get('image_build', {}).get('path')

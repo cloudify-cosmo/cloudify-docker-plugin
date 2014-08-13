@@ -14,8 +14,10 @@
 
 
 import setuptools
+from setuptools.command.install import install
 
 import docker_plugin
+import docker_installation.apt_get_wrapper
 
 
 LICENCE = open('LICENSE').read()
@@ -23,14 +25,22 @@ README = open('README.md').read()
 REQUIREMENTS = open('requirements.txt').read().split('\n')
 
 
-setuptools.setup(author='Michał Soczewka',
-                 author_email='michal.soczewka@codilime.com',
-                 name=docker_plugin.__name__,
-                 version=docker_plugin.__version__,
-                 description=docker_plugin.__doc__,
-                 license=LICENCE,
-                 long_description=README,
-                 install_requires=REQUIREMENTS,
-                 packages=setuptools.find_packages(),
-                 zip_safe=False,
-                 scripts=['bin/install_docker.sh'])
+class CustomInstallCommand(install):
+    def run(self):
+        docker_installation.apt_get_wrapper.install_docker()
+        install.run(self)
+
+
+setuptools.setup(
+    author='Michał Soczewka',
+    author_email='michal.soczewka@codilime.com',
+    name=docker_plugin.__name__,
+    version=docker_plugin.__version__,
+    description=docker_plugin.__doc__,
+    license=LICENCE,
+    long_description=README,
+    install_requires=REQUIREMENTS,
+    packages=['docker_plugin'],
+    zip_safe=False,
+    cmdclass={'install': CustomInstallCommand}
+)
