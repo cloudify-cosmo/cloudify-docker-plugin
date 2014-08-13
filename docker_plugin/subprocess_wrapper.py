@@ -13,13 +13,38 @@
 #    under the License.
 
 
-import psutil
+import errno
+import fcntl
+import os
 import select
 import subprocess
 import time
 
+import psutil
 
-_DELAY_STEP = 1
+
+_DELAY_STEP = 0.4
+
+
+def _set_ononblock(fd):
+    curr_flags = fcntl.fcntl(fd.fileno(), fcntl.F_GETFL)
+    fcntl.fcntl(
+        fd.fileno(),
+        fcntl.F_SETFL,
+        curr_flags | os.O_NONBLOCK
+    )
+
+
+def _read_async(fd):
+    output, eof = '', False
+    try:
+        output = fd.read()
+    except IOError as e:
+        if e.errno != errno.EAGAIN:
+            raise
+    else:
+        eof = (output == '')
+    return output, eof
 
 
 def _read_fds(ctx, process, timeout):
@@ -48,9 +73,8 @@ def _read_fds(ctx, process, timeout):
             hung_up = True
             break
         for fd in read_fds:
-            output = fd.read(1)
+            output, fds[fd.fileno()]['eof'] = _read_async(fd)
             fds[fd.fileno()]['output'] += output
-            fds[fd.fileno()]['eof'] = (output == '')
         if all(fds[fd]['eof'] for fd in fds):
             ctx.logger.info('Subprocess finished')
             hung_up = False
@@ -81,8 +105,10 @@ def _manually_clean_up(ctx, process, waiting_for_output, timeout_terminate):
     else:
         ctx.logger.info('Killing process')
         process.kill()
-        stdout += process.stdout.read()
-        stderr += process.stderr.read()
+        output, _ = _read_async(process.stdout)
+        stdout += output
+        output, _ = _read_async(process.stderr)
+        stderr += output
     process.wait()
     return stdout, stderr
 
@@ -117,6 +143,8 @@ def run_process(
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
+    for fd in process.stdout, process.stderr:
+        _set_ononblock(fd)
     stdout, stderr, success = _read_fds(ctx, process, waiting_for_output)
     new_stdout, new_stderr = _clean_up(
         ctx,
