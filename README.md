@@ -3,6 +3,7 @@ Cloudify Docker plugin
 
 A Cloudify plugin enabling it to create and manipulate Docker containers.
 
+```Please note this plugin is under developing and not yet officially supported.```
 
 Installation and upgrading
 --------------------------
