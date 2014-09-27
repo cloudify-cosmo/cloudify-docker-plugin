@@ -42,5 +42,5 @@ setuptools.setup(
     install_requires=REQUIREMENTS,
     packages=['docker_plugin'],
     zip_safe=False,
-    cmdclass={'install': CustomInstallCommand}
+    # cmdclass={'install': CustomInstallCommand}
 )

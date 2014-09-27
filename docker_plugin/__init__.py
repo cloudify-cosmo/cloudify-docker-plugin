@@ -16,4 +16,4 @@
 '''A Cloudify plugin enabling it to create and manipulate Docker containers.'''
 
 __name__ = 'cloudify-docker-plugin'
-__version__ = '0.1'
+__version__ = '1.1a4'
