@@ -84,7 +84,7 @@ def create(daemon_client=None,
 
     client = docker_wrapper.get_client(daemon_client)
     image_import_src = image_import.get('src')
-    image_build_path = iamge_build.get('path')
+    image_build_path = image_build.get('path')
     if image_import_src and image_build_path:
         ctx.logger.error(_ERR_MSG_TWO_IMAGE_SRC)
         raise exceptions.NonRecoverableError(_ERR_MSG_TWO_IMAGE_SRC)

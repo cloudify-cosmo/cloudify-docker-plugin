@@ -75,6 +75,6 @@ class TestCaseBase(TestWithMockupCtx):
         # Try to delete container,
         # if it fails, because it doesnt exist, do nothing
         try:
-            self._try_calling(tasks.delete, [self.ctx])
+            self._try_calling(tasks.delete)
         except exceptions.NonRecoverableError:
             pass
