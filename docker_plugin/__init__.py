@@ -11,9 +11,3 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
-
-'''A Cloudify plugin enabling it to create and manipulate Docker containers.'''
-
-__name__ = 'cloudify-docker-plugin'
-__version__ = '1.1a4'

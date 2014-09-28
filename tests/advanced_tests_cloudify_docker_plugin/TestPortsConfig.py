@@ -29,9 +29,9 @@ _CMD = '/bin/nc -nvl {}'.format(str(_PORT1))
 class TestPortsConfig(TestCaseBase):
 
     def test_ports_config(self):
-        self._try_calling(tasks.create, [self.ctx])
-        self._try_calling(tasks.configure, [self.ctx])
-        self._try_calling(tasks.run, [self.ctx])
+        self._try_calling(tasks.create)
+        self._try_calling(tasks.configure)
+        self._try_calling(tasks.run)
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             s.connect((_HOST, _PORT2))

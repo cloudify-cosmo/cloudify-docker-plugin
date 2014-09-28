@@ -17,14 +17,16 @@ import unittest
 
 import docker
 
+from cloudify.state import current_ctx
 from cloudify import mocks
 
 
 class TestWithMockupCtx(unittest.TestCase):
 
-    ctx = None
-    client = None
-
     def setUp(self):
         self.client = docker.Client()
         self.ctx = mocks.MockCloudifyContext()
+        current_ctx.set(self.ctx)
+
+    def tearDown(self):
+        current_ctx.clear()

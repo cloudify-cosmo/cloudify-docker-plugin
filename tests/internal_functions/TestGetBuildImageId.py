@@ -41,7 +41,6 @@ class TestGetBuildImageId(TestWithMockupCtx):
         self.assertRaises(
             exceptions.RecoverableError,
             docker_wrapper._get_build_image_id,
-            self.ctx,
             self.client,
             self._gen_stream(_EMPTY_STREAM_LIST)
         )
@@ -50,7 +49,6 @@ class TestGetBuildImageId(TestWithMockupCtx):
         self.assertEqual(
             _BUILD_ID,
             docker_wrapper._get_build_image_id(
-                self.ctx,
                 self.client,
                 self._gen_stream(_VALID_STREAM_LIST)
             )
@@ -60,7 +58,6 @@ class TestGetBuildImageId(TestWithMockupCtx):
         self.assertRaises(
             exceptions.NonRecoverableError,
             docker_wrapper._get_build_image_id,
-            self.ctx,
             self.client,
             self._gen_stream(_INVALID_STREAM_LIST)
         )

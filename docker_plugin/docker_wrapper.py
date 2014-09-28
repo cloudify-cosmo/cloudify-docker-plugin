@@ -12,13 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
-"""Functions that wrap docker functions.
-
-All functions take
-    client: docker client
-as parameters.
-"""
+"""Functions that wrap docker functions."""
 
 
 import re

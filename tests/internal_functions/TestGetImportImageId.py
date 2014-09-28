@@ -55,7 +55,6 @@ class TestGetImportImageId(TestWithMockupCtx):
         self.assertRaises(
             exceptions.NonRecoverableError,
             docker_wrapper._get_import_image_id,
-            self.ctx,
             self.client,
             output
         )
@@ -76,7 +75,6 @@ class TestGetImportImageId(TestWithMockupCtx):
         self.assertEqual(
             _IMAGE_ID,
             docker_wrapper._get_import_image_id(
-                self.ctx,
                 self.client,
                 _VALID_OUTPUT
             )

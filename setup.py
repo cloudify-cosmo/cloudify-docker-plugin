@@ -1,4 +1,3 @@
-# coding=utf-8
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -22,7 +21,6 @@ import docker_installation.apt_get_wrapper
 
 LICENCE = open('LICENSE').read()
 README = open('README.md').read()
-REQUIREMENTS = open('requirements.txt').read().split('\n')
 
 
 class CustomInstallCommand(install):
@@ -32,14 +30,19 @@ class CustomInstallCommand(install):
 
 
 setuptools.setup(
-    author='Michał Soczewka',
-    author_email='michal.soczewka@codilime.com',
-    name=docker_plugin.__name__,
-    version=docker_plugin.__version__,
-    description=docker_plugin.__doc__,
+    name='cloudify-docker-plugin',
+    version='1.1a4',
+    author='Gigaspaces',
+    author_email='cosmo-admin@gigaspaces.com',
+    description='A Cloudify plugin enabling it to create'
+                'and manipulate Docker containers.',
     license=LICENCE,
     long_description=README,
-    install_requires=REQUIREMENTS,
+    install_requires=[
+        'cloudify-plugins-common==3.1a4',
+        'docker-py==0.4.0',
+        'netifaces==0.10.4'
+    ],
     packages=['docker_plugin'],
     zip_safe=False,
     # cmdclass={'install': CustomInstallCommand}

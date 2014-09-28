@@ -24,10 +24,10 @@ _CMD_FAIL = '/bin/false'
 class TestCommand(TestCaseBase):
     def _check_command(self, command, assert_fun):
         self.ctx.properties['container_create'].update({'command': command})
-        self._try_calling(tasks.create, [self.ctx])
-        self._try_calling(tasks.configure, [self.ctx])
-        self._try_calling(tasks.run, [self.ctx])
-        self._try_calling(tasks.stop, [self.ctx])
+        self._try_calling(tasks.create)
+        self._try_calling(tasks.configure)
+        self._try_calling(tasks.run)
+        self._try_calling(tasks.stop)
         assert_fun(
             self.client.inspect_container(
                 self.ctx.runtime_properties['container']

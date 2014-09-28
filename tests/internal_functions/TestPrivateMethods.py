@@ -29,7 +29,7 @@ _VALID_ID = '2318d26665ef'
 class TestIsImageIdValid(TestWithMockupCtx):
     def _assert_image_id(self, image_id, is_valid):
         self.assertEqual(
-            docker_wrapper._is_image_id_valid(self.ctx, image_id),
+            docker_wrapper._is_image_id_valid(image_id),
             is_valid
         )
 
