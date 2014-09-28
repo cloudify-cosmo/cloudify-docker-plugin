@@ -18,6 +18,7 @@
 
 import netifaces
 
+from cloudify import ctx
 from cloudify import exceptions
 from cloudify.decorators import operation
 
@@ -44,7 +45,10 @@ def _get_host_ips():
 
 
 @operation
-def create(ctx, *args, **kwargs):
+def create(daemon_client=None,
+           image_import=None,
+           image_build=None,
+           *args, **kwargs):
     """Create image.
 
     RPC called by Cloudify Manager.
@@ -74,17 +78,20 @@ def create(ctx, *args, **kwargs):
             or are both specified.
 
     """
+    daemon_client = daemon_client or {}
+    image_import = image_import or {}
+    image_build = image_build or {}
 
-    client = docker_wrapper.get_client(ctx)
-    image_import = ctx.properties.get('image_import', {}).get('src')
-    image_build = ctx.properties.get('image_build', {}).get('path')
-    if image_import and image_build:
+    client = docker_wrapper.get_client(daemon_client)
+    image_import_src = image_import.get('src')
+    image_build_path = iamge_build.get('path')
+    if image_import_src and image_build_path:
         ctx.logger.error(_ERR_MSG_TWO_IMAGE_SRC)
         raise exceptions.NonRecoverableError(_ERR_MSG_TWO_IMAGE_SRC)
-    elif image_import:
-        image = docker_wrapper.import_image(ctx, client)
-    elif image_build:
-        image = docker_wrapper.build_image(ctx, client)
+    elif image_import_src:
+        image = docker_wrapper.import_image(client, image_import)
+    elif image_build_path:
+        image = docker_wrapper.build_image(client, image_build)
     else:
         ctx.logger.error(_ERR_MSG_NO_IMAGE_SRC)
         raise exceptions.NonRecoverableError(_ERR_MSG_NO_IMAGE_SRC)
@@ -92,7 +99,9 @@ def create(ctx, *args, **kwargs):
 
 
 @operation
-def configure(ctx, *args, **kwargs):
+def configure(container_config,
+              daemon_client=None,
+              *args, **kwargs):
     """Create container using image from ctx.runtime_properties.
 
     RPC called by Cloudify Manager.
@@ -114,14 +123,18 @@ def configure(ctx, *args, **kwargs):
             ctx.properties['container_create']).
 
     """
+    container_config = container_config or {}
+    daemon_client = daemon_client or {}
 
-    client = docker_wrapper.get_client(ctx)
-    docker_wrapper.set_env_var(ctx, client)
-    docker_wrapper.create_container(ctx, client)
+    client = docker_wrapper.get_client(daemon_client)
+    docker_wrapper.set_env_var(client, container_config)
+    docker_wrapper.create_container(client, container_config)
 
 
 @operation
-def run(ctx, *args, **kwargs):
+def run(container_start=None
+        daemon_client=None,
+        *args, **kwargs):
     """Run container.
 
     RPC called by Cloudify Manager.
@@ -149,14 +162,14 @@ def run(ctx, *args, **kwargs):
        Container top information
 
     """
-
-    client = docker_wrapper.get_client(ctx)
-    docker_wrapper.start_container(ctx, client)
-    container = docker_wrapper.get_container_info(ctx, client)
-    container_inspect = docker_wrapper.inspect_container(ctx, client)
+    container_start = container_start or {}
+    client = docker_wrapper.get_client(daemon_client)
+    docker_wrapper.start_container(client)
+    container = docker_wrapper.get_container_info(client)
+    container_inspect = docker_wrapper.inspect_container(client)
     ctx.runtime_properties['host_ips'] = _get_host_ips()
     ctx.runtime_properties['ports'] = container['Ports']
-    ctx.runtime_properties['networkSettings'] = \
+    ctx.runtime_properties['network_settings'] = \
         container_inspect['NetworkSettings']
     log_msg = (
         'Container: {}\nHost IPs: {}\nForwarded ports: {}\nTop: {}'
@@ -164,13 +177,15 @@ def run(ctx, *args, **kwargs):
         container['Id'],
         ctx.runtime_properties['host_ips'],
         str(ctx.runtime_properties['ports']),
-        docker_wrapper.get_top_info(ctx, client)
+        docker_wrapper.get_top_info(client)
     )
     ctx.logger.info(log_msg)
 
 
 @operation
-def stop(ctx, *args, **kwargs):
+def stop(container_stop=None,
+         daemon_client=None,
+         *args, **kwargs):
     """Stop container.
 
     RPC called by Cloudify Manager.
@@ -186,13 +201,16 @@ def stop(ctx, *args, **kwargs):
             or when docker.errors.APIError during stop.
 
     """
-
-    client = docker_wrapper.get_client(ctx)
-    docker_wrapper.stop_container(ctx, client)
+    container_stop = container_stop or {}
+    daemon_client = daemon_client or {}
+    client = docker_wrapper.get_client(daemon_client)
+    docker_wrapper.stop_container(client, container_stop)
 
 
 @operation
-def delete(ctx, *args, **kwargs):
+def delete(container_remove=None,
+           daemon_client=None,
+           *args, **kwargs):
     """Delete container.
 
     RPC called by Cloudify Manager.
@@ -215,14 +233,12 @@ def delete(ctx, *args, **kwargs):
             remove_image (for example if image is used by another container).
 
     """
-
-    client = docker_wrapper.get_client(ctx)
-    container_info = docker_wrapper.inspect_container(ctx, client)
+    daemon_client = daemon_client or {}
+    client = docker_wrapper.get_client(daemon_client)
+    container_info = docker_wrapper.inspect_container(client)
     if container_info and container_info['State']['Running']:
-        docker_wrapper.stop_container(ctx, client)
-    remove_image = ctx.properties.get('container_remove', {}).pop(
-        'remove_image', None
-    )
-    docker_wrapper.remove_container(ctx, client)
+        docker_wrapper.stop_container(client)
+    remove_image = container_remove.pop('remove_image', None)
+    docker_wrapper.remove_container(client, container_remove)
     if remove_image:
-        docker_wrapper.remove_image(ctx, client)
+        docker_wrapper.remove_image(client)
