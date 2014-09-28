@@ -17,11 +17,12 @@
 context needed in the Nodecellar application on Docker example."""
 
 
+from cloudify import ctx
 from cloudify.decorators import operation
 
 
 @operation
-def inject_properties(ctx, *args, **kwargs):
+def inject_properties(*args, **kwargs):
     ctx.runtime_properties['docker_env_var'] = {
         'MONGO_HOST': ctx.related.runtime_properties['host_ips']['eth1'],
         'MONGO_PORT': ctx.related.runtime_properties['ports'][0]['PublicPort']
