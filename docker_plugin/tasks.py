@@ -132,7 +132,7 @@ def configure(container_config,
 
 
 @operation
-def run(container_start=None
+def run(container_start=None,
         daemon_client=None,
         *args, **kwargs):
     """Run container.
