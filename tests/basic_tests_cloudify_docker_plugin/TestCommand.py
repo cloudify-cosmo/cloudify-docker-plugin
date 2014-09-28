@@ -14,17 +14,17 @@
 
 
 from docker_plugin import tasks
-from tests.TestCaseBase import TestCaseBase
+from tests import TestCaseBase
 
 
 _CMD_SUCC = '/bin/true'
 _CMD_FAIL = '/bin/false'
 
 
-class TestCommand(TestCaseBase):
+class TestCommand(TestCaseBase.TestCaseBase):
     def _check_command(self, command, assert_fun):
         container_config = {'command': command}
-        self._try_calling(tasks.create)
+        self._try_calling(tasks.create, kwargs={'image_build': {'path': TestCaseBase._TEST_PATH}})
         self._try_calling(tasks.configure, [container_config])
         self._try_calling(tasks.run)
         self._try_calling(tasks.stop)
