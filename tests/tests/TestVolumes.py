@@ -16,7 +16,7 @@
 import os
 
 from docker_plugin import tasks
-from tests.TestCaseBase import TestCaseBase
+from tests.tests.TestCaseBase import TestCaseBase
 
 
 _DIR = '/tmp/test_folder.{}'.format(str(os.getpid()))
@@ -31,20 +31,19 @@ _CMD = 'sh -c \'/bin/cat {}; sleep 1\''.format(_CONT_FILE_PATH)
 class TestVolumes(TestCaseBase):
 
     def test_volumes(self):
-        self._try_calling(tasks.create)
-        self._try_calling(tasks.configure)
-        self._try_calling(tasks.run)
-        logs = self.client.logs(self.ctx.runtime_properties['container'])
+        self._execute(['create', 'configure', 'run'],
+                      container_config={
+                          'volumes': [_MNT_DIR],
+                          'command': _CMD
+                      },
+                      container_start={
+                          'binds': {_DIR: {'bind': _MNT_DIR}}
+                      })
+        logs = self.client.logs(self.runtime_properties['container'])
         self.assertEqual(logs, _TEXT)
 
     def setUp(self):
         super(TestVolumes, self).setUp()
-        self.ctx.properties['container_create'].update(
-            {'volumes': [_MNT_DIR], 'command': _CMD}
-        )
-        self.ctx.properties['container_start'].update(
-            {'binds': {_DIR: {'bind': _MNT_DIR}}}
-        )
         os.mkdir(_DIR, 0755)
         with open(_FILE_PATH, 'w') as f:
             f.write(_TEXT)
