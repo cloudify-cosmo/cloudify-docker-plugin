@@ -26,21 +26,53 @@ from docker_plugin import tasks
 
 _CMD = ('sh -c \'i=0; while [ 1 ]; do i=`expr $i + 1`;'
         '/bin/echo Hello world $i; sleep 1; done\'')
-_TEST_PATH = 'tests'
-
 
 class TestCaseBase(unittest.TestCase):
 
     def _assert_container_running(self, assert_fun):
         assert_fun(
             self.client.inspect_container(
-                self.ctx.runtime_properties['container']
+                self.runtime_properties['container']
             )['State']['Running']
         )
 
-    def _execute(self):
-        inputs = {}
-        blueprint_path = os.
+    @property
+    def blueprint_dir(self):
+        return os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                            'blueprint'))
+
+    @property
+    def runtime_properties(self):
+        return self.env.storage.get_node_instances()[0].runtime_properties
+
+    def _execute(self, operations,
+                 container_config=None):
+        inputs = dict(
+            daemon_client={},
+            image_import={},
+            image_build={
+                'path': self.blueprint_dir
+            },
+            container_config=container_config or {},
+            container_start={},
+            container_stop={},
+            container_remove={}
+        )
+        blueprint_path = os.path.join(self.blueprint_dir, 'blueprint.yaml')
+        self.env = local.init_env(blueprint_path,
+                                  name=self._testMethodName,
+                                  inputs)
+        self.env.execute('execute_operations',
+                         parameters={'operations': operations},
+                         task_retries=5)
 
     def setUp(self):
         self.client = docker.Client()
+
+
+@workflow
+def execute_operations(operations, **kwargs):
+    node = next(workflow_ctx.nodes)
+    instance = next(node.instances)
+    for operation in operations:
+        instance.execute_operation('test.{0}'.format(operation)).get()

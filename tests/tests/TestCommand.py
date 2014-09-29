@@ -14,7 +14,7 @@
 
 
 from docker_plugin import tasks
-from tests import TestCaseBase
+from tests.tests import TestCaseBase
 
 
 _CMD_SUCC = '/bin/true'
@@ -24,13 +24,11 @@ _CMD_FAIL = '/bin/false'
 class TestCommand(TestCaseBase.TestCaseBase):
     def _check_command(self, command, assert_fun):
         container_config = {'command': command}
-        self._try_calling(tasks.create, kwargs={'image_build': {'path': TestCaseBase._TEST_PATH}})
-        self._try_calling(tasks.configure, [container_config])
-        self._try_calling(tasks.run)
-        self._try_calling(tasks.stop)
+        self._execute(['create', 'configure', 'run', 'stop'],
+                      container_config=container_config)
         assert_fun(
             self.client.inspect_container(
-                self.ctx.runtime_properties['container']
+                self.runtime_properties['container']
             )['State']['ExitCode']
         )
 
