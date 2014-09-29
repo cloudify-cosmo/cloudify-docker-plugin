@@ -209,6 +209,7 @@ def stop(container_stop=None,
 
 @operation
 def delete(container_remove=None,
+           container_stop=None,
            daemon_client=None,
            *args, **kwargs):
     """Delete container.
@@ -237,7 +238,7 @@ def delete(container_remove=None,
     client = docker_wrapper.get_client(daemon_client)
     container_info = docker_wrapper.inspect_container(client)
     if container_info and container_info['State']['Running']:
-        docker_wrapper.stop_container(client)
+        docker_wrapper.stop_container(client, container_stop)
     remove_image = container_remove.pop('remove_image', None)
     docker_wrapper.remove_container(client, container_remove)
     if remove_image:

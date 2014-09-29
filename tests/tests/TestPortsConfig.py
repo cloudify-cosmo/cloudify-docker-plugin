@@ -16,7 +16,7 @@
 import socket
 
 from docker_plugin import tasks
-from tests.TestCaseBase import TestCaseBase
+from tests.tests.TestCaseBase import TestCaseBase
 
 
 _INTERFACE = '127.0.0.1'
@@ -29,20 +29,17 @@ _CMD = '/bin/nc -nvl {}'.format(str(_PORT1))
 class TestPortsConfig(TestCaseBase):
 
     def test_ports_config(self):
-        self._try_calling(tasks.create)
-        self._try_calling(tasks.configure)
-        self._try_calling(tasks.run)
+        self._execute(['create', 'configure', 'run'],
+                      container_config={
+                          'command': _CMD,
+                          'ports': [_PORT1]
+                      },
+                      container_start={
+                          'port_bindings': {_PORT1: (_INTERFACE, _PORT2)}
+                      })
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             s.connect((_HOST, _PORT2))
             s.close()
         except socket.error as e:
             raise AssertionError(e)
-
-    def setUp(self):
-        super(TestPortsConfig, self).setUp()
-        self.ctx.properties['container_create'].update({'command': _CMD})
-        self.ctx.properties['container_create'].update({'ports': [_PORT1]})
-        self.ctx.properties['container_start'].update(
-            {'port_bindings': {_PORT1: (_INTERFACE, _PORT2)}}
-        )
