@@ -15,7 +15,7 @@
 
 from docker_plugin import tasks
 from docker_plugin import docker_wrapper
-from tests.TestCaseBase import TestCaseBase
+from tests.tests.TestCaseBase import TestCaseBase
 
 
 _KEY1 = 'a'
@@ -47,40 +47,21 @@ _ADDITIONAL_ENV_LIST = [
     '{}={}'.format(_ADKEY2, _ADVAL2)
 ]
 
-_NON_ENV_KEYS = [
-    'daemon_client',
-    'image_import',
-    'image_build',
-    'container_create',
-    'container_start',
-    'container_stop',
-    'container_remove',
-]
-
-
 class TestEnvironmentVariables(TestCaseBase):
-    def _check_env(self, env_set):
-        self._try_calling(tasks.create)
-        self._try_calling(tasks.configure)
-        self._try_calling(tasks.run)
-        inspect_dict = docker_wrapper.inspect_container(self.client)
-        self.assertTrue(env_set.issubset(set(inspect_dict['Config']['Env'])))
-        return inspect_dict
+    def _check_env(self, docker_env_var, environment, env_set):
+        def assertion(**kwargs):
+            inspect_dict = docker_wrapper.inspect_container(self.client)
+            self.assertTrue(env_set.issubset(set(inspect_dict['Config']['Env'])))
+        self.patch_custom_operation(assertion)
+        self._execute(['set_docker_env_var', 'create', 'configure', 'run',
+                       'custom_operation'],
+                      docker_env_var=docker_env_var,
+                      container_config={
+                        'environment': environment
+                      })
 
     def test_basic(self):
-        self.ctx.runtime_properties['docker_env_var'] = _ENV_VAR
-        self._check_env(set(_ENV_LIST))
+        self._check_env(_ENV_VAR, {}, set(_ENV_LIST))
 
     def test_with_additional_env(self):
-        self.ctx.runtime_properties['docker_env_var'] = _ENV_VAR
-        self.ctx.properties['container_create'].update(
-            {'environment': _ADDITIONAL_ENV}
-        )
-        self._check_env(set(_ADDITIONAL_ENV_LIST))
-
-    def test_no_non_env_keys(self):
-        self.ctx.runtime_properties['docker_env_var'] = _ENV_VAR
-        inspect_dict = self._check_env(set(_ENV_LIST))
-        for non_env in _NON_ENV_KEYS:
-            for env in inspect_dict['Config']['Env']:
-                self.assertEqual(env.find(non_env), -1)
+        self._check_env(_ENV_VAR, _ADDITIONAL_ENV, set(_ADDITIONAL_ENV_LIST))

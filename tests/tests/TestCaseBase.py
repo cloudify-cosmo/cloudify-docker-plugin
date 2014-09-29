@@ -20,7 +20,8 @@ import docker
 
 from cloudify import exceptions
 from cloudify.workflows import local, ctx as workflow_ctx
-from cloudify.decorators import workflow
+from cloudify.decorators import workflow, operation
+from cloudify import ctx as operation_ctx
 
 from docker_plugin import tasks
 
@@ -47,7 +48,10 @@ class TestCaseBase(unittest.TestCase):
         return self.env.storage.get_node_instances()[0].runtime_properties
 
     def _execute(self, operations,
-                 container_config=None):
+                 container_config=None,
+                 docker_env_var=None,
+                 custom_operation_kwargs=None,
+                 task_retries=5):
         inputs = dict(
             daemon_client={},
             image_import={},
@@ -57,7 +61,9 @@ class TestCaseBase(unittest.TestCase):
             container_config=container_config or {},
             container_start={},
             container_stop={},
-            container_remove={}
+            container_remove={},
+            docker_env_var=docker_env_var or {},
+            custom_operation_kwargs=custom_operation_kwargs or {},
         )
         blueprint_path = os.path.join(self.blueprint_dir, 'blueprint.yaml')
         if not self.env:
@@ -66,18 +72,34 @@ class TestCaseBase(unittest.TestCase):
                                       inputs=inputs)
         self.env.execute('execute_operations',
                          parameters={'operations': operations},
-                         task_retries=5,
+                         task_retries=task_retries,
                          task_retry_interval=1)
 
     def setUp(self):
         self.client = docker.Client()
         self.env = None
+        self.original_custom_operation = custom_operation
+
+    def cleanup(self):
+        custom_operation = self.original_custom_operation
+
+    def tearDown(self):
+        super(TestCaseBase, self).tearDown()
+        custom_operation = self.original_custom_operation
+        self.delete_container()
 
     def delete_container(self):
         try:
-            self._execute(['delete'])
+            self._execute(['delete'],
+                          task_retries=0)
         except Exception:
             pass
+
+    def patch_custom_operation(self, new_operation):
+        # celery caches tasks so we force use of stub _task
+        global custom_operation
+        custom_operation = operation(new_operation,
+                                     force_not_celery=True)
 
 
 @workflow
@@ -86,3 +108,14 @@ def execute_operations(operations, **kwargs):
     instance = next(node.instances)
     for operation in operations:
         instance.execute_operation('test.{0}'.format(operation)).get()
+
+
+@operation
+def set_docker_env_var(docker_env_var, **kwargs):
+    operation_ctx.runtime_properties['docker_env_var'] = docker_env_var
+
+
+# celery caches tasks so we force use of stub _task
+@operation(force_not_celery=True)
+def custom_operation(custom_operation_kwargs, **kwargs):
+    raise RuntimeError('patched by tests')

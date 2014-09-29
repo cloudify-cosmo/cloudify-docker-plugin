@@ -1,13 +1,15 @@
 tosca_definitions_version: cloudify_dsl_1_0
 
 inputs:
-    daemon_client:    {}
-    image_import:     {}
-    image_build:      {}
-    container_config: {}
-    container_start:  {}
-    container_stop:   {}
-    container_remove: {}
+    daemon_client:           {}
+    image_import:            {}
+    image_build:             {}
+    container_config:        {}
+    container_start:         {}
+    container_stop:          {}
+    container_remove:        {}
+    docker_env_var:          {}
+    custom_operation_kwargs: {}
 
 node_templates:
     test:
@@ -40,6 +42,14 @@ node_templates:
                     properties:
                         daemon_client:    { get_input: daemon_client }
                         container_remove: { get_input: container_remove }
+                - set_docker_env_var:
+                    mapping: docker.tests.tests.TestCaseBase.set_docker_env_var
+                    properties:
+                        docker_env_var:   { get_input: docker_env_var }
+                - custom_operation:
+                    mapping: docker.tests.tests.TestCaseBase.custom_operation
+                    properties:
+                        custom_operation_kwargs: { get_input: custom_operation_kwargs }
 
 workflows:
     execute_operations:
