@@ -51,15 +51,18 @@ class TestCaseBase(unittest.TestCase):
                  container_config=None,
                  docker_env_var=None,
                  custom_operation_kwargs=None,
+                 container_start=None,
+                 image_build=None,
+                 image_import=None,
                  task_retries=5):
         inputs = dict(
             daemon_client={},
-            image_import={},
-            image_build={
+            image_import=image_import or {},
+            image_build=image_build or {
                 'path': self.blueprint_dir
             },
             container_config=container_config or {},
-            container_start={},
+            container_start=container_start or {},
             container_stop={},
             container_remove={},
             docker_env_var=docker_env_var or {},

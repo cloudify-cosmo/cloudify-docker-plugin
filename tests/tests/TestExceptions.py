@@ -16,7 +16,7 @@
 from cloudify import exceptions
 
 from docker_plugin import tasks
-from tests.TestCaseBase import TestCaseBase
+from tests.tests.TestCaseBase import TestCaseBase
 
 
 _WRONG_PATH = 'wrong path'
@@ -28,37 +28,44 @@ _IMG_SRC = 'image_source'
 
 class TestExceptions(TestCaseBase):
     def test_wrong_path_to_image(self):
-        self.ctx.properties['image_build'].update({'path': _WRONG_PATH})
-        with self.assertRaises(exceptions.NonRecoverableError):
-            self._try_calling(tasks.create)
-        with self.assertRaises(exceptions.NonRecoverableError):
-            self._try_calling(tasks.configure)
-        with self.assertRaises(exceptions.NonRecoverableError):
-            self._try_calling(tasks.run)
+        def assertion(op, message):
+            try:
+                self._execute([op], image_build={'path': _WRONG_PATH})
+                self.fail()
+            except exceptions.NonRecoverableError as e:
+                self.assertIn(message, e.message)
+        assertion('create', 'No such file')
+        assertion('configure', 'No image specified')
+        assertion('run', 'No container specified')
 
     def test_wrong_command(self):
-        self.ctx.properties['container_create'].update({'command': _WRONG_CMD})
-        self._try_calling(tasks.create)
-        self._try_calling(tasks.configure)
-        with self.assertRaises(exceptions.NonRecoverableError):
-            self._try_calling(tasks.run)
+        try:
+            self._execute(['create', 'configure', 'run'],
+                          container_config={'command': _WRONG_CMD})
+            self.fail()
+        except exceptions.NonRecoverableError as e:
+            self.assertIn('"wrong": executable file not found', e.message)
 
     def test_wrong_volumes(self):
-        self._try_calling(tasks.create)
-        self._try_calling(tasks.configure)
-        self.ctx.properties['container_start'].update(
-            {'binds': {_DIR: {'bind': _MNT_DIR}}}
-        )
-        with self.assertRaises(exceptions.NonRecoverableError):
-            self._try_calling(tasks.run)
+        try:
+            self._execute(['create', 'configure', 'run'],
+                          container_start={'binds': {_DIR: {'bind': _MNT_DIR}}})
+            self.fail()
+        except exceptions.NonRecoverableError as e:
+            self.assertIn('cannot bind mount volume', e.message)
 
     def test_no_image_path(self):
-        self.ctx.properties.pop('image_build')
-        self.ctx.properties.pop('image_import')
-        with self.assertRaises(exceptions.NonRecoverableError):
-            self._try_calling(tasks.create)
+        try:
+            self._execute(['create'],
+                          image_build={'stub': 'prop'})
+            self.fail()
+        except exceptions.NonRecoverableError as e:
+            self.assertIn('Either path or url', e.message)
 
     def test_two_image_sources(self):
-        self.ctx.properties['image_import'].update({'src': _IMG_SRC})
-        with self.assertRaises(exceptions.NonRecoverableError):
-            self._try_calling(tasks.create)
+        try:
+            self._execute(['create'],
+                          image_import={'src': _IMG_SRC})
+            self.fail()
+        except exceptions.NonRecoverableError as e:
+            self.assertIn('There can only be one image source', e.message)
