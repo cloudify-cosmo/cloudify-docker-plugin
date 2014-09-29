@@ -13,38 +13,40 @@
 #    under the License.
 
 
+import os
 import SimpleHTTPServer
 import SocketServer
-import threading
+import multiprocessing
 
 
 from docker_plugin import tasks
-from tests.TestCaseBase import TestCaseBase
+from tests.tests.TestCaseBase import TestCaseBase
 
 
 _PORT = 8000
 _HOST = 'localhost'
-_IMAGE_DIR = '/tests/advanced_tests_cloudify_docker_plugin/mini.tar.xz'
-_IMAGE = 'http://{}:{}{}'.format(_HOST, _PORT, _IMAGE_DIR)
 
-
-def _get_request(httpd):
+def _get_request(httpd, workdir):
+    os.chdir(workdir)
     httpd.handle_request()
     httpd.server_close()
 
 
 class TestImageImport(TestCaseBase):
     def test_image_import(self):
+        image_url = 'http://{}:{}/{}'.format(_HOST, _PORT, 'mini.tar.xz')
         Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
-        httpd = SocketServer.TCPServer((_HOST, _PORT), Handler)
-        request_thread = threading.Thread(target=_get_request, args=(httpd,))
-        request_thread.start()
-        self.ctx.properties.pop('image_build')
-        self.ctx.properties['image_import'].update({'src': _IMAGE})
-        self.ctx.properties['container_remove'].update({'remove_image': True})
-        self._try_calling(tasks.create)
-        self._try_calling(tasks.configure)
+        class TCPServer(SocketServer.TCPServer):
+            allow_reuse_address = True
+        httpd = TCPServer((_HOST, _PORT), Handler)
+        request_process = multiprocessing.Process(target=_get_request,
+                                                  args=(httpd, self.blueprint_dir))
+        request_process.start()
+        self._execute(['create', 'configure'],
+                      image_import={'src': image_url},
+                      image_build={'stub': 'prop'},
+                      container_config={'command': '/bin/true'},
+                      container_remove={'remove_image': True})
+        request_process.join()
         self.assertIsNotNone(
-            self.client.inspect_image(self.ctx.runtime_properties['image'])
-        )
-        request_thread.join()
+                self.client.inspect_image(self.runtime_properties['image']))

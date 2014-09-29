@@ -52,6 +52,7 @@ class TestCaseBase(unittest.TestCase):
                  docker_env_var=None,
                  custom_operation_kwargs=None,
                  container_start=None,
+                 container_remove=None,
                  image_build=None,
                  image_import=None,
                  task_retries=5):
@@ -64,7 +65,7 @@ class TestCaseBase(unittest.TestCase):
             container_config=container_config or {},
             container_start=container_start or {},
             container_stop={},
-            container_remove={},
+            container_remove=container_remove or {},
             docker_env_var=docker_env_var or {},
             custom_operation_kwargs=custom_operation_kwargs or {},
         )

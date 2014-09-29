@@ -42,10 +42,12 @@ def _get_import_image_id(client, import_image_output):
     # It is useful beacause
     # import_image returns long string where in the second line
     # after last status is image id
+    unknow_error_message = '{0} (import image output: {1})'.format(
+        _ERR_MSG_UNKNOWN_IMAGE_IMPORT, import_image_output)
     try:
         output_line = import_image_output.split('\n')[-2]
     except IndexError:
-        _log_and_raise(client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
+        _log_and_raise(client, unknow_error_message)
     position_of_last_status = output_line.rfind('status')
     if position_of_last_status < 0:
         # If there was an error, there is no 'status'
@@ -56,19 +58,19 @@ def _get_import_image_id(client, import_image_output):
             err_msg = output_line[position_of_error:].\
                 split('"')[_IMAGE_IMPORT_ERROR_POSITION]
         except IndexError:
-            _log_and_raise(client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
+            _log_and_raise(client, unknow_error_message)
         err_msg = 'Error during image import {}'.format(err_msg)
         _log_and_raise(client, err_msg)
     try:
         image_id = output_line[position_of_last_status:].\
             split('"')[_IMAGE_IMPORT_ID_POSITION]
     except IndexError:
-        _log_and_raise(client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
+        _log_and_raise(client, unknow_error_message)
     else:
         if _is_image_id_valid(image_id):
             return image_id
         else:
-            _log_and_raise(client, _ERR_MSG_UNKNOWN_IMAGE_IMPORT)
+            _log_and_raise(client, unknow_error_message)
 
 
 def _get_build_image_id(client, stream_generator):
@@ -280,9 +282,9 @@ def import_image(client, image_import):
     """
 
     ctx.logger.info('Importing image')
+    import_image_output = client.import_image(**image_import)
     image_id = _get_import_image_id(
-        client,
-        client.import_image(**image_import))
+        client, import_image_output)
     ctx.logger.info('Image {} has been imported'.format(image_id))
     return image_id
 
