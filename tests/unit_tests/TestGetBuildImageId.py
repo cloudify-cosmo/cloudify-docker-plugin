@@ -17,7 +17,7 @@ from cloudify import exceptions
 
 from docker_plugin import docker_wrapper
 
-from tests.TestWithMockupCtx import TestWithMockupCtx
+from tests.unit_tests.TestWithMockupCtx import TestWithMockupCtx
 
 
 _BUILD_ID = 'ba5877dc9bec'

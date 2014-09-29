@@ -12,13 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
+import os
 import unittest
 
 from docker_installation import subprocess_wrapper
 
 
-_TEST_SCRIPT = 'tests/internal_functions/basic_script.sh'
+_TEST_SCRIPT = os.path.join(os.path.dirname(__file__), 'basic_script.sh')
 
 _VALID_PROCESS = [_TEST_SCRIPT]
 _SUCCESS_EXIT_CODE = 0
