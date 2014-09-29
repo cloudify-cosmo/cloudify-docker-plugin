@@ -19,7 +19,8 @@ from tests.tests.TestCaseBase import TestCaseBase
 
 class TestStopAndRun(TestCaseBase):
     def test_stop_and_run(self):
-        self._execute(['create', 'configure', 'run'])
+        self._execute(['create', 'configure', 'run'],
+                      default_sleep=2)
         self._assert_container_running(self.assertTrue)
         self._execute(['stop'])
         self._assert_container_running(self.assertFalse)

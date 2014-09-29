@@ -25,10 +25,6 @@ from cloudify import ctx as operation_ctx
 
 from docker_plugin import tasks
 
-
-_CMD = ('sh -c \'i=0; while [ 1 ]; do i=`expr $i + 1`;'
-        '/bin/echo Hello world $i; sleep 1; done\'')
-
 class TestCaseBase(unittest.TestCase):
 
     def _assert_container_running(self, assert_fun):
@@ -55,6 +51,7 @@ class TestCaseBase(unittest.TestCase):
                  container_remove=None,
                  image_build=None,
                  image_import=None,
+                 default_sleep=0,
                  task_retries=5):
         inputs = dict(
             daemon_client={},
@@ -62,7 +59,9 @@ class TestCaseBase(unittest.TestCase):
             image_build=image_build or {
                 'path': self.blueprint_dir
             },
-            container_config=container_config or {},
+            container_config=container_config or {
+                'command': 'sleep {0}'.format(default_sleep)
+            },
             container_start=container_start or {},
             container_stop={},
             container_remove=container_remove or {},
