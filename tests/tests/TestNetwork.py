@@ -17,7 +17,7 @@ import copy
 import time
 
 from docker_plugin import tasks
-from tests.TestCaseBase import TestCaseBase
+from tests.tests.TestCaseBase import TestCaseBase
 
 from cloudify import exceptions
 from cloudify import mocks
