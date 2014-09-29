@@ -13,7 +13,6 @@
 #    under the License.
 
 
-from docker_plugin import tasks
 from docker_plugin import docker_wrapper
 from tests.tests.TestCaseBase import TestCaseBase
 
@@ -47,18 +46,20 @@ _ADDITIONAL_ENV_LIST = [
     '{}={}'.format(_ADKEY2, _ADVAL2)
 ]
 
+
 class TestEnvironmentVariables(TestCaseBase):
     def _check_env(self, docker_env_var, environment, env_set):
         def assertion(**kwargs):
             inspect_dict = docker_wrapper.inspect_container(self.client)
-            self.assertTrue(env_set.issubset(set(inspect_dict['Config']['Env'])))
+            self.assertTrue(env_set.issubset(
+                set(inspect_dict['Config']['Env'])))
         self.patch_custom_operation(assertion)
         self._execute(['set_docker_env_var', 'create', 'configure', 'run',
                        'custom_operation'],
                       docker_env_var=docker_env_var,
                       container_config={
-                        'environment': environment
-                      })
+                          'environment': environment
+        })
 
     def test_basic(self):
         self._check_env(_ENV_VAR, {}, set(_ENV_LIST))

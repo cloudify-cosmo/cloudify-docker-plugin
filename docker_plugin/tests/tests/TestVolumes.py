@@ -15,7 +15,6 @@
 
 import os
 
-from docker_plugin import tasks
 from tests.tests.TestCaseBase import TestCaseBase
 
 
@@ -31,14 +30,16 @@ _CMD = 'sh -c \'/bin/cat {}; sleep 1\''.format(_CONT_FILE_PATH)
 class TestVolumes(TestCaseBase):
 
     def test_volumes(self):
-        self._execute(['create', 'configure', 'run'],
-                      container_config={
-                          'volumes': [_MNT_DIR],
-                          'command': _CMD
-                      },
-                      container_start={
-                          'binds': {_DIR: {'bind': _MNT_DIR}}
-                      })
+        self._execute(
+            ['create', 'configure', 'run'],
+            container_config={
+                'volumes': [_MNT_DIR],
+                'command': _CMD
+            },
+            container_start={
+                'binds': {_DIR: {'bind': _MNT_DIR}}
+            }
+        )
         logs = self.client.logs(self.runtime_properties['container'])
         self.assertEqual(logs, _TEXT)
 

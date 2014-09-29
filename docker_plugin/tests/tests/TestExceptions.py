@@ -15,7 +15,6 @@
 
 from cloudify import exceptions
 
-from docker_plugin import tasks
 from tests.tests.TestCaseBase import TestCaseBase
 
 
@@ -49,7 +48,9 @@ class TestExceptions(TestCaseBase):
     def test_wrong_volumes(self):
         try:
             self._execute(['create', 'configure', 'run'],
-                          container_start={'binds': {_DIR: {'bind': _MNT_DIR}}})
+                          container_start={
+                              'binds': {_DIR: {'bind': _MNT_DIR}}
+            })
             self.fail()
         except exceptions.NonRecoverableError as e:
             self.assertIn('cannot bind mount volume', e.message)

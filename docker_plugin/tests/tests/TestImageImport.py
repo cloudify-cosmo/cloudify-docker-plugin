@@ -19,12 +19,12 @@ import SocketServer
 import multiprocessing
 
 
-from docker_plugin import tasks
 from tests.tests.TestCaseBase import TestCaseBase
 
 
 _PORT = 8000
 _HOST = 'localhost'
+
 
 def _get_request(httpd, workdir):
     os.chdir(workdir)
@@ -36,11 +36,13 @@ class TestImageImport(TestCaseBase):
     def test_image_import(self):
         image_url = 'http://{}:{}/{}'.format(_HOST, _PORT, 'mini.tar.xz')
         Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+
         class TCPServer(SocketServer.TCPServer):
             allow_reuse_address = True
         httpd = TCPServer((_HOST, _PORT), Handler)
-        request_process = multiprocessing.Process(target=_get_request,
-                                                  args=(httpd, self.blueprint_dir))
+        request_process = multiprocessing.Process(
+            target=_get_request,
+            args=(httpd, self.blueprint_dir))
         request_process.start()
         self._execute(['create', 'configure'],
                       image_import={'src': image_url},
@@ -49,4 +51,4 @@ class TestImageImport(TestCaseBase):
                       container_remove={'remove_image': True})
         request_process.join()
         self.assertIsNotNone(
-                self.client.inspect_image(self.runtime_properties['image']))
+            self.client.inspect_image(self.runtime_properties['image']))

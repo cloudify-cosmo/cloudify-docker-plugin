@@ -13,7 +13,6 @@
 #    under the License.
 
 
-from docker_plugin import tasks
 from tests.tests import TestCaseBase
 
 

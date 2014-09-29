@@ -15,7 +15,6 @@
 
 import socket
 
-from docker_plugin import tasks
 from tests.tests.TestCaseBase import TestCaseBase
 
 
@@ -29,14 +28,16 @@ _CMD = '/bin/nc -nvl {}'.format(str(_PORT1))
 class TestPortsConfig(TestCaseBase):
 
     def test_ports_config(self):
-        self._execute(['create', 'configure', 'run'],
-                      container_config={
-                          'command': _CMD,
-                          'ports': [_PORT1]
-                      },
-                      container_start={
-                          'port_bindings': {_PORT1: (_INTERFACE, _PORT2)}
-                      })
+        self._execute(
+            ['create', 'configure', 'run'],
+            container_config={
+                'command': _CMD,
+                'ports': [_PORT1]
+            },
+            container_start={
+                'port_bindings': {_PORT1: (_INTERFACE, _PORT2)}
+            }
+        )
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             s.connect((_HOST, _PORT2))

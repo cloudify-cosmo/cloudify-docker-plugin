@@ -14,20 +14,18 @@
 
 import os
 import unittest
-import logging
 
 import docker
 
-from cloudify import exceptions
 from cloudify.workflows import local, ctx as workflow_ctx
 from cloudify.decorators import workflow, operation
 from cloudify import ctx as operation_ctx
 
-from docker_plugin import tasks
 
 class TestCaseBase(unittest.TestCase):
 
     def _assert_container_running(self, assert_fun):
+
         assert_fun(
             self.client.inspect_container(
                 self.runtime_properties['container']
@@ -83,11 +81,9 @@ class TestCaseBase(unittest.TestCase):
         self.env = None
         self.original_custom_operation = custom_operation
 
-    def cleanup(self):
-        custom_operation = self.original_custom_operation
-
     def tearDown(self):
         super(TestCaseBase, self).tearDown()
+        global custom_operation
         custom_operation = self.original_custom_operation
         self.delete_container()
 
@@ -109,8 +105,8 @@ class TestCaseBase(unittest.TestCase):
 def execute_operations(operations, **kwargs):
     node = next(workflow_ctx.nodes)
     instance = next(node.instances)
-    for operation in operations:
-        instance.execute_operation('test.{0}'.format(operation)).get()
+    for op in operations:
+        instance.execute_operation('test.{0}'.format(op)).get()
 
 
 @operation

@@ -19,6 +19,7 @@ import unittest
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
 
+
 class TestWithMockupCtx(unittest.TestCase):
 
     def setUp(self):
