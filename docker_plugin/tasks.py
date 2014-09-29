@@ -164,7 +164,7 @@ def run(container_start=None,
     """
     container_start = container_start or {}
     client = docker_wrapper.get_client(daemon_client)
-    docker_wrapper.start_container(client)
+    docker_wrapper.start_container(client, container_start)
     container = docker_wrapper.get_container_info(client)
     container_inspect = docker_wrapper.inspect_container(client)
     ctx.runtime_properties['host_ips'] = _get_host_ips()

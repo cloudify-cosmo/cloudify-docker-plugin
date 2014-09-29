@@ -18,8 +18,9 @@ import logging
 
 import docker
 
-from cloudify.workflows import local
 from cloudify import exceptions
+from cloudify.workflows import local, ctx as workflow_ctx
+from cloudify.decorators import workflow
 
 from docker_plugin import tasks
 
@@ -59,15 +60,24 @@ class TestCaseBase(unittest.TestCase):
             container_remove={}
         )
         blueprint_path = os.path.join(self.blueprint_dir, 'blueprint.yaml')
-        self.env = local.init_env(blueprint_path,
-                                  name=self._testMethodName,
-                                  inputs)
+        if not self.env:
+            self.env = local.init_env(blueprint_path,
+                                      name=self._testMethodName,
+                                      inputs=inputs)
         self.env.execute('execute_operations',
                          parameters={'operations': operations},
-                         task_retries=5)
+                         task_retries=5,
+                         task_retry_interval=1)
 
     def setUp(self):
         self.client = docker.Client()
+        self.env = None
+
+    def delete_container(self):
+        try:
+            self._execute(['delete'])
+        except Exception:
+            pass
 
 
 @workflow

@@ -43,3 +43,7 @@ class TestCommand(TestCaseBase.TestCaseBase):
             _CMD_FAIL,
             lambda exit_code: self.assertNotEqual(exit_code, 0)
         )
+
+    def tearDown(self):
+        super(TestCommand, self).tearDown()
+        self.delete_container()
