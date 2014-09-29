@@ -12,21 +12,35 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
+import os
 import unittest
+import logging
 
 import docker
 
-from cloudify.state import current_ctx
-from cloudify import mocks
+from cloudify.workflows import local
+from cloudify import exceptions
+
+from docker_plugin import tasks
 
 
-class TestWithMockupCtx(unittest.TestCase):
+_CMD = ('sh -c \'i=0; while [ 1 ]; do i=`expr $i + 1`;'
+        '/bin/echo Hello world $i; sleep 1; done\'')
+_TEST_PATH = 'tests'
+
+
+class TestCaseBase(unittest.TestCase):
+
+    def _assert_container_running(self, assert_fun):
+        assert_fun(
+            self.client.inspect_container(
+                self.ctx.runtime_properties['container']
+            )['State']['Running']
+        )
+
+    def _execute(self):
+        inputs = {}
+        blueprint_path = os.
 
     def setUp(self):
         self.client = docker.Client()
-        self.ctx = mocks.MockCloudifyContext()
-        current_ctx.set(self.ctx)
-
-    def tearDown(self):
-        current_ctx.clear()
