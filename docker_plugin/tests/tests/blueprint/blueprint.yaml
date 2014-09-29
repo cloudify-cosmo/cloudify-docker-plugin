@@ -44,17 +44,17 @@ node_templates:
                         container_remove: { get_input: container_remove }
                         container_stop:   { get_input: container_stop }
                 - set_docker_env_var:
-                    mapping: docker.tests.tests.TestCaseBase.set_docker_env_var
+                    mapping: docker.docker_plugin.tests.tests.TestCaseBase.set_docker_env_var
                     properties:
                         docker_env_var:   { get_input: docker_env_var }
                 - custom_operation:
-                    mapping: docker.tests.tests.TestCaseBase.custom_operation
+                    mapping: docker.docker_plugin.tests.tests.TestCaseBase.custom_operation
                     properties:
                         custom_operation_kwargs: { get_input: custom_operation_kwargs }
 
 workflows:
     execute_operations:
-        mapping: docker.tests.tests.TestCaseBase.execute_operations
+        mapping: docker.docker_plugin.tests.tests.TestCaseBase.execute_operations
         parameters: { operations: {} }
 
 plugins:

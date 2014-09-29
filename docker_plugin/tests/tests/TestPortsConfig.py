@@ -15,7 +15,7 @@
 
 import socket
 
-from tests.tests.TestCaseBase import TestCaseBase
+from docker_plugin.tests.tests.TestCaseBase import TestCaseBase
 
 
 _INTERFACE = '127.0.0.1'

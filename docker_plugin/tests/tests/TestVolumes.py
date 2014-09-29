@@ -15,7 +15,7 @@
 
 import os
 
-from tests.tests.TestCaseBase import TestCaseBase
+from docker_plugin.tests.tests.TestCaseBase import TestCaseBase
 
 
 _DIR = '/tmp/test_folder.{}'.format(str(os.getpid()))

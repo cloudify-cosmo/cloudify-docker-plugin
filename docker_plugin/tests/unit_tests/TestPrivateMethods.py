@@ -15,7 +15,7 @@
 
 from docker_plugin import docker_wrapper
 
-from tests.unit_tests.TestWithMockupCtx import TestWithMockupCtx
+from docker_plugin.tests.unit_tests.TestWithMockupCtx import TestWithMockupCtx
 
 
 _EMPTY_ID = ''

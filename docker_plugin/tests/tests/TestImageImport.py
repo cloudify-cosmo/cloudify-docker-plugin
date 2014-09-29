@@ -19,7 +19,7 @@ import SocketServer
 import multiprocessing
 
 
-from tests.tests.TestCaseBase import TestCaseBase
+from docker_plugin.tests.tests.TestCaseBase import TestCaseBase
 
 
 _PORT = 8000

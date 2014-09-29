@@ -14,7 +14,7 @@
 
 
 from docker_plugin import docker_wrapper
-from tests.tests.TestCaseBase import TestCaseBase
+from docker_plugin.tests.tests.TestCaseBase import TestCaseBase
 
 
 _KEY1 = 'a'

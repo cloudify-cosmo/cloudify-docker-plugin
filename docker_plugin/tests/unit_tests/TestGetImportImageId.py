@@ -17,7 +17,7 @@ from cloudify import exceptions
 
 from docker_plugin import docker_wrapper
 
-from tests.unit_tests.TestWithMockupCtx import TestWithMockupCtx
+from docker_plugin.tests.unit_tests.TestWithMockupCtx import TestWithMockupCtx
 
 
 _BEGINNING = ('{"status":"Downloading from http://www.img.com/ubuntu.tar"}\n')

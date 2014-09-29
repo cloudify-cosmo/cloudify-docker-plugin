@@ -15,7 +15,7 @@
 
 from cloudify import exceptions
 
-from tests.tests.TestCaseBase import TestCaseBase
+from docker_plugin.tests.tests.TestCaseBase import TestCaseBase
 
 
 _WRONG_PATH = 'wrong path'

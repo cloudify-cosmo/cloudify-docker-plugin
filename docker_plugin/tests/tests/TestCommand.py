@@ -13,7 +13,7 @@
 #    under the License.
 
 
-from tests.tests import TestCaseBase
+from docker_plugin.tests.tests import TestCaseBase
 
 
 _CMD_SUCC = '/bin/true'
