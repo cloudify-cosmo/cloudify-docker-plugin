@@ -16,17 +16,13 @@ import setuptools
 from setuptools.command.install import install
 
 import docker_plugin
-import docker_installation.apt_get_wrapper
+# import docker_installation.apt_get_wrapper
 
 
-LICENCE = open('LICENSE').read()
-README = open('README.md').read()
-
-
-class CustomInstallCommand(install):
-    def run(self):
-        docker_installation.apt_get_wrapper.install_docker()
-        install.run(self)
+# class CustomInstallCommand(install):
+#     def run(self):
+#         docker_installation.apt_get_wrapper.install_docker()
+#         install.run(self)
 
 
 setuptools.setup(
@@ -36,8 +32,7 @@ setuptools.setup(
     author_email='cosmo-admin@gigaspaces.com',
     description='A Cloudify plugin enabling it to create'
                 'and manipulate Docker containers.',
-    license=LICENCE,
-    long_description=README,
+    license='LICENCE',
     install_requires=[
         'cloudify-plugins-common==3.1a4',
         'docker-py==0.4.0',
