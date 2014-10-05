@@ -2,27 +2,7 @@
 # Cloudify Docker built in types and plugins definitions.
 ##################################################################################
 
-
 plugins:
     docker_plugin:
         executor: host_agent
         source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/{{ plugin_branch }}.zip
-
-types:
-    cloudify.types.docker:
-        derived_from: cloudify.types.base
-        interfaces:
-            cloudify.interfaces.lifecycle:
-                - create: docker_plugin.tasks.create
-                - configure: docker_plugin.tasks.configure
-                - start: docker_plugin.tasks.run
-                - stop: docker_plugin.tasks.stop
-                - delete: docker_plugin.tasks.delete
-        properties:
-            - daemon_client
-            - image_build
-            - image_import
-            - container_create
-            - container_start
-            - container_stop
-            - container_remove
