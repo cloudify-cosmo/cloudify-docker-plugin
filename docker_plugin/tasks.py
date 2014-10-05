@@ -16,8 +16,6 @@
 """Cloudify tasks that operate docker containers using python docker api"""
 
 
-import netifaces
-
 from cloudify import ctx
 from cloudify import exceptions
 from cloudify.decorators import operation
@@ -28,20 +26,6 @@ import docker_plugin.docker_wrapper as docker_wrapper
 _ERR_MSG_NO_IMAGE_SRC = 'Either path or url to image must be given'
 _ERR_MSG_TWO_IMAGE_SRC = ('Image import url and image build path specified'
                           ' There can only be one image source')
-_LOOPBACK_INTERFACE = 'lo'
-_ADDRESS = 'addr'
-
-
-def _get_host_ips():
-    host_ips = {}
-    for i in netifaces.interfaces():
-        ifaddresses = netifaces.ifaddresses(i)
-        if (
-            i != _LOOPBACK_INTERFACE and
-            netifaces.AF_INET in ifaddresses
-        ):
-            host_ips.update({i: ifaddresses[netifaces.AF_INET][0][_ADDRESS]})
-    return host_ips
 
 
 @operation
@@ -134,7 +118,6 @@ def run(container_start=None,
 
     Logs:
        Container id,
-       List of network interfaces with IPs,
        Container ports,
        Container top information
 
@@ -150,15 +133,13 @@ def run(container_start=None,
     docker_wrapper.start_container(client, container_start)
     container = docker_wrapper.get_container_info(client)
     container_inspect = docker_wrapper.inspect_container(client)
-    ctx.runtime_properties['host_ips'] = _get_host_ips()
     ctx.runtime_properties['ports'] = container['Ports']
     ctx.runtime_properties['network_settings'] = \
         container_inspect['NetworkSettings']
     log_msg = (
-        'Container: {}\nHost IPs: {}\nForwarded ports: {}\nTop: {}'
+        'Container: {}\nForwarded ports: {}\nTop: {}'
     ).format(
         container['Id'],
-        ctx.runtime_properties['host_ips'],
         str(ctx.runtime_properties['ports']),
         docker_wrapper.get_top_info(client)
     )

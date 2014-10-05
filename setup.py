@@ -43,7 +43,6 @@ setuptools.setup(
     install_requires=[
         'cloudify-plugins-common==3.1a4',
         'docker-py==0.4.0',
-        'netifaces==0.10.4'
     ],
     packages=['docker_plugin'],
     zip_safe=False,
