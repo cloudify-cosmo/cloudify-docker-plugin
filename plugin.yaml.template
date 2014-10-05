@@ -3,6 +3,6 @@
 ##################################################################################
 
 plugins:
-    docker_plugin:
+    docker:
         executor: host_agent
         source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/{{ plugin_branch }}.zip
