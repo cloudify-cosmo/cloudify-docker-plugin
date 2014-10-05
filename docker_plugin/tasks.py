@@ -48,34 +48,23 @@ def _get_host_ips():
 def create(daemon_client=None,
            image_import=None,
            image_build=None,
-           *args, **kwargs):
+           **kwargs):
     """Create image.
 
-    RPC called by Cloudify Manager.
-
-    If 'src' is specified in 'import_image' then
-    Import image using ctx.properties['image_build'] as options.
-    Otherwise If 'path' is specified in 'build_image' then
-    Build image using ctx.properties['image_build'] as options.
+    If 'src' is specified in 'import_image' then import image using it as options.
+    Otherwise, if 'path' is specified in 'image_build' then build image using
+    it as options.
     Otherwise error is raised.
 
     Set imported image_id in ctx.runtime_properties['image'].
 
-    Set variables from ctx.properties that are not used by cloudify plugin
-    to enviromental variables, which will be added to variables from
-    ctx.properties['container_create']['enviroment'] and relayed to container.
-
-    Create container from imported image with options from
-    ctx.properties['container_create'].
-    'command' in ctx.properties['container_create'] must be specified.
-
-    Args:
-        ctx (cloudify context)
-
-    Raises:
-        NonRecoverableError: when 'src' in ctx.properties['image_import']
-            and 'path' in ctx.properties are both not specified
-            or are both specified.
+    :param daemon_client: optional configuration for client creation
+    :param image_import: configuration for importing image
+    :param image_build: configuration for building image
+    :raises NonRecoverableError:
+        when 'src' in 'image_import'
+        and 'path' in 'image_build' are both not specified
+        or are both specified.
 
     """
     daemon_client = daemon_client or {}
@@ -101,26 +90,22 @@ def create(daemon_client=None,
 @operation
 def configure(container_config,
               daemon_client=None,
-              *args, **kwargs):
+              **kwargs):
     """Create container using image from ctx.runtime_properties.
 
-    RPC called by Cloudify Manager.
-
     Add variables from ctx.runtime_properties['docker_env_var'] to variables
-    from ctx.properties['container_create']['enviroment'] and
+    from "container_config['enviroment']" and
     relayed to container as enviromental variables.
 
     Create container from image from ctx.runtime_properties with options from
-    ctx.properties['container_create'].
-    'command' in ctx.properties['container_create'] must be specified.
+    'container_config'.
+    'command' in 'container_config' must be specified.
 
-    Args:
-        ctx (cloudify context)
-
-    Raises:
-        NonRecoverableError: when docker.errors.APIError during start
-            (for example when 'command' is not specified in
-            ctx.properties['container_create']).
+    :param daemon_client: optional configuration for client creation
+    :param container_config: configuration for creating container
+    :raises NonRecoverableError:
+        when docker.errors.APIError during start
+        (for example when 'command' is not specified in 'container_create').
 
     """
     container_config = container_config or {}
@@ -134,13 +119,11 @@ def configure(container_config,
 @operation
 def run(container_start=None,
         daemon_client=None,
-        *args, **kwargs):
+        **kwargs):
     """Run container.
 
-    RPC called by Cloudify Manager.
-
     Run container which id is specified in ctx.runtime_properties['container']
-    with optional options from ctx.properties['container_start'].
+    with optional options from 'container_start'.
 
     Retreives host IP, forwarded ports and top info about the container
     from the Docker and log it. Additionally sets in ctx.runtime_properties:
@@ -148,18 +131,17 @@ def run(container_start=None,
     -   forwarded ports (list)
     -   Docker's networkSettings (dictionary)
 
-    Args:
-        ctx (cloudify context)
-
-    Raises:
-        NonRecoverableError: when 'container' in ctx.runtime_properties is None
-            or when docker.errors.APIError during start.
-
     Logs:
        Container id,
        List of network interfaces with IPs,
        Container ports,
        Container top information
+
+    :param daemon_client: optional configuration for client creation
+    :param container_start: configuration for starting a container
+    :raises NonRecoverableError:
+        when 'container' in ctx.runtime_properties is None
+        or when docker.errors.APIError during start.
 
     """
     container_start = container_start or {}
@@ -185,20 +167,18 @@ def run(container_start=None,
 @operation
 def stop(container_stop=None,
          daemon_client=None,
-         *args, **kwargs):
+         **kwargs):
     """Stop container.
 
-    RPC called by Cloudify Manager.
-
     Stop container which id is specified in ctx.runtime_properties
-    ['container'] with optional options from ctx.properties['container_stop'].
+    ['container'] with optional options from 'container_stop'.
 
-    Args:
-        ctx (cloudify context)
 
-    Raises:
-        NonRecoverableError: when 'container' in ctx.runtime_properties is None
-            or when docker.errors.APIError during stop.
+    :param daemon_client: optional configuration for client creation
+    :param container_stop: configuration for stopping a container
+    :raises NonRecoverableError:
+        when 'container' in ctx.runtime_properties is None
+        or when docker.errors.APIError during stop.
 
     """
     container_stop = container_stop or {}
@@ -211,27 +191,25 @@ def stop(container_stop=None,
 def delete(container_remove=None,
            container_stop=None,
            daemon_client=None,
-           *args, **kwargs):
+           **kwargs):
     """Delete container.
 
-    RPC called by Cloudify Manager.
-
     Remove container which id is specified in ctx.runtime_properties
-    ['container'] with optional options from
-    ctx.properties['container_remove'].
+    ['container'] with optional options from 'container_remove'.
 
     If container is running stop it.
-    if ctx['container_remove']['remove_image'] is True then remove image.
+    if "container_remove['remove_image']" is True then remove image.
 
-    Args:
-        ctx (cloudify context)
-
-    Raises:
-        NonRecoverableError: when 'container' in ctx.runtime_properties is None
-            or 'remove_image' in ctx.properties['container_remove'] is True
-            and 'image' in ctx.runtime_properties is None
-            or when docker.errors.APIError during stop, remove_container,
-            remove_image (for example if image is used by another container).
+    :param daemon_client: optional configuration for client creation
+    :param container_remove: coniguration for removing container
+    :param container_stop: coniguration for stopping a container in case it
+                           is running before removal
+    :raises NonRecoverableError:
+        when 'container' in ctx.runtime_properties is None
+        or 'remove_image' in ctx.properties['container_remove'] is True
+        and 'image' in ctx.runtime_properties is None
+        or when docker.errors.APIError during stop, remove_container,
+        remove_image (for example if image is used by another container).
 
     """
     daemon_client = daemon_client or {}
