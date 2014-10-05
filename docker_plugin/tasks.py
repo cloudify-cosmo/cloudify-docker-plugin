@@ -207,7 +207,7 @@ def delete(container_remove=None,
                            is running before removal
     :raises NonRecoverableError:
         when 'container' in ctx.runtime_properties is None
-        or 'remove_image' in ctx.properties['container_remove'] is True
+        or 'remove_image' in 'container_remove' is True
         and 'image' in ctx.runtime_properties is None
         or when docker.errors.APIError during stop, remove_container,
         remove_image (for example if image is used by another container).
