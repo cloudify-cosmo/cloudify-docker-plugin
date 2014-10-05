@@ -51,7 +51,8 @@ def create(daemon_client=None,
            **kwargs):
     """Create image.
 
-    If 'src' is specified in 'import_image' then import image using it as options.
+    If 'src' is specified in 'import_image' then import image using it as
+    options.
     Otherwise, if 'path' is specified in 'image_build' then build image using
     it as options.
     Otherwise error is raised.
