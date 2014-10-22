@@ -17,7 +17,6 @@ import os
 import setuptools
 from setuptools.command.install import install
 
-import docker_plugin
 import docker_installation.apt_get_wrapper
 
 
@@ -30,7 +29,7 @@ class CustomInstallCommand(install):
 additional_configuration = {}
 if 'CELERY_WORK_DIR' in os.environ:
     additional_configuration.update(
-    {'cmdclass':{'install': CustomInstallCommand}})
+        {'cmdclass': {'install': CustomInstallCommand}})
 
 setuptools.setup(
     name='cloudify-docker-plugin',

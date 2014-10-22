@@ -41,7 +41,7 @@ def create(daemon_client=None,
     it as options.
     Otherwise error is raised.
 
-    Set imported image_id in ctx.runtime_properties['image'].
+    Set imported image_id in ctx.instance.runtime_properties['image'].
 
     :param daemon_client: optional configuration for client creation
     :param image_import: configuration for importing image
@@ -69,21 +69,21 @@ def create(daemon_client=None,
     else:
         ctx.logger.error(_ERR_MSG_NO_IMAGE_SRC)
         raise exceptions.NonRecoverableError(_ERR_MSG_NO_IMAGE_SRC)
-    ctx.runtime_properties['image'] = image
+    ctx.instance.runtime_properties['image'] = image
 
 
 @operation
 def configure(container_config,
               daemon_client=None,
               **kwargs):
-    """Create container using image from ctx.runtime_properties.
+    """Create container using image from ctx.instance.runtime_properties.
 
-    Add variables from ctx.runtime_properties['docker_env_var'] to variables
-    from "container_config['enviroment']" and
+    Add variables from ctx.instance.runtime_properties['docker_env_var']
+    to variables from "container_config['enviroment']" and
     relayed to container as enviromental variables.
 
-    Create container from image from ctx.runtime_properties with options from
-    'container_config'.
+    Create container from image from ctx.instance.runtime_properties
+    with options from 'container_config'.
     'command' in 'container_config' must be specified.
 
     :param daemon_client: optional configuration for client creation
@@ -107,11 +107,13 @@ def run(container_start=None,
         **kwargs):
     """Run container.
 
-    Run container which id is specified in ctx.runtime_properties['container']
-    with optional options from 'container_start'.
+    Run container which id is specified in
+    ctx.instance.runtime_properties['container'] with optional options
+    from 'container_start'.
 
     Retreives host IP, forwarded ports and top info about the container
-    from the Docker and log it. Additionally sets in ctx.runtime_properties:
+    from the Docker and log it. Additionally sets in
+    ctx.instance.runtime_properties:
     -   host_ip (dictionary of strings)
     -   forwarded ports (list)
     -   Docker's networkSettings (dictionary)
@@ -124,7 +126,7 @@ def run(container_start=None,
     :param daemon_client: optional configuration for client creation
     :param container_start: configuration for starting a container
     :raises NonRecoverableError:
-        when 'container' in ctx.runtime_properties is None
+        when 'container' in ctx.instance.runtime_properties is None
         or when docker.errors.APIError during start.
 
     """
@@ -133,14 +135,14 @@ def run(container_start=None,
     docker_wrapper.start_container(client, container_start)
     container = docker_wrapper.get_container_info(client)
     container_inspect = docker_wrapper.inspect_container(client)
-    ctx.runtime_properties['ports'] = container['Ports']
-    ctx.runtime_properties['network_settings'] = \
+    ctx.instance.runtime_properties['ports'] = container['Ports']
+    ctx.instance.runtime_properties['network_settings'] = \
         container_inspect['NetworkSettings']
     log_msg = (
         'Container: {}\nForwarded ports: {}\nTop: {}'
     ).format(
         container['Id'],
-        str(ctx.runtime_properties['ports']),
+        str(ctx.instance.runtime_properties['ports']),
         docker_wrapper.get_top_info(client)
     )
     ctx.logger.info(log_msg)
@@ -152,14 +154,14 @@ def stop(container_stop=None,
          **kwargs):
     """Stop container.
 
-    Stop container which id is specified in ctx.runtime_properties
+    Stop container which id is specified in ctx.instance.runtime_properties
     ['container'] with optional options from 'container_stop'.
 
 
     :param daemon_client: optional configuration for client creation
     :param container_stop: configuration for stopping a container
     :raises NonRecoverableError:
-        when 'container' in ctx.runtime_properties is None
+        when 'container' in ctx.instance.runtime_properties is None
         or when docker.errors.APIError during stop.
 
     """
@@ -176,7 +178,7 @@ def delete(container_remove=None,
            **kwargs):
     """Delete container.
 
-    Remove container which id is specified in ctx.runtime_properties
+    Remove container which id is specified in ctx.instance.runtime_properties
     ['container'] with optional options from 'container_remove'.
 
     If container is running stop it.
@@ -187,9 +189,9 @@ def delete(container_remove=None,
     :param container_stop: coniguration for stopping a container in case it
                            is running before removal
     :raises NonRecoverableError:
-        when 'container' in ctx.runtime_properties is None
+        when 'container' in ctx.instance.runtime_properties is None
         or 'remove_image' in 'container_remove' is True
-        and 'image' in ctx.runtime_properties is None
+        and 'image' in ctx.instance.runtime_properties is None
         or when docker.errors.APIError during stop, remove_container,
         remove_image (for example if image is used by another container).
 

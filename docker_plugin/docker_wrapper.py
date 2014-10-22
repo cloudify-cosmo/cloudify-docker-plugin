@@ -99,22 +99,23 @@ def _get_build_image_id(client, stream_generator):
 
 
 def _get_container_or_raise(client):
-    container = ctx.runtime_properties.get('container')
+    container = ctx.instance.runtime_properties.get('container')
     if container is None:
         _log_and_raise(client, 'No container specified')
     return container
 
 
 def _get_image_or_raise(client):
-    image = ctx.runtime_properties.get('image')
+    image = ctx.instance.runtime_properties.get('image')
     if image is None:
         _log_and_raise(client, 'No image specified')
     return image
 
 
 def _log_container_info(message=''):
-    if 'container' in ctx.runtime_properties:
-        message = '{} {}'.format(message, ctx.runtime_properties['container'])
+    if 'container' in ctx.instance.runtime_properties:
+        message = '{} {}'.format(message,
+                                 ctx.instance.runtime_properties['container'])
     ctx.logger.info(message)
 
 
@@ -126,7 +127,7 @@ def _log_and_raise(client,
 
 
 def _log_error_container_logs(client, message=''):
-    container = ctx.runtime_properties.get('container')
+    container = ctx.instance.runtime_properties.get('container')
     if container is not None:
         if message:
             message += '\n'
@@ -146,7 +147,7 @@ def get_top_info(client):
     """Get container top info.
 
     Get container top info using docker top function with container id
-    from ctx.runtime_properties['container'].
+    from ctx.instance.runtime_properties['container'].
 
     Transforms data into a simple top table.
 
@@ -154,7 +155,7 @@ def get_top_info(client):
     :return: top_table
     :rtype: str
     :raises NonRecoverableError:
-        when container in ctx.runtime_properties is None.
+        when container in ctx.instance.runtime_properties is None.
 
     """
 
@@ -177,7 +178,8 @@ def get_container_info(client):
     """Get container info.
 
     Get list of containers dictionaries from docker containers function.
-    Find container which is specified in ctx.runtime_properties['container'].
+    Find container which is specified in
+    ctx.instance.runtime_properties['container'].
 
     :param client: docker client
     :return: container_info
@@ -185,7 +187,7 @@ def get_container_info(client):
 
     """
 
-    container = ctx.runtime_properties.get('container')
+    container = ctx.instance.runtime_properties.get('container')
     if container is not None:
         for c in client.containers():
             if container in c.itervalues():
@@ -196,7 +198,8 @@ def get_container_info(client):
 def inspect_container(client):
     """Inspect container.
 
-    Call inspect with container id from ctx.runtime_properties['container'].
+    Call inspect with container id from
+    ctx.instance.runtime_properties['container'].
 
     :param client: docker client
     :return: container_info
@@ -204,7 +207,7 @@ def inspect_container(client):
 
     """
 
-    container = ctx.runtime_properties.get('container')
+    container = ctx.instance.runtime_properties.get('container')
     if container is not None:
         return client.inspect_container(container)
     return None
@@ -213,7 +216,7 @@ def inspect_container(client):
 def set_env_var(client, container_config):
     """Set environmental variables.
 
-    Set variables from ctx.runtime_properties['docker_env_var']
+    Set variables from ctx.instance.runtime_properties['docker_env_var']
     to enviromental variables, which will be added to variables from
     container_create['enviroment'] and relayed to container.
 
@@ -222,7 +225,8 @@ def set_env_var(client, container_config):
 
     """
     environment = container_config.get('environment', {})
-    for key, value in ctx.runtime_properties.get('docker_env_var', {}).items():
+    for key, value in ctx.instance.runtime_properties.get(
+            'docker_env_var', {}).items():
         if key not in environment:
             environment[str(key)] = str(value)
     container_config['environment'] = environment
@@ -304,16 +308,17 @@ def build_image(client, image_build):
 def create_container(client, container_config):
     """Create container.
 
-    Create container from image which id is specified in ctx.runtime_properties
+    Create container from image which id is specified in
+    ctx.instance.runtime_properties
     ['container'] with options from 'container_config'.
     In those options at least 'command' must be specified.
 
-    Set container id in ctx.runtime_properties['container'].
+    Set container id in ctx.instance.runtime_properties['container'].
 
     :param client: docker client
     :param container_config: configuration for creating container
     :raises NonRecoverableError:
-        when 'image' in ctx.runtime_properties is None
+        when 'image' in ctx.instance.runtime_properties is None
         or when docker.errors.APIError (for example when 'command' is
         not specified in 'container_config'.
 
@@ -327,20 +332,20 @@ def create_container(client, container_config):
         error_msg = 'Error while creating container: {}'.format(str(e))
         _log_and_raise(client, error_msg)
     else:
-        ctx.runtime_properties['container'] = cont['Id']
+        ctx.instance.runtime_properties['container'] = cont['Id']
     _log_container_info('Created container')
 
 
 def start_container(client, container_start):
     """Start container.
 
-    Start container which id is specified in ctx.runtime_properties
+    Start container which id is specified in ctx.instance.runtime_properties
     ['container'] with optional options from 'container_start'.
 
     :param client: docker client
     :param container_start: configuration for starting a container
     :raises NonRecoverableError:
-        when 'container' in ctx.runtime_properties is None
+        when 'container' in ctx.instance.runtime_properties is None
         or when docker.errors.APIError.
 
     """
@@ -357,13 +362,13 @@ def start_container(client, container_start):
 def stop_container(client, container_stop):
     """Stop container.
 
-    Stop container which id is specified in ctx.runtime_properties
+    Stop container which id is specified in ctx.instance.runtime_properties
     ['container'] with optional options from 'container_stop'.
 
     :param client: docker client
     :param container_stop: configuration for stopping a container
     :raises NonRecoverableError:
-        when 'container' in ctx.runtime_properties is None
+        when 'container' in ctx.instance.runtime_properties is None
         or when docker.errors.APIError.
 
     """
@@ -380,15 +385,15 @@ def stop_container(client, container_stop):
 def remove_container(client, container_remove):
     """Remove container.
 
-    Remove container which id is specified in ctx.runtime_properties
+    Remove container which id is specified in ctx.instance.runtime_properties
     ['container'] with optional options from 'container_remove'.
 
     :param client: docker client
     :param container_remove: coniguration for removing container
     :raises NonRecoverableError:
-        when 'container' in ctx.runtime_properties is None
+        when 'container' in ctx.instance.runtime_properties is None
         or 'remove_image' in 'container_remove' is True
-        and 'image' in ctx.runtime_properties is None
+        and 'image' in ctx.instance.runtime_properties is None
         or when docker.errors.APIError.
 
     """
@@ -405,11 +410,12 @@ def remove_container(client, container_remove):
 def remove_image(client):
     """Remove image.
 
-    Remove image which id is specified in ctx.runtime_properties['image'].
+    Remove image which id is specified in
+    ctx.instance.runtime_properties['image'].
 
     :param client: docker client
     :raises NonRecoverableError:
-        when 'image' in ctx.runtime_properties is None
+        when 'image' in ctx.instance.runtime_properties is None
         or when docker.errors.APIError while removing image (for example
         if image is used by another container).
 

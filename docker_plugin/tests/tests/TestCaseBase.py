@@ -111,7 +111,8 @@ def execute_operations(operations, **kwargs):
 
 @operation
 def set_docker_env_var(docker_env_var, **kwargs):
-    operation_ctx.runtime_properties['docker_env_var'] = docker_env_var
+    operation_ctx.instance.runtime_properties[
+        'docker_env_var'] = docker_env_var
 
 
 # celery caches tasks so we force use of stub _task
