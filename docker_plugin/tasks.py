@@ -24,7 +24,7 @@ import docker_plugin.docker_wrapper as docker_wrapper
 
 
 _ERR_MSG_NO_IMAGE_SRC = 'Either path or url to image must be given'
-_ERR_MSG_TWO_IMAGE_SRC = ('Image import url and image build path specified'
+_ERR_MSG_TWO_IMAGE_SRC = ('Image import url and image build path specified.'
                           ' There can only be one image source')
 
 

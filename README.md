@@ -12,46 +12,45 @@ An example node specification:
 
 ```
 
-    name: db_server
+db_server:
 
     type: cloudify.types.db_server
 
     interfaces:
+        cloudify.interfaces.lifecycle:
+            create:
+                implementation: docker.docker_plugin.tasks.create
+                inputs:
+                    daemon_client: {}
+                    image_import:
+                        src: http://insert/url/to/image/here
+                    # could also be image_build, see below
+                    # image_build: {}
 
-        - create:
-            mapping: docker.docker_plugin.tasks.create
-            properties:
-                daemon_client: {}
-                image_import:
-                    src: http://insert/url/to/image/here
-                # could also be image_build, see below
-                # image_build: {}
+            configure:
+                implementation: docker.docker_plugin.tasks.configure
+                inputs:
+                    daemon_client:    {}
+                    container_config:
+                        command: /bin/echo hello
 
-        - configure:
-            mapping: docker.docker_plugin.tasks.configure
-
-            properties:
-                daemon_client:    {}
-                container_config:
-                    command: /bin/echo hello
-
-        - start:
-            mapping: docker.docker_plugin.tasks.run
-            properties:
-                daemon_client:   {}
-                container_start: {}
-        - stop:
-            mapping: docker.docker_plugin.tasks.stop
-            properties:
-                daemon_client:  {}
-                container_stop: {}
-        - delete:
-            mapping: docker.docker_plugin.tasks.delete
-            properties:
-                daemon_client:    {}
-                # required in case container to remove is currently running
-                container_stop:   {}
-                container_remove: {}
+            start:
+                implementation: docker.docker_plugin.tasks.run
+                inputs:
+                    daemon_client:   {}
+                    container_start: {}
+            stop:
+                implementation: docker.docker_plugin.tasks.stop
+                inputs:
+                    daemon_client:  {}
+                    container_stop: {}
+            delete:
+                implementation: docker.docker_plugin.tasks.delete
+                inputs:
+                    daemon_client:    {}
+                    # required in case container to remove is currently running
+                    container_stop:   {}
+                    container_remove: {}
 ```
 
 ### Operation Properties: ###
