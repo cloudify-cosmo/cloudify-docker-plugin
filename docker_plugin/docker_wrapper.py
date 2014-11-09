@@ -105,8 +105,14 @@ def _get_container_or_raise(client):
     return container
 
 
-def _get_image_or_raise(client):
-    image = ctx.instance.runtime_properties.get('image')
+def _get_image_or_raise(client, container_config=None):
+    image = container_config.get('image')
+    if image:
+        container_config.pop('image', None)
+        ctx.instance.runtime_properties['using_local_image'] = True
+    else:
+        ctx.instance.runtime_properties['using_local_image'] = False
+        image = ctx.instance.runtime_properties.get('image')
     if image is None:
         _log_and_raise(client, 'No image specified')
     return image
@@ -325,7 +331,7 @@ def create_container(client, container_config):
     """
 
     ctx.logger.info('Creating container')
-    image = _get_image_or_raise(client)
+    image = _get_image_or_raise(client, container_config)
     try:
         cont = client.create_container(image, **container_config)
     except docker.errors.APIError as e:
@@ -410,8 +416,9 @@ def remove_container(client, container_remove):
 def remove_image(client):
     """Remove image.
 
-    Remove image which id is specified in
+    Remove image whose id is specified in
     ctx.instance.runtime_properties['image'].
+    If the user used a locally built image do nothing
 
     :param client: docker client
     :raises NonRecoverableError:
@@ -420,6 +427,10 @@ def remove_image(client):
         if image is used by another container).
 
     """
+    if ctx.instance.runtime_properties.get('using_local_image') is True:
+        ctx.logger.debug('remove_image called, doing nothing since user used \
+         a local image')
+        return
 
     image = _get_image_or_raise(client)
     _log_container_info('Removing image {}, container:'.format(image))
