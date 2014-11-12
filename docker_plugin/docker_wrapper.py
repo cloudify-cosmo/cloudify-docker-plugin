@@ -369,6 +369,7 @@ def start_container(client, processes_to_wait_for, container_start):
             wait_for_time = processes_to_wait_for.get('wait_for_time_secs', 0)
             interval = processes_to_wait_for.get('interval', 5)
             all_active = _wait_for_processes(client,
+                                             container,
                                              process_names,
                                              wait_for_time,
                                              interval)
@@ -381,9 +382,9 @@ def start_container(client, processes_to_wait_for, container_start):
     _log_container_info('Started container')
 
 
-def _wait_for_processes(client, process_names, timeout, interval):
+def _wait_for_processes(client, container, process_names, timeout, interval):
     ctx.logger.info('waiting for the following processeses: {}'
-                            .format(process_names))
+                    .format(process_names))
     if timeout:
         ctx.logger.info('about to wait for {} seconds for processes to start'
                         .format(timeout))
