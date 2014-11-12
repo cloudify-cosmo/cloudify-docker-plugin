@@ -107,14 +107,13 @@ def _get_container_or_raise(client):
 
 
 def _get_image_or_raise(client, container_config=None):
-    image = container_config.get('image')
+    image = container_config.pop('image', None)
     if image:
-        container_config.pop('image', None)
         ctx.instance.runtime_properties['using_local_image'] = True
     else:
-        ctx.instance.runtime_properties['using_local_image'] = False
         image = ctx.instance.runtime_properties.get('image')
-    if image is None:
+        ctx.instance.runtime_properties['using_local_image'] = False
+    if not image:
         _log_and_raise(client, 'No image specified')
     return image
 
@@ -350,6 +349,9 @@ def start_container(client, processes_to_wait_for, container_start):
     ['container'] with optional options from 'container_start'.
 
     :param client: docker client
+    :param processes_to_wait_for: dict for specifying processes for which
+                                  this call should block until they all
+                                  exist
     :param container_start: configuration for starting a container
     :raises NonRecoverableError:
         when 'container' in ctx.instance.runtime_properties is None
@@ -361,36 +363,47 @@ def start_container(client, processes_to_wait_for, container_start):
     container = _get_container_or_raise(client)
     try:
         client.start(container, **container_start)
-        if processes_to_wait_for:
+        processes_to_wait_for = processes_to_wait_for or {}
+        if processes_to_wait_for.get('process_names'):
             process_names = processes_to_wait_for.get('process_names')
-            if process_names and len(process_names) > 0:
-                wait_for_time = processes_to_wait_for.get('wait_for_time_secs')
-                ctx.logger.info('waiting for the following processeses: {}'
-                                .format(process_names))
-                if wait_for_time:
-                    ctx.logger.info('about to sleep for {} seconds'
-                                    .format(wait_for_time))
-                    time.sleep(wait_for_time)
-
-                top_result = client.top(container)
-                ctx.logger.info('Container.top(): {}'.format(top_result))
-                top_result_processes = top_result.get('Processes')
-
-                all_active = all([
-                    any([
-                        top_result_process[len(top_result_process) - 1].find(process_name) >= 0
-                        for top_result_process in top_result_processes
-                    ])
-                    for process_name in process_names
-                ])
-                if not all_active:
-                    _log_and_raise(client, 'one of the following processes was not \
-                                   started in the container: {}'
-                                   .format(process_names))
-
+            wait_for_time = processes_to_wait_for.get('wait_for_time_secs', 0)
+            interval = processes_to_wait_for.get('interval', 5)
+            all_active = _wait_for_processes(client,
+                                             process_names,
+                                             wait_for_time,
+                                             interval)
+            if not all_active:
+                _log_and_raise(client, 'one of the following processes was not \
+                               started in the container: {}'
+                               .format(process_names))
     except docker.errors.APIError as e:
         _log_and_raise(client, str(e))
     _log_container_info('Started container')
+
+
+def _wait_for_processes(client, process_names, timeout, interval):
+    ctx.logger.info('waiting for the following processeses: {}'
+                            .format(process_names))
+    if timeout:
+        ctx.logger.info('about to wait for {} seconds for processes to start'
+                        .format(timeout))
+
+    end = time.time() + timeout
+    while True:
+        top_result = client.top(container)
+        top_result_processes = top_result.get('Processes')
+        all_active = all([
+            any([
+                # last element of list is the command executed
+                process_name in top_result_process[-1]
+                for top_result_process in top_result_processes
+            ])
+            for process_name in process_names
+        ])
+        if all_active or time.time() >= end:
+            ctx.logger.info('Container.top(): {}'.format(top_result))
+            return all_active
+        time.sleep(interval)
 
 
 def stop_container(client, container_stop):

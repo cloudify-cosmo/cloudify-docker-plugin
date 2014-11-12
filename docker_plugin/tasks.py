@@ -125,10 +125,15 @@ def run(container_start=None,
        Container top information
 
     :param daemon_client: optional configuration for client creation
-    :param processes_to_wait_for a dict containing a list of processes
-    that are to be waited for (process_names) and the wait timeout in seconds
-    (wait_for_time_secs) before checking if these processes are alive in the
-    docker container (based on the Container.top() method).
+    :param processes_to_wait_for: a dict containing a list of processes
+                                  that are to be waited for (process_names)
+                                  and the wait timeout in seconds
+                                  (wait_for_time_secs) before checking if
+                                  these processes are alive in the
+                                  docker container.
+                                  Sleep interval is specified by 'interval'
+                                  (default: 1 second)
+                                  (based on the Container.top() method).
     :param container_start: configuration for starting a container
     :raises NonRecoverableError:
         when 'container' in ctx.instance.runtime_properties is None
