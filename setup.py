@@ -33,14 +33,14 @@ if 'CELERY_WORK_DIR' in os.environ:
 
 setuptools.setup(
     name='cloudify-docker-plugin',
-    version='1.1rc1',
+    version='1.1rc2',
     author='Gigaspaces',
     author_email='cosmo-admin@gigaspaces.com',
     description='A Cloudify plugin enabling it to create'
                 'and manipulate Docker containers.',
     license='LICENCE',
     install_requires=[
-        'cloudify-plugins-common==3.1rc1',
+        'cloudify-plugins-common==3.1rc2',
         'docker-py==0.4.0',
     ],
     packages=['docker_plugin'],
