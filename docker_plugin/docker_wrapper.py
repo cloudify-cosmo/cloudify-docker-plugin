@@ -17,6 +17,7 @@
 
 import re
 
+import time
 import docker
 
 from cloudify import ctx
@@ -105,8 +106,14 @@ def _get_container_or_raise(client):
     return container
 
 
-def _get_image_or_raise(client):
-    image = ctx.instance.runtime_properties.get('image')
+def _get_image_or_raise(client, container_config=None):
+    image = container_config.get('image')
+    if image:
+        container_config.pop('image', None)
+        ctx.instance.runtime_properties['using_local_image'] = True
+    else:
+        ctx.instance.runtime_properties['using_local_image'] = False
+        image = ctx.instance.runtime_properties.get('image')
     if image is None:
         _log_and_raise(client, 'No image specified')
     return image
@@ -325,7 +332,7 @@ def create_container(client, container_config):
     """
 
     ctx.logger.info('Creating container')
-    image = _get_image_or_raise(client)
+    image = _get_image_or_raise(client, container_config)
     try:
         cont = client.create_container(image, **container_config)
     except docker.errors.APIError as e:
@@ -336,7 +343,7 @@ def create_container(client, container_config):
     _log_container_info('Created container')
 
 
-def start_container(client, container_start):
+def start_container(client, processes_to_wait_for, container_start):
     """Start container.
 
     Start container which id is specified in ctx.instance.runtime_properties
@@ -354,6 +361,33 @@ def start_container(client, container_start):
     container = _get_container_or_raise(client)
     try:
         client.start(container, **container_start)
+        if processes_to_wait_for:
+            process_names = processes_to_wait_for.get('process_names')
+            if process_names and len(process_names) > 0:
+                wait_for_time = processes_to_wait_for.get('wait_for_time_secs')
+                ctx.logger.info('waiting for the following processeses: {}'
+                                .format(process_names))
+                if wait_for_time:
+                    ctx.logger.info('about to sleep for {} seconds'
+                                    .format(wait_for_time))
+                    time.sleep(wait_for_time)
+
+                top_result = client.top(container)
+                ctx.logger.info('Container.top(): {}'.format(top_result))
+                top_result_processes = top_result.get('Processes')
+
+                all_active = all([
+                    any([
+                        top_result_process[len(top_result_process) - 1].find(process_name) >= 0
+                        for top_result_process in top_result_processes
+                    ])
+                    for process_name in process_names
+                ])
+                if not all_active:
+                    _log_and_raise(client, 'one of the following processes was not \
+                                   started in the container: {}'
+                                   .format(process_names))
+
     except docker.errors.APIError as e:
         _log_and_raise(client, str(e))
     _log_container_info('Started container')
@@ -410,8 +444,9 @@ def remove_container(client, container_remove):
 def remove_image(client):
     """Remove image.
 
-    Remove image which id is specified in
+    Remove image whose id is specified in
     ctx.instance.runtime_properties['image'].
+    If the user used a locally built image do nothing
 
     :param client: docker client
     :raises NonRecoverableError:
@@ -420,6 +455,10 @@ def remove_image(client):
         if image is used by another container).
 
     """
+    if ctx.instance.runtime_properties.get('using_local_image') is True:
+        ctx.logger.debug('remove_image called, doing nothing since user used \
+         a local image')
+        return
 
     image = _get_image_or_raise(client)
     _log_container_info('Removing image {}, container:'.format(image))
