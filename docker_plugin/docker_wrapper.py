@@ -17,6 +17,7 @@
 
 import re
 
+import time
 import docker
 
 from cloudify import ctx
@@ -342,7 +343,7 @@ def create_container(client, container_config):
     _log_container_info('Created container')
 
 
-def start_container(client, container_start):
+def start_container(client, processes_to_wait_for, container_start):
     """Start container.
 
     Start container which id is specified in ctx.instance.runtime_properties
@@ -360,6 +361,33 @@ def start_container(client, container_start):
     container = _get_container_or_raise(client)
     try:
         client.start(container, **container_start)
+        if processes_to_wait_for:
+            process_names = processes_to_wait_for.get('process_names')
+            if process_names and len(process_names) > 0:
+                wait_for_time = processes_to_wait_for.get('wait_for_time_secs')
+                ctx.logger.info('waiting for the following processeses: {}'
+                                .format(process_names))
+                if wait_for_time:
+                    ctx.logger.info('about to sleep for {} seconds'
+                                    .format(wait_for_time))
+                    time.sleep(wait_for_time)
+
+                top_result = client.top(container)
+                ctx.logger.info('Container.top(): {}'.format(top_result))
+                top_result_processes = top_result.get('Processes')
+
+                all_active = all([
+                    any([
+                        top_result_process[len(top_result_process) - 1].find(process_name) >= 0
+                        for top_result_process in top_result_processes
+                    ])
+                    for process_name in process_names
+                ])
+                if not all_active:
+                    _log_and_raise(client, 'one of the following processes was not \
+                                   started in the container: {}'
+                                   .format(process_names))
+
     except docker.errors.APIError as e:
         _log_and_raise(client, str(e))
     _log_container_info('Started container')
