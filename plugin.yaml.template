@@ -1,8 +1,0 @@
-##################################################################################
-# Cloudify Docker built in types and plugins definitions.
-##################################################################################
-
-plugins:
-    docker:
-        executor: host_agent
-        source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/{{ plugin_branch }}.zip
