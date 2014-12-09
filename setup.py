@@ -41,7 +41,7 @@ setuptools.setup(
     license='LICENCE',
     install_requires=[
         'cloudify-plugins-common==3.1',
-        'docker-py==0.4.0',
+        'docker-py==0.6.0',
     ],
     packages=['docker_plugin'],
     zip_safe=False,
