@@ -271,7 +271,7 @@ def pull_image(client, image_pull):
 
     image_pull_repo = image_pull.get('repo')
     if not image_pull_repo:
-        _log_and_raise("Missing repository name")
+        _log_and_raise(client=client, err_msg='Missing repository name')
     image_pull_tag = image_pull.get('tag')
 
     image_pull_insecure_registry = image_pull.get('insecure_registry') or False
