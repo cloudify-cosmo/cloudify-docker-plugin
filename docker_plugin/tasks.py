@@ -29,6 +29,28 @@ _ERR_MSG_TWO_IMAGE_SRC = ('Image import url and image build path specified.'
 
 
 @operation
+def pull(daemon_client=None,
+         image_pull=None,
+         **kwargs):
+    """Pull image from the Docker hub.
+
+    :param daemon_client: optional configuration for client creation
+    :param image_import: configuration for importing image
+    :param image_build: configuration for building image
+    :raises NonRecoverableError:
+        when 'src' in 'image_import'
+        and 'path' in 'image_build' are both not specified
+        or are both specified.
+
+    """
+    daemon_client = daemon_client or {}
+    image_pull = image_pull or {}
+
+    client = docker_wrapper.get_client(daemon_client)
+    docker_wrapper.pull_image(client, image_pull)
+
+
+@operation
 def create(daemon_client=None,
            image_import=None,
            image_build=None,
@@ -120,20 +142,20 @@ def run(container_start=None,
     -   Docker's networkSettings (dictionary)
 
     Logs:
-       Container id,
-       Container ports,
-       Container top information
+         Container id,
+         Container ports,
+         Container top information
 
     :param daemon_client: optional configuration for client creation
     :param processes_to_wait_for: a dict containing a list of processes
-                                  that are to be waited for (process_names)
-                                  and the wait timeout in seconds
-                                  (wait_for_time_secs) before checking if
-                                  these processes are alive in the
-                                  docker container.
-                                  Sleep interval is specified by 'interval'
-                                  (default: 1 second)
-                                  (based on the Container.top() method).
+                                    that are to be waited for (process_names)
+                                    and the wait timeout in seconds
+                                    (wait_for_time_secs) before checking if
+                                    these processes are alive in the
+                                    docker container.
+                                    Sleep interval is specified by 'interval'
+                                    (default: 1 second)
+                                    (based on the Container.top() method).
     :param container_start: configuration for starting a container
     :raises NonRecoverableError:
         when 'container' in ctx.instance.runtime_properties is None
@@ -199,7 +221,7 @@ def delete(container_remove=None,
     :param daemon_client: optional configuration for client creation
     :param container_remove: coniguration for removing container
     :param container_stop: coniguration for stopping a container in case it
-                           is running before removal
+                             is running before removal
     :raises NonRecoverableError:
         when 'container' in ctx.instance.runtime_properties is None
         or 'remove_image' in 'container_remove' is True
