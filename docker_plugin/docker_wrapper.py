@@ -257,6 +257,31 @@ def get_client(daemon_client):
         _log_and_raise(daemon_client, error_msg)
 
 
+def pull_image(client, image_pull):
+    """Pull an image
+
+    Pull an image from the docker hub
+    :param client: docker client
+    :param image_pull: confoguration for pulling the image
+    :raises NonRecoverableError:
+        when failing to pull the image
+
+    """
+    ctx.logger.info('Pulling image')
+
+    image_pull_repo = image_pull.get('repository')
+    if not image_pull_repo:
+        _log_and_raise(client=client, err_msg='Missing repository name')
+    stream = image_pull.get('stream')
+    if stream is False:
+        ctx.logger.warn("Streaming will be set to True although False \
+            was specified")
+    image_pull['stream'] = True
+
+    for line in client.pull(**image_pull):
+        ctx.logger.info(line)
+
+
 def import_image(client, image_import):
     """Import image.
 
