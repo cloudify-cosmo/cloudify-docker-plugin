@@ -5,4 +5,4 @@ import TestWithMockupCtx
 class TestImagePull(TestWithMockupCtx.TestWithMockupCtx):
 
     def test_pull(self):
-        tasks.pull(image_pull={'repo': 'uric/nodecellar'})
+        tasks.pull(image_pull={'repository': 'uric/nodecellar'})

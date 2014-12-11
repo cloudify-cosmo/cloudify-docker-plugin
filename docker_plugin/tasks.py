@@ -35,12 +35,9 @@ def pull(daemon_client=None,
     """Pull image from the Docker hub.
 
     :param daemon_client: optional configuration for client creation
-    :param image_import: configuration for importing image
-    :param image_build: configuration for building image
+    :param image_pull: configuration for pulling the image
     :raises NonRecoverableError:
-        when 'src' in 'image_import'
-        and 'path' in 'image_build' are both not specified
-        or are both specified.
+        when 'repository' in 'image_import' is not specified.
 
     """
     daemon_client = daemon_client or {}

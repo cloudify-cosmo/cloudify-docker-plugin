@@ -269,16 +269,16 @@ def pull_image(client, image_pull):
     """
     ctx.logger.info('Pulling image')
 
-    image_pull_repo = image_pull.get('repo')
+    image_pull_repo = image_pull.get('repository')
     if not image_pull_repo:
         _log_and_raise(client=client, err_msg='Missing repository name')
-    image_pull_tag = image_pull.get('tag')
+    stream = image_pull.get('stream')
+    if stream is False:
+        ctx.logger.warn("Streaming will be set to True although False \
+            was specified")
+    image_pull['stream'] = True
 
-    image_pull_insecure_registry = image_pull.get('insecure_registry') or False
-    for line in client.pull(image_pull_repo,
-                            image_pull_tag,
-                            stream=True,
-                            insecure_registry=image_pull_insecure_registry):
+    for line in client.pull(**image_pull):
         ctx.logger.info(line)
 
 
