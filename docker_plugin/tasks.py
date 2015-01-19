@@ -15,13 +15,17 @@
 
 """Cloudify tasks that operate docker containers using python docker api"""
 
+# Built-in Imports
+import json
 
+# Third-party Imports
+from docker.errors import APIError
+
+# Cloudify Imports
 from cloudify import ctx
-from cloudify import exceptions
+from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
-
 import docker_plugin.docker_wrapper as docker_wrapper
-
 
 _ERR_MSG_NO_IMAGE_SRC = 'Either path or url to image must be given'
 _ERR_MSG_TWO_IMAGE_SRC = ('Image import url and image build path specified.'
@@ -40,61 +44,82 @@ def pull(daemon_client=None,
         when 'repository' in 'image_import' is not specified.
 
     """
-    daemon_client = daemon_client or {}
-    image_pull = image_pull or {}
 
+    client = daemon_client or {}
+    image_pull = image_pull or {}
     client = docker_wrapper.get_client(daemon_client)
-    docker_wrapper.pull_image(client, image_pull)
+
+    if image_pull.get('repository') is None:
+        raise NonRecoverableError('Missing respository name.')
+
+    repository = image_pull.get('repository')
+    ctx.logger.info('Pulling image: {0}'.format(repository))
+
+    if image_pull.get('stream', False) is False:
+        image_pull['stream'] = True
+        ctx.logger.debug('Setting streaming to True even though '
+                         'True was not provided in blueprint.')
+
+    for stream in client.pull(**image_pull):
+        streamd = json.loads(stream)
+        if streamd.get('status', 'Downloading') is not 'Downloading':
+            ctx.logger.info('Pulling Image status: {0}.'.format(
+                streamd['status']))
 
 
 @operation
-def create(daemon_client=None,
-           image_import=None,
-           image_build=None,
-           **kwargs):
-    """Create image.
-
-    If 'src' is specified in 'import_image' then import image using it as
-    options.
-    Otherwise, if 'path' is specified in 'image_build' then build image using
-    it as options.
-    Otherwise error is raised.
-
-    Set imported image_id in ctx.instance.runtime_properties['image'].
-
-    :param daemon_client: optional configuration for client creation
-    :param image_import: configuration for importing image
-    :param image_build: configuration for building image
-    :raises NonRecoverableError:
-        when 'src' in 'image_import'
-        and 'path' in 'image_build' are both not specified
-        or are both specified.
-
+def build(daemon_client=None, image_build=None, **kwargs):
+    """ Builds an image.
     """
+
     daemon_client = daemon_client or {}
-    image_import = image_import or {}
     image_build = image_build or {}
 
     client = docker_wrapper.get_client(daemon_client)
-    image_import_src = image_import.get('src')
-    image_build_path = image_build.get('path')
-    if image_import_src and image_build_path:
-        ctx.logger.error(_ERR_MSG_TWO_IMAGE_SRC)
-        raise exceptions.NonRecoverableError(_ERR_MSG_TWO_IMAGE_SRC)
-    elif image_import_src:
-        image = docker_wrapper.import_image(client, image_import)
-    elif image_build_path:
-        image = docker_wrapper.build_image(client, image_build)
-    else:
-        ctx.logger.error(_ERR_MSG_NO_IMAGE_SRC)
-        raise exceptions.NonRecoverableError(_ERR_MSG_NO_IMAGE_SRC)
-    ctx.instance.runtime_properties['image'] = image
+
+    if image_build.get('path', None) is None:
+        raise NonRecoverableError('No path to a Dockerfile was provided.')
+
+    ctx.logger.info('Building image from path {}'.format(image_build['path']))
+
+    try:
+        image_stream = client.build(**image_build)
+    except OSError as e:
+        raise NonRecoverableError('Error while building image: {0}'.format(e))
+
+    image_id = docker_wrapper.get_build_image_id(client, image_stream)
+
+    ctx.logger.info('Build image successful. Image: {0}'.format(image_id))
+    ctx.instance.runtime_properties['image'] = image_id
 
 
 @operation
-def configure(container_config,
-              daemon_client=None,
-              **kwargs):
+def import_image(daemon_client=None, image_import=None, **kwargs):
+    """ Imports an image.
+    """
+
+    daemon_client = daemon_client or {}
+    image_import = image_import or {}
+
+    client = docker_wrapper.get_client(daemon_client)
+
+    if image_import.get('src', None) is None:
+        raise NonRecoverableError('No source was provided. '
+                                  'Import image exiting.')
+
+    ctx.logger.info('Importing image.')
+
+    output = client.import_image(**image_import)
+
+    image_id = docker_wrapper.get_import_image_id(client, output)
+    ctx.logger.info('Image import successful. Image: {0}'.format(image_id))
+    ctx.instance.runtime_properties['image'] = image_id
+
+
+@operation
+def create_container(container_config,
+                     daemon_client=None,
+                     **kwargs):
     """Create container using image from ctx.instance.runtime_properties.
 
     Add variables from ctx.instance.runtime_properties['docker_env_var']
@@ -112,12 +137,31 @@ def configure(container_config,
         (for example when 'command' is not specified in 'container_create').
 
     """
+
     container_config = container_config or {}
     daemon_client = daemon_client or {}
-
     client = docker_wrapper.get_client(daemon_client)
-    docker_wrapper.set_env_var(client, container_config)
-    docker_wrapper.create_container(client, container_config)
+
+    environment = container_config.get('environment', {})
+
+    for key, value in ctx.instance.runtime_properties.get(
+            'docker_env_var', {}).items():
+        if key not in environment:
+            environment[str(key)] = str(value)
+
+    container_config['environment'] = environment
+
+    ctx.logger.info('Creating container')
+    image = docker_wrapper.get_image_or_raise(client, container_config)
+
+    try:
+        container = client.create_container(image, **container_config)
+    except APIError as e:
+        raise NonRecoverableError('Error while creating container: '
+                                  '{0}'.format(e))
+
+    ctx.instance.runtime_properties['container'] = container['Id']
+    ctx.logger.info('Container created: {0}.'.format(container['Id']))
 
 
 @operation
@@ -160,23 +204,37 @@ def run(container_start=None,
 
     """
     container_start = container_start or {}
+    processes_to_wait_for = processes_to_wait_for or {}
     client = docker_wrapper.get_client(daemon_client)
+
     docker_wrapper.start_container(client,
                                    processes_to_wait_for,
                                    container_start)
+
+    if ctx.instance.runtime_properties.get('container', None) is None:
+        raise NonRecoverableError('No container provided.')
+
+    container = ctx.instance.runtime_properties.get('container')
+    ctx.logger.info('Starting container.')
+
+    try:
+        client.start(container, **container_start)
+    except APIError as e:
+        raise NonRecoverableError('Failed to start container: {0}.'.format(e))
+
+    docker_wrapper.to_wait_for_processes(client, container,
+                                         processes_to_wait_for)
+
+    ctx.logger.info('Started container: {0}.'.format(container))
+
     container = docker_wrapper.get_container_info(client)
     container_inspect = docker_wrapper.inspect_container(client)
     ctx.instance.runtime_properties['ports'] = container['Ports']
     ctx.instance.runtime_properties['network_settings'] = \
         container_inspect['NetworkSettings']
-    log_msg = (
-        'Container: {}\nForwarded ports: {}\nTop: {}'
-    ).format(
-        container['Id'],
-        str(ctx.instance.runtime_properties['ports']),
-        docker_wrapper.get_top_info(client)
-    )
-    ctx.logger.info(log_msg)
+    ctx.logger.info('Container: {0}\nForwarded ports: {1}\nTop: {2}.'.format(
+        container['Id'], ctx.instance.runtime_properties['ports'],
+        docker_wrapper.get_top_info(client)))
 
 
 @operation
@@ -199,14 +257,23 @@ def stop(container_stop=None,
     container_stop = container_stop or {}
     daemon_client = daemon_client or {}
     client = docker_wrapper.get_client(daemon_client)
-    docker_wrapper.stop_container(client, container_stop)
+
+    ctx.logger.info('Stopping container.')
+    container = docker_wrapper.get_container_or_raise(client)
+
+    try:
+        client.stop(container, **container_stop)
+    except APIError as e:
+        raise NonRecoverableError('Failed to stop container: {0}'.format(e))
+
+    ctx.logger.info('Stopped container.')
 
 
 @operation
-def delete(container_remove=None,
-           container_stop=None,
-           daemon_client=None,
-           **kwargs):
+def rm(container_remove=None,
+       container_stop=None,
+       daemon_client=None,
+       **kwargs):
     """Delete container.
 
     Remove container which id is specified in ctx.instance.runtime_properties
@@ -230,9 +297,19 @@ def delete(container_remove=None,
     daemon_client = daemon_client or {}
     client = docker_wrapper.get_client(daemon_client)
     container_info = docker_wrapper.inspect_container(client)
+
     if container_info and container_info['State']['Running']:
-        docker_wrapper.stop_container(client, container_stop)
-    remove_image = container_remove.pop('remove_image', None)
+        container = docker_wrapper.get_container_or_raise(client)
+        ctx.logger.info('Removing container {}'.format(container))
+        try:
+            client.remove_container(container, **container_remove)
+        except APIError as e:
+            raise NonRecoverableError('Failed to delete container: {0}.'
+                                      .format(e))
+
+        ctx.logger.info('Removed container {}'.format(container))
+
+    remove_image = docker_wrapper.container_remove.pop('remove_image', None)
     docker_wrapper.remove_container(client, container_remove)
     if remove_image:
         docker_wrapper.remove_image(client)

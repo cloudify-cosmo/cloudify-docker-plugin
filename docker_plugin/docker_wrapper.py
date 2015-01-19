@@ -14,13 +14,17 @@
 
 """Functions that wrap docker functions."""
 
-
+# Built-in Imports
 import re
-
 import time
+import json
+
+# Third-party Imports
 import docker
 
+# Cloudify Imports
 from cloudify import ctx
+from cloudify.exceptions import NonRecoverableError
 from cloudify import exceptions
 
 
@@ -39,12 +43,13 @@ def _is_image_id_valid(image_id):
     return re.match('^[a-f0-9]{12,64}$', image_id) is not None
 
 
-def _get_import_image_id(client, import_image_output):
+def get_import_image_id(client, import_image_output):
     # It is useful beacause
     # import_image returns long string where in the second line
     # after last status is image id
     unknow_error_message = '{0} (import image output: {1})'.format(
         _ERR_MSG_UNKNOWN_IMAGE_IMPORT, import_image_output)
+
     try:
         output_line = import_image_output.split('\n')[-2]
     except IndexError:
@@ -74,7 +79,7 @@ def _get_import_image_id(client, import_image_output):
             _log_and_raise(client, unknow_error_message)
 
 
-def _get_build_image_id(client, stream_generator):
+def get_build_image_id(client, stream_generator):
     stream = None
     for stream in stream_generator:
         pass
@@ -99,26 +104,29 @@ def _get_build_image_id(client, stream_generator):
         )
 
 
-def _get_container_or_raise(client):
+def get_container_or_raise(client):
     container = ctx.instance.runtime_properties.get('container')
     if container is None:
         _log_and_raise(client, 'No container specified')
     return container
 
 
-def _get_image_or_raise(client, container_config=None):
+def get_image_or_raise(client, container_config=None):
+
     image = container_config.pop('image', None)
+
     if image:
         ctx.instance.runtime_properties['using_local_image'] = True
     else:
         image = ctx.instance.runtime_properties.get('image')
         ctx.instance.runtime_properties['using_local_image'] = False
+
     if not image:
         _log_and_raise(client, 'No image specified')
     return image
 
 
-def _log_container_info(message=''):
+def log_container_info(message=''):
     if 'container' in ctx.instance.runtime_properties:
         message = '{} {}'.format(message,
                                  ctx.instance.runtime_properties['container'])
@@ -170,8 +178,8 @@ def get_top_info(client):
         top_table += '\n'.join(' '.join(p) for p in top_dict['Processes'])
         return top_table
 
-    _log_container_info('getting TOP info of container')
-    container = _get_container_or_raise(client)
+    log_container_info('getting TOP info of container')
+    container = get_container_or_raise(client)
     try:
         top_dict = client.top(container)
     except docker.errors.APIError as e:
@@ -250,11 +258,11 @@ def get_client(daemon_client):
     :rtype: docker.Client
 
     """
+
     try:
         return docker.Client(**daemon_client)
     except docker.errors.DockerException as e:
-        error_msg = 'Error while getting client: {}'.format(str(e))
-        _log_and_raise(daemon_client, error_msg)
+        raise NonRecoverableError('Error while getting client: {0}.'.format(e))
 
 
 def pull_image(client, image_pull):
@@ -267,19 +275,23 @@ def pull_image(client, image_pull):
         when failing to pull the image
 
     """
-    ctx.logger.info('Pulling image')
 
-    image_pull_repo = image_pull.get('repository')
-    if not image_pull_repo:
-        _log_and_raise(client=client, err_msg='Missing repository name')
-    stream = image_pull.get('stream')
-    if stream is False:
-        ctx.logger.warn("Streaming will be set to True although False \
-            was specified")
-    image_pull['stream'] = True
+    if image_pull.get('repository') is None:
+        raise NonRecoverableError('Missing respository name.')
 
-    for line in client.pull(**image_pull):
-        ctx.logger.info(line)
+    repository = image_pull.get('repository')
+    ctx.logger.info('Pulling image: {0}'.format(repository))
+
+    if image_pull.get('stream', False) is False:
+        image_pull['stream'] = True
+        ctx.logger.debug('Setting streaming to True even though '
+                         'True was not provided in blueprint.')
+
+    for stream in client.pull(**image_pull):
+        streamd = json.loads(stream)
+        if streamd.get('status', 'Downloading') is not 'Downloading':
+            ctx.logger.info('Pulling Image status: {0}.'.format(
+                streamd['status']))
 
 
 def import_image(client, image_import):
@@ -300,7 +312,7 @@ def import_image(client, image_import):
 
     ctx.logger.info('Importing image')
     import_image_output = client.import_image(**image_import)
-    image_id = _get_import_image_id(
+    image_id = get_import_image_id(
         client, import_image_output)
     ctx.logger.info('Image {} has been imported'.format(image_id))
     return image_id
@@ -331,7 +343,7 @@ def build_image(client, image_build):
         error_msg = 'Error while building image: {}'.format(str(e))
         _log_and_raise(client, error_msg)
     else:
-        image_id = _get_build_image_id(client, image_stream)
+        image_id = get_build_image_id(client, image_stream)
         ctx.logger.info('Image {} has been built'.format(image_id))
         return image_id
 
@@ -356,7 +368,7 @@ def create_container(client, container_config):
     """
 
     ctx.logger.info('Creating container')
-    image = _get_image_or_raise(client, container_config)
+    image = get_image_or_raise(client, container_config)
     try:
         cont = client.create_container(image, **container_config)
     except docker.errors.APIError as e:
@@ -364,7 +376,21 @@ def create_container(client, container_config):
         _log_and_raise(client, error_msg)
     else:
         ctx.instance.runtime_properties['container'] = cont['Id']
-    _log_container_info('Created container')
+    log_container_info('Created container')
+
+
+def to_wait_for_processes(client, container, processes_to_wait_for):
+
+    if processes_to_wait_for.get('process_names'):
+        process_names = processes_to_wait_for.get('process_names')
+        wait_for_time = processes_to_wait_for.get('wait_for_time_secs', 0)
+        interval = processes_to_wait_for.get('interval', 5)
+        all_active = wait_for_processes(client, container,
+                                        process_names, wait_for_time, interval)
+        if not all_active:
+            raise NonRecoverableError('One of the following processes was not '
+                                      'started in the container: {}'.format(
+                                          process_names))
 
 
 def start_container(client, processes_to_wait_for, container_start):
@@ -384,8 +410,8 @@ def start_container(client, processes_to_wait_for, container_start):
 
     """
 
-    _log_container_info('Starting container')
-    container = _get_container_or_raise(client)
+    log_container_info('Starting container')
+    container = get_container_or_raise(client)
     try:
         client.start(container, **container_start)
         processes_to_wait_for = processes_to_wait_for or {}
@@ -393,21 +419,22 @@ def start_container(client, processes_to_wait_for, container_start):
             process_names = processes_to_wait_for.get('process_names')
             wait_for_time = processes_to_wait_for.get('wait_for_time_secs', 0)
             interval = processes_to_wait_for.get('interval', 5)
-            all_active = _wait_for_processes(client,
-                                             container,
-                                             process_names,
-                                             wait_for_time,
-                                             interval)
+            all_active = wait_for_processes(client,
+                                            container,
+                                            process_names,
+                                            wait_for_time,
+                                            interval)
             if not all_active:
                 _log_and_raise(client, 'one of the following processes was not \
                                started in the container: {}'
                                .format(process_names))
     except docker.errors.APIError as e:
         _log_and_raise(client, str(e))
-    _log_container_info('Started container')
+    log_container_info('Started container')
 
 
-def _wait_for_processes(client, container, process_names, timeout, interval):
+def wait_for_processes(client, container, process_names, timeout, interval):
+
     ctx.logger.info('waiting for the following processeses: {}'
                     .format(process_names))
     if timeout:
@@ -432,29 +459,6 @@ def _wait_for_processes(client, container, process_names, timeout, interval):
         time.sleep(interval)
 
 
-def stop_container(client, container_stop):
-    """Stop container.
-
-    Stop container which id is specified in ctx.instance.runtime_properties
-    ['container'] with optional options from 'container_stop'.
-
-    :param client: docker client
-    :param container_stop: configuration for stopping a container
-    :raises NonRecoverableError:
-        when 'container' in ctx.instance.runtime_properties is None
-        or when docker.errors.APIError.
-
-    """
-
-    _log_container_info('Stopping container')
-    container = _get_container_or_raise(client)
-    try:
-        client.stop(container, **container_stop)
-    except docker.errors.APIError as e:
-        _log_and_raise(client, str(e))
-    _log_container_info('Stopped container')
-
-
 def remove_container(client, container_remove):
     """Remove container.
 
@@ -471,7 +475,7 @@ def remove_container(client, container_remove):
 
     """
 
-    container = _get_container_or_raise(client)
+    container = get_container_or_raise(client)
     ctx.logger.info('Removing container {}'.format(container))
     try:
         client.remove_container(container, **container_remove)
@@ -494,15 +498,15 @@ def remove_image(client):
         if image is used by another container).
 
     """
-    if ctx.instance.runtime_properties.get('using_local_image') is True:
-        ctx.logger.debug('remove_image called, doing nothing since user used \
-         a local image')
+    if ctx.instance.runtime_properties.get('using_local_image', False) is True:
+        ctx.logger.debug('remove_image: Doing nothing because '
+                         'image is a local image')
         return
 
-    image = _get_image_or_raise(client)
-    _log_container_info('Removing image {}, container:'.format(image))
+    image = get_image_or_raise(client)
+    log_container_info('Removing image {}, container:'.format(image))
     try:
         client.remove_image(image)
     except docker.errors.APIError as e:
         _log_and_raise(client, str(e))
-    _log_container_info('Removed image {}, container:'.format(image))
+    log_container_info('Removed image {}, container:'.format(image))
