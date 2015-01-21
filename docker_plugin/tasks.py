@@ -19,17 +19,13 @@
 import json
 
 # Third-party Imports
-from docker.errors import APIError
+import docker.errors
 
 # Cloudify Imports
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
 import docker_plugin.docker_wrapper as docker_wrapper
-
-_ERR_MSG_NO_IMAGE_SRC = 'Either path or url to image must be given'
-_ERR_MSG_TWO_IMAGE_SRC = ('Image import url and image build path specified.'
-                          ' There can only be one image source')
 
 
 @operation
@@ -49,13 +45,13 @@ def pull(daemon_client=None,
     image_pull = image_pull or {}
     client = docker_wrapper.get_client(daemon_client)
 
-    if image_pull.get('repository') is None:
+    if image_pull.get('repository', None) is None:
         raise NonRecoverableError('Missing respository name.')
 
     repository = image_pull.get('repository')
     ctx.logger.info('Pulling image: {0}'.format(repository))
 
-    if image_pull.get('stream', False) is False:
+    if image_pull.get('stream', True) is False:
         image_pull['stream'] = True
         ctx.logger.debug('Setting streaming to True even though '
                          'True was not provided in blueprint.')
@@ -85,7 +81,8 @@ def build(daemon_client=None, image_build=None, **kwargs):
     try:
         image_stream = client.build(**image_build)
     except OSError as e:
-        raise NonRecoverableError('Error while building image: {0}'.format(e))
+        raise NonRecoverableError('Error while building image: '
+                                  '{0}'.format(str(e)))
 
     image_id = docker_wrapper.get_build_image_id(client, image_stream)
 
@@ -133,7 +130,7 @@ def create_container(container_config,
     :param daemon_client: optional configuration for client creation
     :param container_config: configuration for creating container
     :raises NonRecoverableError:
-        when docker.errors.APIError during start
+        when docker.errors.docker.errors.APIError during start
         (for example when 'command' is not specified in 'container_create').
 
     """
@@ -156,9 +153,9 @@ def create_container(container_config,
 
     try:
         container = client.create_container(image, **container_config)
-    except APIError as e:
+    except docker.errors.APIError as e:
         raise NonRecoverableError('Error while creating container: '
-                                  '{0}'.format(e))
+                                  '{0}'.format(str(e)))
 
     ctx.instance.runtime_properties['container'] = container['Id']
     ctx.logger.info('Container created: {0}.'.format(container['Id']))
@@ -200,7 +197,7 @@ def run(container_start=None,
     :param container_start: configuration for starting a container
     :raises NonRecoverableError:
         when 'container' in ctx.instance.runtime_properties is None
-        or when docker.errors.APIError during start.
+        or when docker.errors.docker.errors.APIError during start.
 
     """
     container_start = container_start or {}
@@ -219,8 +216,9 @@ def run(container_start=None,
 
     try:
         client.start(container, **container_start)
-    except APIError as e:
-        raise NonRecoverableError('Failed to start container: {0}.'.format(e))
+    except docker.errors.APIError as e:
+        raise NonRecoverableError('Failed to start container: '
+                                  '{0}.'.format(str(e)))
 
     docker_wrapper.to_wait_for_processes(client, container,
                                          processes_to_wait_for)
@@ -251,7 +249,7 @@ def stop(container_stop=None,
     :param container_stop: configuration for stopping a container
     :raises NonRecoverableError:
         when 'container' in ctx.instance.runtime_properties is None
-        or when docker.errors.APIError during stop.
+        or when docker.errors.docker.errors.APIError during stop.
 
     """
     container_stop = container_stop or {}
@@ -263,8 +261,9 @@ def stop(container_stop=None,
 
     try:
         client.stop(container, **container_stop)
-    except APIError as e:
-        raise NonRecoverableError('Failed to stop container: {0}'.format(e))
+    except docker.errors.APIError as e:
+        raise NonRecoverableError('Failed to stop container: '
+                                  '{0}'.format(str(e)))
 
     ctx.logger.info('Stopped container.')
 
@@ -303,9 +302,9 @@ def rm(container_remove=None,
         ctx.logger.info('Removing container {}'.format(container))
         try:
             client.remove_container(container, **container_remove)
-        except APIError as e:
+        except docker.errors.APIError as e:
             raise NonRecoverableError('Failed to delete container: {0}.'
-                                      .format(e))
+                                      .format(str(e)))
 
         ctx.logger.info('Removed container {}'.format(container))
 

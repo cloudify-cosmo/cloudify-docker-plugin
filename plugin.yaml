@@ -8,58 +8,131 @@ plugins:
     source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/master.zip
 
 node_types:
-  docker_container: 
-    derived_from: cloudify.nodes.Root
-    properties:            
-      image:
-        description: the image name 
-      command: 
-        description: the command to start the container
-        default: '' 
-      exported_ports:
-        description: the ports the container exports 
-        default: []
-      port_bindings: 
-        description: port bindings on the host machine 
-        default: {}
-      volumes: 
-        description: volumes bindings 
-        default: []
-      binds: 
-        description: volumes to bind 
-        default: {}
-      environment: 
-        description: environment variables for the container 
-        default: {}
+
+  cloudify.docker.Image:
+    derived_from: cloudify.node.Root
+    properties:
+      resource_id:
+        description: The image tag.
+        type: string 
+      use_existing_resource:
+        description: Whether the image already exists or not.
+        type: boolean
+        default: false
+
+  cloudify.docker.BuildImage:
+    derived_from: cloudify.docker.Image
+    properties:
+      resource_id:
+        description: The image tag.
+        type: string 
+      use_existing_resource:
+        description: Whether the image already exists or not.
+        type: boolean
+        default: false
+      path:
+        description: Path to the directory containing the Dockerfile.
+        type: string
+      fileobj: A file object to use as the Dockerfile. (Or a file-like object).
+        type: string
     interfaces:
       cloudify.interfaces.lifecycle:
-      create:
-        implementation: docker.docker_plugin.tasks.pull
-        inputs:            
-        image_pull:
-          repository: { get_property: [ SELF, image]}
-      configure:
-        implementation: docker.docker_plugin.tasks.configure          
-        inputs:            
-          container_config:
-            command: { get_property: [ SELF, command ]}
-            image: { get_property: [ SELF, image]}
-            ports: { get_property: [ SELF, exported_ports]}
-      start:
-        implementation: docker.docker_plugin.tasks.run
-          inputs:
-            daemon_client: {}
-            container_start:
-              port_bindings: { get_property: [SELF, port_bindings]}
-      stop:
-        implementation: docker.docker_plugin.tasks.stop
-        inputs:
-          daemon_client:  {}
-          container_stop: {}
-      delete:
-        implementation: docker.docker_plugin.tasks.delete
-          inputs:
-            daemon_client:    {}
-            # required in case container to remove is currently running
-            container_stop:   {}
-            container_remove: {}
+        create:
+          implementation: docker.docker_plugin.task.build
+          description: Creates an image from a docker build file.
+        delete:
+          implementation: docker.docker_plugin.task.rmi
+          description: Removes an image.
+
+  cloudify.docker.ImportImage:
+    derived_from: cloudify.docker.Image
+    properties:
+      resource_id:
+        description: The image tag.
+        type: string 
+      use_existing_resource:
+        description: Whether the image already exists or not.
+        type: boolean
+        default: false
+      src:
+        description: Path to tarfile or URL.
+        type: string
+      image:
+        description: Use another image like the FROM Dockerfile parameter.
+        type: string
+        default: ''
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.docker_plugin.task.import_image
+          description: Create a new filesystem image from the contents of a tarball.
+        delete:
+          implementation: docker.docker_plugin.task.rmi
+          description: Removes an image.
+
+  cloudify.docker.container:
+    derived_from: cloudify.nodes.Container
+    properties:
+      resource_id:
+        description: The image tag.
+        type: string 
+      use_existing_resource:
+        description: Whether the image already exists or not.
+        type: boolean
+        default: false
+      image:
+        description: The image to run.
+        type: string
+        default: ''
+      ports:
+        description: >
+          Key value pairs of port bindings as provided to the start function.
+          The create function is designed to get only the keys for assignment
+          of the ports parameter.
+        default: []
+      volumes:
+        description: >
+          A list of dictinaries describing volume mounts as described in the
+          Using Volumes article in docker-py readthedocs.
+        default: []
+      params: {}
+        description: Any parameters in the create_container function that are not mentioned here.
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.docker_plugin.task.create_container
+          description: Creates a container from an image.
+        start:
+          implementation: docker.docker_plugin.task.start
+          description:  Runs a container.
+        stop:
+          implementation: docker.docker_plugin.task.stop
+          description: Stops a container.
+        delete:
+          implementation: docker.docker_plugin.task.remove_container
+          description: Deletes a container.
+      cloudify.interfaces.validation:
+        commit:
+          implementation: docker.docker_plugin.task.commit
+          description: Create a new image from a container's changes.
+      cloudify.interfaces.docker_lifecycle:
+        attach:
+          implementation: docker.docker_plugin.task.attach
+          description: Attach to a running container.
+        copy:
+          implementation: docker.docker_plugin.task.copy
+          description: Copy files/folders from a container's filesystem to the host path.
+        execute:
+          implementation: docker.docker_plugin.task.execute
+          description: Run a command in a new container.
+        export:
+          implementation: docker.docker_plugin.task.export
+          description:  Stream the contents of a container as a tar archive.
+        inspect:
+          implementation: docker.docker_plugin.task.inspect
+          description: Return low-level information on a container
+
+relationships:
+
+  cloudify.docker.container_based_on_image:
+    derived_from: cloudify.relationships.node_depends_on
