@@ -188,45 +188,6 @@ def get_top_info(client):
         return format_as_table(top_dict)
 
 
-def get_container_info(client):
-    """Get container info.
-
-    Get list of containers dictionaries from docker containers function.
-    Find container which is specified in
-    ctx.instance.runtime_properties['container'].
-
-    :param client: docker client
-    :return: container_info
-    :rtype: dict
-
-    """
-
-    container = ctx.instance.runtime_properties.get('container')
-    if container is not None:
-        for c in client.containers():
-            if container in c.itervalues():
-                return c
-    return None
-
-
-def inspect_container(client):
-    """Inspect container.
-
-    Call inspect with container id from
-    ctx.instance.runtime_properties['container'].
-
-    :param client: docker client
-    :return: container_info
-    :rtype: dict
-
-    """
-
-    container = ctx.instance.runtime_properties.get('container')
-    if container is not None:
-        return client.inspect_container(container)
-    return None
-
-
 def set_env_var(client, container_config):
     """Set environmental variables.
 
@@ -244,25 +205,6 @@ def set_env_var(client, container_config):
         if key not in environment:
             environment[str(key)] = str(value)
     container_config['environment'] = environment
-
-
-def get_client(daemon_client):
-    """Get client.
-
-    Returns docker client using daemon_client as configuration.
-
-    :param daemon_client: optional configuration for client creation
-    :raises NonRecoverableError:
-        when docker.errors.APIError during client.
-    :return: docker client
-    :rtype: docker.Client
-
-    """
-
-    try:
-        return docker.Client(**daemon_client)
-    except docker.errors.DockerException as e:
-        raise NonRecoverableError('Error while getting client: {0}.'.format(e))
 
 
 def pull_image(client, image_pull):
@@ -292,60 +234,6 @@ def pull_image(client, image_pull):
         if streamd.get('status', 'Downloading') is not 'Downloading':
             ctx.logger.info('Pulling Image status: {0}.'.format(
                 streamd['status']))
-
-
-def import_image(client, image_import):
-    """Import image.
-
-    Import image from 'image_import'.
-    'src' in 'image_import' must be specified.
-
-    :param client: docker client
-    :param image_import: configuration for importing image
-    :raises NonRecoverableError:
-        when no 'src' in 'image_import' or when there was
-        a problem during image download.
-    :return: image_id, valid docker image id
-    :rtype: str
-
-    """
-
-    ctx.logger.info('Importing image')
-    import_image_output = client.import_image(**image_import)
-    image_id = get_import_image_id(
-        client, import_image_output)
-    ctx.logger.info('Image {} has been imported'.format(image_id))
-    return image_id
-
-
-def build_image(client, image_build):
-    """Build image.
-
-    Build image from 'image_build'.
-    'path' in 'image_build' must be specified.
-
-    :param client: docker client
-    :param image_build: configuration for building image
-    :return: image_id, valid docker image id
-    :rtype: str
-    :raises NonRecoverableError:
-        when no 'path' in 'image_build'
-        or when there was a problem during image download.
-
-    """
-
-    ctx.logger.info(
-        'Building image from path {}'.format(
-            image_build['path']))
-    try:
-        image_stream = client.build(**image_build)
-    except OSError as e:
-        error_msg = 'Error while building image: {}'.format(str(e))
-        _log_and_raise(client, error_msg)
-    else:
-        image_id = get_build_image_id(client, image_stream)
-        ctx.logger.info('Image {} has been built'.format(image_id))
-        return image_id
 
 
 def create_container(client, container_config):
