@@ -17,13 +17,23 @@
 import testtools
 
 # Third Party Imports
+from docker import Client
+from docker import errors
 
 # Cloudify Imports is imported and used in operations
-from tasks import pull
+from docker_plugin import tasks
 from cloudify.mocks import MockCloudifyContext
+from cloudify.exceptions import NonRecoverableError
 
 
 class TestPull(testtools.TestCase):
+
+    def get_client(self):
+        try:
+            return Client(base_url='unix://var/run/docker.sock')
+        except errors.DockerException as e:
+            raise NonRecoverableError(
+                'Error while getting client: {0}.'.format(str(e)))
 
     def mock_ctx(self, test_name):
         """ Creates a mock context for the instance
@@ -46,14 +56,17 @@ class TestPull(testtools.TestCase):
 
         return ctx
 
-    @testtools.skip
     def test_pull_clean(self):
         """ This test pulls the docker-dev image from
             the docker hub and deletes it.
         """
 
         ctx = self.mock_ctx('test_pull_clean')
-        
+        client = self.get_client()
+
         tasks.pull(ctx=ctx)
         image_id = ctx.instance.runtime_properties['image_id']
-        
+        if client.images(name=image_id) is not None:
+            test_passed = True
+            client.remove_image(image_id)
+        self.AssertTrue(test_passed)

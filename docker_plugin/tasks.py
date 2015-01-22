@@ -43,13 +43,13 @@ def pull(daemon_client=None, **_):
     client = daemon_client or {}
     client = get_client(daemon_client)
 
-    if ctx.node.properties['use_existing_resource'] is True:
+    if ctx.node.properties['use_external_resource'] is True:
         ctx.instance.runtime_properties['repository'] = \
             ctx.node.properties['resource_id']
         return
 
     arguments = dict()
-    args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), [])
+    args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), {})
     arguments.update(args_to_merge)
     arguments['repository'] = ctx.node.properties['resource_id']
 
@@ -85,7 +85,7 @@ def build(daemon_client=None, **_):
         raise NonRecoverableError('No path to a Dockerfile was provided.')
 
     arguments = dict()
-    args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), [])
+    args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), {})
     arguments.update(args_to_merge)
     arguments['path'] = ctx.node.properties['path']
     arguments['fileobj'] = ctx.node.properties['fileobj']
@@ -119,7 +119,7 @@ def import_image(daemon_client=None, **_):
     daemon_client = daemon_client or {}
     client = get_client(daemon_client)
     arguments = dict()
-    args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), [])
+    args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), {})
     arguments.update(args_to_merge)
     arguments['repository'] = ctx.node.properties['resource_id']
     arguments['src'] = ctx.node.properties['src']
@@ -144,7 +144,7 @@ def create_container(daemon_client=None, **_):
     client = get_client(daemon_client)
 
     arguments = dict()
-    args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), [])
+    args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), {})
     arguments.update(args_to_merge)
     arguments['image'] = ctx.node.properties['resource_id']
 
@@ -174,7 +174,7 @@ def run(daemon_client=None, **_):
     client = get_client(daemon_client)
 
     arguments = dict()
-    args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), [])
+    args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), {})
     arguments.update(args_to_merge)
     arguments['container'] = \
         ctx.instance.runtime_properties['docker_container']

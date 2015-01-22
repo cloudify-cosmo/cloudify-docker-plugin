@@ -13,25 +13,12 @@
 #    under the License.
 
 
-import os
-import setuptools
-from setuptools.command.install import install
+from setuptools import setup
 
-import docker_installation.apt_get_wrapper
+# Replace the place holders with values for your project
 
+setup(
 
-class CustomInstallCommand(install):
-    def run(self):
-        docker_installation.apt_get_wrapper.install_docker()
-        install.run(self)
-
-
-additional_configuration = {}
-if 'CELERY_WORK_DIR' in os.environ:
-    additional_configuration.update(
-        {'cmdclass': {'install': CustomInstallCommand}})
-
-setuptools.setup(
     name='cloudify-docker-plugin',
     version='1.2a3',
     author='Gigaspaces',
@@ -41,9 +28,8 @@ setuptools.setup(
     license='LICENCE',
     install_requires=[
         'cloudify-plugins-common==3.2a3',
-        'docker-py==0.6.0',
+        'docker-py==0.7.1',
     ],
     packages=['docker_plugin'],
     zip_safe=False,
-    **additional_configuration
 )
