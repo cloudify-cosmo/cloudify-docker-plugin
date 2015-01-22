@@ -25,6 +25,10 @@ import docker.errors
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
+from utils import build_arg_dict
+from utils import get_container_info
+from utils import inspect_container
+from docker_client import get_client
 import docker_plugin.docker_wrapper as docker_wrapper
 
 
@@ -37,7 +41,7 @@ def pull(daemon_client=None, **_):
     """
 
     client = daemon_client or {}
-    client = docker_wrapper.get_client(daemon_client)
+    client = get_client(daemon_client)
 
     if ctx.node.properties['use_existing_resource'] is True:
         ctx.instance.runtime_properties['repository'] = \
@@ -75,7 +79,7 @@ def build(daemon_client=None, **_):
     """
 
     daemon_client = daemon_client or {}
-    client = docker_wrapper.get_client(daemon_client)
+    client = get_client(daemon_client)
 
     if ctx.node.properties.get('path', None) is None:
         raise NonRecoverableError('No path to a Dockerfile was provided.')
@@ -113,7 +117,7 @@ def import_image(daemon_client=None, **_):
     """
 
     daemon_client = daemon_client or {}
-    client = docker_wrapper.get_client(daemon_client)
+    client = get_client(daemon_client)
     arguments = dict()
     args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), [])
     arguments.update(args_to_merge)
@@ -137,7 +141,7 @@ def create_container(daemon_client=None, **_):
     """
 
     daemon_client = daemon_client or {}
-    client = docker_wrapper.get_client(daemon_client)
+    client = get_client(daemon_client)
 
     arguments = dict()
     args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), [])
@@ -167,7 +171,7 @@ def run(daemon_client=None, **_):
     :param daemon_client: optional configuration for client creation
     """
 
-    client = docker_wrapper.get_client(daemon_client)
+    client = get_client(daemon_client)
 
     arguments = dict()
     args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), [])
@@ -198,8 +202,8 @@ def run(daemon_client=None, **_):
 
     ctx.logger.info('Started container: {0}.'.format(container))
 
-    container = docker_wrapper.get_container_info(client)
-    container_inspect = docker_wrapper.inspect_container(client)
+    container = get_container_info(client)
+    container_inspect = inspect_container(client)
     ctx.instance.runtime_properties['ports'] = container['Ports']
     ctx.instance.runtime_properties['network_settings'] = \
         container_inspect['NetworkSettings']
@@ -227,7 +231,7 @@ def stop(container_stop=None,
     """
     container_stop = container_stop or {}
     daemon_client = daemon_client or {}
-    client = docker_wrapper.get_client(daemon_client)
+    client = get_client(daemon_client)
 
     ctx.logger.info('Stopping container.')
     container = docker_wrapper.get_container_or_raise(client)
@@ -242,10 +246,10 @@ def stop(container_stop=None,
 
 
 @operation
-def rm(container_remove=None,
-       container_stop=None,
-       daemon_client=None,
-       **kwargs):
+def remove_container(container_remove=None,
+                     container_stop=None,
+                     daemon_client=None,
+                     **kwargs):
     """Delete container.
 
     Remove container which id is specified in ctx.instance.runtime_properties
@@ -267,8 +271,8 @@ def rm(container_remove=None,
 
     """
     daemon_client = daemon_client or {}
-    client = docker_wrapper.get_client(daemon_client)
-    container_info = docker_wrapper.inspect_container(client)
+    client = get_client(daemon_client)
+    container_info = inspect_container(client)
 
     if container_info and container_info['State']['Running']:
         container = docker_wrapper.get_container_or_raise(client)
@@ -285,13 +289,3 @@ def rm(container_remove=None,
     docker_wrapper.remove_container(client, container_remove)
     if remove_image:
         docker_wrapper.remove_image(client)
-
-
-def build_arg_dict(user_supplied, unsupported):
-
-    arguments = {}
-    for pair in user_supplied.items():
-        arguments['{0}'.format(pair[0])] = pair[1]
-    for pair in unsupported.items():
-        arguments['{0}'.format(pair[0])] = pair[1]
-    return arguments
