@@ -13,18 +13,31 @@ node_types:
     derived_from: cloudify.node.Root
     properties:
       resource_id:
-        description: The image tag.
+        description: The name of an existing repository.
         type: string 
       use_existing_resource:
         description: Whether the image already exists or not.
         type: boolean
         default: false
+      tag:
+        description: The tag.
+        type: string
+      params:
+        description: Any other parameters allowed by the API call that are not listed.
+        default: {}
+    interfaces:
+        create:
+          implementation: docker.docker_plugin.tasks.pull
+          description: Pull an image or a repository from a Docker registry server.
+        delete:
+          implementation: docker.docker_plugin.tasks.remove_image
+          description: Removes an image.
 
   cloudify.docker.BuildImage:
     derived_from: cloudify.docker.Image
     properties:
       resource_id:
-        description: The image tag.
+        description: The final image tag.
         type: string 
       use_existing_resource:
         description: Whether the image already exists or not.
@@ -35,13 +48,16 @@ node_types:
         type: string
       fileobj: A file object to use as the Dockerfile. (Or a file-like object).
         type: string
+      params:
+        description: Any other parameters allowed by the API call that are not listed.
+        default: {}
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: docker.docker_plugin.task.build
-          description: Creates an image from a docker build file.
+          implementation: docker.docker_plugin.tasks.build
+          description: Build an image from a Dockerfile.
         delete:
-          implementation: docker.docker_plugin.task.rmi
+          implementation: docker.docker_plugin.tasks.remove_image
           description: Removes an image.
 
   cloudify.docker.ImportImage:
@@ -57,33 +73,28 @@ node_types:
       src:
         description: Path to tarfile or URL.
         type: string
-      image:
-        description: Use another image like the FROM Dockerfile parameter.
-        type: string
-        default: ''
+      params:
+        description: Any other parameters allowed by the API call that are not listed.
+        default: {}
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: docker.docker_plugin.task.import_image
+          implementation: docker.docker_plugin.tasks.import_image
           description: Create a new filesystem image from the contents of a tarball.
         delete:
-          implementation: docker.docker_plugin.task.rmi
+          implementation: docker.docker_plugin.tasks.remove_image
           description: Removes an image.
 
   cloudify.docker.container:
     derived_from: cloudify.nodes.Container
     properties:
       resource_id:
-        description: The image tag.
+        description: The container to start.
         type: string 
       use_existing_resource:
         description: Whether the image already exists or not.
         type: boolean
-        default: false
-      image:
-        description: The image to run.
-        type: string
-        default: ''
+        default: true
       ports:
         description: >
           Key value pairs of port bindings as provided to the start function.
@@ -100,39 +111,38 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: docker.docker_plugin.task.create_container
+          implementation: docker.docker_plugin.tasks.create_container
           description: Creates a container from an image.
         start:
-          implementation: docker.docker_plugin.task.start
+          implementation: docker.docker_plugin.tasks.start
           description:  Runs a container.
         stop:
-          implementation: docker.docker_plugin.task.stop
+          implementation: docker.docker_plugin.tasks.stop
           description: Stops a container.
         delete:
-          implementation: docker.docker_plugin.task.remove_container
+          implementation: docker.docker_plugin.tasks.remove_container
           description: Deletes a container.
       cloudify.interfaces.validation:
         commit:
-          implementation: docker.docker_plugin.task.commit
+          implementation: docker.docker_plugin.tasks.commit
           description: Create a new image from a container's changes.
       cloudify.interfaces.docker_lifecycle:
         attach:
-          implementation: docker.docker_plugin.task.attach
+          implementation: docker.docker_plugin.tasks.attach
           description: Attach to a running container.
         copy:
-          implementation: docker.docker_plugin.task.copy
+          implementation: docker.docker_plugin.tasks.copy
           description: Copy files/folders from a container's filesystem to the host path.
         execute:
-          implementation: docker.docker_plugin.task.execute
+          implementation: docker.docker_plugin.tasks.execute
           description: Run a command in a new container.
         export:
-          implementation: docker.docker_plugin.task.export
+          implementation: docker.docker_plugin.tasks.export
           description:  Stream the contents of a container as a tar archive.
         inspect:
-          implementation: docker.docker_plugin.task.inspect
+          implementation: docker.docker_plugin.tasks.inspect
           description: Return low-level information on a container
 
 relationships:
-
   cloudify.docker.container_based_on_image:
     derived_from: cloudify.relationships.node_depends_on
