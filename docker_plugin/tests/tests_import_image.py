@@ -15,6 +15,7 @@
 
 # Built-in Imports
 import testtools
+import os
 
 # Third Party Imports
 from docker import Client
@@ -26,7 +27,7 @@ from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 
 
-class TestPull(testtools.TestCase):
+class TestImportImage(testtools.TestCase):
 
     def get_client(self, daemon_client):
         try:
@@ -39,14 +40,16 @@ class TestPull(testtools.TestCase):
         """ Creates a mock context for the instance
             tests
         """
+        source_file = os.path.join(os.path.dirname(__file__),
+                                   'resources', 'example.tar')
 
         test_node_id = test_name
         test_properties = {
-            'resource_id': 'docker-test-image',
+            'resource_id': 'example-repo',
             'use_external_resource': False,
-            'tag': None,
+            'src': source_file,
             'params': {
-                'stream': True
+                'repository': '{}{}'.format('test/', test_name)
             }
         }
 
@@ -57,16 +60,16 @@ class TestPull(testtools.TestCase):
 
         return ctx
 
-    def test_pull_clean(self):
-        """ This test pulls the docker-dev image from
+    def test_import_image_clean(self):
+        """ This test builds a docker image from
             the docker hub and deletes it.
         """
 
-        ctx = self.mock_ctx('test_pull_clean')
+        ctx = self.mock_ctx('test_import_image_clean')
         daemon_client = {}
         client = self.get_client(daemon_client)
 
-        tasks.pull(ctx=ctx)
+        tasks.import_image(ctx=ctx)
         image_id = ctx.instance.runtime_properties['image_id']
         if client.images(name=image_id) is not None:
             test_passed = True

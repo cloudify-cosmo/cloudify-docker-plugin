@@ -28,7 +28,7 @@ from cloudify.decorators import operation
 from utils import build_arg_dict
 from utils import get_container_info
 from utils import inspect_container
-from docker_client import get_client
+from docker_plugin import docker_client
 import docker_plugin.docker_wrapper as docker_wrapper
 
 
@@ -40,8 +40,8 @@ def pull(daemon_client=None, **_):
 
     """
 
-    client = daemon_client or {}
-    client = get_client(daemon_client)
+    daemon_client = daemon_client or {}
+    client = docker_client.get_client(daemon_client)
 
     if ctx.node.properties['use_external_resource'] is True:
         ctx.instance.runtime_properties['repository'] = \
@@ -54,7 +54,7 @@ def pull(daemon_client=None, **_):
     arguments['repository'] = ctx.node.properties['resource_id']
 
     ctx.logger.info('Pulling repository/image: {0}'.format(
-        arguments['repository']))
+        arguments))
 
     try:
         for stream in client.pull(**arguments):
@@ -68,8 +68,7 @@ def pull(daemon_client=None, **_):
                                       ctx.node.properties['resource_id'],
                                       str(e)))
 
-    ctx.instance.runtime_properties['repository'] = \
-        ctx.node.properties['resource_id']
+    ctx.instance.runtime_properties['image_id'] = arguments['repository']
 
 
 @operation
@@ -79,19 +78,14 @@ def build(daemon_client=None, **_):
     """
 
     daemon_client = daemon_client or {}
-    client = get_client(daemon_client)
-
-    if ctx.node.properties.get('path', None) is None:
-        raise NonRecoverableError('No path to a Dockerfile was provided.')
+    client = docker_client.get_client(daemon_client)
 
     arguments = dict()
     args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), {})
     arguments.update(args_to_merge)
-    arguments['path'] = ctx.node.properties['path']
-    arguments['fileobj'] = ctx.node.properties['fileobj']
+    arguments['tag'] = ctx.node.properties['resource_id']
 
-    ctx.logger.info('Building image from path '
-                    '{0}'.format(ctx.node.properties['path']))
+    ctx.logger.info('Building image from blueprint: ')
 
     try:
         response = [line for line in client.build(**arguments)]
@@ -104,10 +98,11 @@ def build(daemon_client=None, **_):
         raise NonRecoverableError('Error while building image: '
                                   '{0}'.format(str(e)))
 
-    image_id = docker_wrapper.get_build_image_id(client, response)
-
-    ctx.instance.runtime_properties['image'] = image_id
-    ctx.logger.info('Build image successful. Image: {0}'.format(image_id))
+    ctx.logger.debug('Response: {}'.format(response))
+    ctx.instance.runtime_properties['image_id'] = \
+        ctx.node.properties['resource_id']
+    ctx.logger.info('Build image successful. Image: {0}'.format(
+        ctx.node.properties['resource_id']))
 
 
 @operation
@@ -117,21 +112,22 @@ def import_image(daemon_client=None, **_):
     """
 
     daemon_client = daemon_client or {}
-    client = get_client(daemon_client)
+    client = docker_client.get_client(daemon_client)
     arguments = dict()
     args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), {})
     arguments.update(args_to_merge)
-    arguments['repository'] = ctx.node.properties['resource_id']
+    arguments['tag'] = ctx.node.properties['resource_id']
     arguments['src'] = ctx.node.properties['src']
-    arguments['tag'] = ctx.node.properties['tag']
 
-    ctx.logger.info('Importing image.')
+    ctx.logger.info('Importing image from blueprint.')
 
     output = client.import_image(**arguments)
 
+    ctx.logger.info('output: {}'.format(output))
+
     image_id = docker_wrapper.get_import_image_id(client, output)
     ctx.logger.info('Image import successful. Image: {0}'.format(image_id))
-    ctx.instance.runtime_properties['docker_image_id'] = image_id
+    ctx.instance.runtime_properties['image_id'] = image_id
 
 
 @operation
@@ -141,7 +137,7 @@ def create_container(daemon_client=None, **_):
     """
 
     daemon_client = daemon_client or {}
-    client = get_client(daemon_client)
+    client = docker_client.get_client(daemon_client)
 
     arguments = dict()
     args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), {})
@@ -171,7 +167,7 @@ def run(daemon_client=None, **_):
     :param daemon_client: optional configuration for client creation
     """
 
-    client = get_client(daemon_client)
+    client = docker_client.get_client(daemon_client)
 
     arguments = dict()
     args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), {})
@@ -231,7 +227,7 @@ def stop(container_stop=None,
     """
     container_stop = container_stop or {}
     daemon_client = daemon_client or {}
-    client = get_client(daemon_client)
+    client = docker_client.get_client(daemon_client)
 
     ctx.logger.info('Stopping container.')
     container = docker_wrapper.get_container_or_raise(client)
@@ -271,7 +267,7 @@ def remove_container(container_remove=None,
 
     """
     daemon_client = daemon_client or {}
-    client = get_client(daemon_client)
+    client = docker_client.get_client(daemon_client)
     container_info = inspect_container(client)
 
     if container_info and container_info['State']['Running']:

@@ -33,7 +33,7 @@ def get_client(daemon_client):
     """
 
     try:
-        return docker.Client(base_url='unix://var/run/docker.sock')
+        return docker.Client(**daemon_client)
     except docker.errors.DockerException as e:
         raise NonRecoverableError('Error while getting client: '
                                   '{0}.'.format(str(e)))
