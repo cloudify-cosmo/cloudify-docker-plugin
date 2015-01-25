@@ -39,15 +39,11 @@ node_types:
       resource_id:
         description: The final image tag.
         type: string 
+        default: ''
       use_existing_resource:
         description: Whether the image already exists or not.
         type: boolean
         default: false
-      path:
-        description: Path to the directory containing the Dockerfile.
-        type: string
-      fileobj: A file object to use as the Dockerfile. (Or a file-like object).
-        type: string
       params:
         description: Any other parameters allowed by the API call that are not listed.
         default: {}
