@@ -25,9 +25,7 @@ import docker.errors
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
-from utils import build_arg_dict
-from utils import get_container_info
-from utils import inspect_container
+from docker_plugin import utils
 from docker_plugin import docker_client
 import docker_plugin.docker_wrapper as docker_wrapper
 
@@ -45,11 +43,12 @@ def pull(daemon_client=None, **_):
 
     if ctx.node.properties['use_external_resource'] is True:
         ctx.instance.runtime_properties['repository'] = \
-            ctx.node.properties['resource_id']
+            ctx.node.properties.get('resource_id')
         return
 
     arguments = dict()
-    args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), {})
+    args_to_merge = utils.build_arg_dict(
+        ctx.node.properties['params'].copy(), {})
     arguments.update(args_to_merge)
     arguments['repository'] = ctx.node.properties['resource_id']
 
@@ -81,7 +80,8 @@ def build(daemon_client=None, **_):
     client = docker_client.get_client(daemon_client)
 
     arguments = dict()
-    args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), {})
+    args_to_merge = utils.build_arg_dict(
+        ctx.node.properties['params'].copy(), {})
     arguments.update(args_to_merge)
     arguments['tag'] = ctx.node.properties['resource_id']
 
@@ -114,7 +114,8 @@ def import_image(daemon_client=None, **_):
     daemon_client = daemon_client or {}
     client = docker_client.get_client(daemon_client)
     arguments = dict()
-    args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), {})
+    args_to_merge = utils.build_arg_dict(
+        ctx.node.properties['params'].copy(), {})
     arguments.update(args_to_merge)
     arguments['tag'] = ctx.node.properties['resource_id']
     arguments['src'] = ctx.node.properties['src']
@@ -139,9 +140,20 @@ def create_container(daemon_client=None, **_):
     daemon_client = daemon_client or {}
     client = docker_client.get_client(daemon_client)
 
+    if ctx.node.properties.get('use_external_resource', False):
+        if 'resource_id' not in ctx.node.properties.keys():
+            raise NonRecoverableError('Use external resource, but '
+                                      'no resource id provided.')
+        ctx.instance.runtime_properties['container_id'] = \
+            ctx.node.properties.get('resource_id')
+        if not ctx.instance.runtime_properties.get('container_id') in \
+                [c.get('Id') for c in client.containers(all=True)]:
+            raise NonRecoverableError('Container specified in resource_id '
+                                      'does not exist.')
+        return
+
     arguments = dict()
-    args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), {})
-    arguments.update(args_to_merge)
+    arguments = utils.get_create_container_params(ctx=ctx)
     arguments['name'] = ctx.node.properties['resource_id']
     arguments['image'] = ctx.node.properties['image']
 
@@ -163,54 +175,63 @@ def create_container(daemon_client=None, **_):
 
 
 @operation
-def run(daemon_client=None, **_):
+def start(retry_interval, daemon_client=None, **_):
     """Run container.
     :param daemon_client: optional configuration for client creation
     """
 
+    daemon_client = daemon_client or {}
     client = docker_client.get_client(daemon_client)
 
+    if ctx.node.properties.get('use_external_resource', False):
+        if 'resource_id' not in ctx.node.properties.keys():
+            raise NonRecoverableError('Use external resource, but '
+                                      'no resource id provided.')
+        if ctx.node.properties.get('resource_id') not in \
+                ctx.instance.runtime_properties.get('container_id'):
+            ctx.logger.error('The resource_id and container_id do not match. '
+                             'Continuing anyway.')
+        if ctx.instance.runtime_properties.get('container_id') not in \
+                [c.get('Id') for c in client.containers(all=True)]:
+            raise NonRecoverableError('{} does not exist.'.format(
+                ctx.instance.runtime_properties.get('container_id')))
+
     arguments = dict()
-    args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), {})
-    arguments.update(args_to_merge)
+    arguments = utils.get_start_params(ctx=ctx)
     arguments['container'] = \
-        ctx.instance.runtime_properties['docker_container']
+        ctx.instance.runtime_properties.get('container_id')
 
-    if ctx.node.properties.key('resource_id', None) is not None:
-        arguments['container'] = ctx.node.properties['resource_id']
-    elif ctx.instance.runtime_properties.get('docker_container',
-                                             None) is not None:
-        arguments['container'] = \
-            ctx.instance.runtime_properties['docker_container']
-    else:
-        raise NonRecoverableError('No container provided.')
-
-    container = ctx.instance.runtime_properties.get('container')
     ctx.logger.info('Starting container.')
 
     try:
-        client.start(**arguments)
+        response = client.start(**arguments)
     except docker.errors.APIError as e:
         raise NonRecoverableError('Failed to start container: '
                                   '{0}.'.format(str(e)))
 
-    docker_wrapper.to_wait_for_processes(client, container,
-                                         processes_to_wait_for)
+    ctx.logger.info('Container started: {}.'.format(response))
 
-    ctx.logger.info('Started container: {0}.'.format(container))
+    if ctx.node.properties.get('params').get('processes_to_wait_for', False):
+        utils.wait_for_processes(retry_interval, client, ctx=ctx)
 
-    container = get_container_info(client)
-    container_inspect = inspect_container(client)
-    ctx.instance.runtime_properties['ports'] = container['Ports']
-    ctx.instance.runtime_properties['network_settings'] = \
-        container_inspect['NetworkSettings']
-    ctx.logger.info('Container: {0}\nForwarded ports: {1}\nTop: {2}.'.format(
-        container['Id'], ctx.instance.runtime_properties['ports'],
-        docker_wrapper.get_top_info(client)))
+    ctx.logger.info('Started container: {0}.'.format(
+        ctx.instance.runtime_properties.get('container_id')))
+
+    if utils.get_container_info(client) is not None:
+        inspect_output = utils.inspect_container(client)
+        ctx.instance.runtime_properties['ports'] = \
+            inspect_output.get('Ports', None)
+        ctx.instance.runtime_properties['network_settings'] = \
+            inspect_output.get('NetworkSettings', None)
+
+    ctx.logger.info('Container: {0} Forwarded ports: {1} Top: {2}.'.format(
+        ctx.instance.runtime_properties.get('container_id'),
+        ctx.instance.runtime_properties.get('ports'),
+        utils.get_top_info(client)))
 
 
 @operation
-def stop(container_stop=None,
+def stop(timeout,
          daemon_client=None,
          **kwargs):
     """Stop container.
@@ -226,15 +247,16 @@ def stop(container_stop=None,
         or when docker.errors.docker.errors.APIError during stop.
 
     """
-    container_stop = container_stop or {}
+
     daemon_client = daemon_client or {}
     client = docker_client.get_client(daemon_client)
 
+    container = ctx.instance.runtime_properties.get('container_id')
+
     ctx.logger.info('Stopping container.')
-    container = docker_wrapper.get_container_or_raise(client)
 
     try:
-        client.stop(container, **container_stop)
+        client.stop(container, timeout)
     except docker.errors.APIError as e:
         raise NonRecoverableError('Failed to stop container: '
                                   '{0}'.format(str(e)))
@@ -243,8 +265,7 @@ def stop(container_stop=None,
 
 
 @operation
-def remove_container(container_remove=None,
-                     container_stop=None,
+def remove_container(v, link, force,
                      daemon_client=None,
                      **kwargs):
     """Delete container.
@@ -269,20 +290,38 @@ def remove_container(container_remove=None,
     """
     daemon_client = daemon_client or {}
     client = docker_client.get_client(daemon_client)
-    container_info = inspect_container(client)
 
-    if container_info and container_info['State']['Running']:
-        container = docker_wrapper.get_container_or_raise(client)
-        ctx.logger.info('Removing container {}'.format(container))
-        try:
-            client.remove_container(container, **container_remove)
-        except docker.errors.APIError as e:
-            raise NonRecoverableError('Failed to delete container: {0}.'
-                                      .format(str(e)))
+    container = ctx.instance.runtime_properties.get('container_id')
 
-        ctx.logger.info('Removed container {}'.format(container))
+    ctx.logger.info('Removing container {}'.format(container))
 
-    remove_image = docker_wrapper.container_remove.pop('remove_image', None)
-    docker_wrapper.remove_container(client, container_remove)
-    if remove_image:
-        docker_wrapper.remove_image(client)
+    try:
+        client.remove_container(container, v, link, force)
+    except docker.errors.APIError as e:
+        raise NonRecoverableError('Failed to delete container: {0}.'
+                                  .format(str(e)))
+    finally:
+        ctx.instance.runtime_properties.pop('container_id')
+
+    ctx.logger.info('Removed container {}'.format(container))
+
+
+@operation
+def remove_image(force, noprune, daemon_client=None,
+                 **_):
+
+    daemon_client = daemon_client or {}
+    client = docker_client.get_client(daemon_client)
+
+    image = ctx.instance.runtime_properties.get('image_id')
+    ctx.logger.info('Removing image: {}'.format(image))
+
+    try:
+        client.remove_image(image, force, noprune)
+    except docker.errors.APIError as e:
+        raise NonRecoverableError('Failed to delete image: {0}.'
+                                  .format(str(e)))
+    finally:
+        ctx.instance.runtime_properties.pop('image_id')
+
+    ctx.logger.info('Removed image: {}'.format(image))
