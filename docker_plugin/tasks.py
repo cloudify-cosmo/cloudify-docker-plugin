@@ -27,21 +27,22 @@ from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
 from docker_plugin import utils
 from docker_plugin import docker_client
-import docker_plugin.docker_wrapper as docker_wrapper
 
 
 @operation
 def pull(daemon_client=None, **_):
-    """Pull image from the Docker hub.
+    """ Identical to the docker pull command.
 
+    :node_property use_external_resource: True or False. Use existing
+        instead of creating a new resource.
+    :node_property resource_id:
     :param daemon_client: optional configuration for client creation
-
     """
 
     daemon_client = daemon_client or {}
     client = docker_client.get_client(daemon_client)
 
-    if ctx.node.properties['use_external_resource'] is True:
+    if ctx.node.properties.get('use_external_resource'):
         ctx.instance.runtime_properties['repository'] = \
             ctx.node.properties.get('resource_id')
         return
@@ -72,7 +73,8 @@ def pull(daemon_client=None, **_):
 
 @operation
 def build(daemon_client=None, **_):
-    """ Builds an image.
+    """ Similar to the docker build command.
+
     :param daemon_client: optional configuration for client creation
     """
 
@@ -107,7 +109,8 @@ def build(daemon_client=None, **_):
 
 @operation
 def import_image(daemon_client=None, **_):
-    """ Imports an image.
+    """ Identical to the docker import command.
+
     :param daemon_client: optional configuration for client creation
     """
 
@@ -126,14 +129,15 @@ def import_image(daemon_client=None, **_):
 
     ctx.logger.info('output: {}'.format(output))
 
-    image_id = docker_wrapper.get_import_image_id(client, output)
+    image_id = utils.get_newest_image_id(client)
     ctx.logger.info('Image import successful. Image: {0}'.format(image_id))
     ctx.instance.runtime_properties['image_id'] = image_id
 
 
 @operation
 def create_container(daemon_client=None, **_):
-    """Create container using image from ctx.instance.runtime_properties.
+    """ Creates a container that can then be .start() ed.
+
     :param daemon_client: optional configuration for client creation
     """
 
@@ -176,8 +180,11 @@ def create_container(daemon_client=None, **_):
 
 @operation
 def start(retry_interval, daemon_client=None, **_):
-    """Run container.
+    """ Similar to the docker start command, but doesn't support attach options.
+
     :param daemon_client: optional configuration for client creation
+    :param retry_interval: The number of seconds between retries during
+        the wait_for_processes bit.
     """
 
     daemon_client = daemon_client or {}
@@ -234,18 +241,11 @@ def start(retry_interval, daemon_client=None, **_):
 def stop(timeout,
          daemon_client=None,
          **kwargs):
-    """Stop container.
-
-    Stop container which id is specified in ctx.instance.runtime_properties
-    ['container'] with optional options from 'container_stop'.
-
+    """ Stops a container. Similar to the docker stop command.
 
     :param daemon_client: optional configuration for client creation
-    :param container_stop: configuration for stopping a container
-    :raises NonRecoverableError:
-        when 'container' in ctx.instance.runtime_properties is None
-        or when docker.errors.docker.errors.APIError during stop.
-
+    :param timeout: Timeout in seconds to wait for the container to stop before
+        sending a SIGKILL.
     """
 
     daemon_client = daemon_client or {}
@@ -268,25 +268,12 @@ def stop(timeout,
 def remove_container(v, link, force,
                      daemon_client=None,
                      **kwargs):
-    """Delete container.
+    """ Remove a container. Similar to the docker rm command.
 
-    Remove container which id is specified in ctx.instance.runtime_properties
-    ['container'] with optional options from 'container_remove'.
-
-    If container is running stop it.
-    if "container_remove['remove_image']" is True then remove image.
-
+    :param v: Remove the volumes associated with the container.
+    :param link: Remove the specified link and not the underlying container.
+    :param force: force the removal of a running container (uses SIGKILL)
     :param daemon_client: optional configuration for client creation
-    :param container_remove: coniguration for removing container
-    :param container_stop: coniguration for stopping a container in case it
-                             is running before removal
-    :raises NonRecoverableError:
-        when 'container' in ctx.instance.runtime_properties is None
-        or 'remove_image' in 'container_remove' is True
-        and 'image' in ctx.instance.runtime_properties is None
-        or when docker.errors.APIError during stop, remove_container,
-        remove_image (for example if image is used by another container).
-
     """
     daemon_client = daemon_client or {}
     client = docker_client.get_client(daemon_client)
@@ -309,6 +296,11 @@ def remove_container(v, link, force,
 @operation
 def remove_image(force, noprune, daemon_client=None,
                  **_):
+    """ Removes an image. Similar to the docker rmi command.
+
+    :param force: Force removal of the image
+    :param noprune: Do not delete untagged parents
+    """
 
     daemon_client = daemon_client or {}
     client = docker_client.get_client(daemon_client)
