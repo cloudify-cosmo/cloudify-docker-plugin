@@ -33,9 +33,7 @@ import docker_plugin.docker_wrapper as docker_wrapper
 @operation
 def pull(daemon_client=None, **_):
     """Pull image from the Docker hub.
-
     :param daemon_client: optional configuration for client creation
-
     """
 
     daemon_client = daemon_client or {}
@@ -133,7 +131,7 @@ def import_image(daemon_client=None, **_):
 
 @operation
 def create_container(daemon_client=None, **_):
-    """Create container using image from ctx.instance.runtime_properties.
+    """Create container.
     :param daemon_client: optional configuration for client creation
     """
 
@@ -176,7 +174,7 @@ def create_container(daemon_client=None, **_):
 
 @operation
 def start(retry_interval, daemon_client=None, **_):
-    """Run container.
+    """ Starts container.
     :param daemon_client: optional configuration for client creation
     """
 
@@ -233,19 +231,11 @@ def start(retry_interval, daemon_client=None, **_):
 @operation
 def stop(timeout,
          daemon_client=None,
-         **kwargs):
-    """Stop container.
-
-    Stop container which id is specified in ctx.instance.runtime_properties
-    ['container'] with optional options from 'container_stop'.
-
-
+         **__):
+    """ Stop container.
+    :param timeout: Timeout in seconds to wait for the container to stop
+        before sending a SIGKILL
     :param daemon_client: optional configuration for client creation
-    :param container_stop: configuration for stopping a container
-    :raises NonRecoverableError:
-        when 'container' in ctx.instance.runtime_properties is None
-        or when docker.errors.docker.errors.APIError during stop.
-
     """
 
     daemon_client = daemon_client or {}
@@ -267,27 +257,15 @@ def stop(timeout,
 @operation
 def remove_container(v, link, force,
                      daemon_client=None,
-                     **kwargs):
+                     **_):
     """Delete container.
 
-    Remove container which id is specified in ctx.instance.runtime_properties
-    ['container'] with optional options from 'container_remove'.
-
-    If container is running stop it.
-    if "container_remove['remove_image']" is True then remove image.
-
+    :param v: Remove the volumes associated with the container.
+    :param link: Remove the specified link and not the underlying container.
+    :param force: Force the removal of a running container (uses SIGKILL).
     :param daemon_client: optional configuration for client creation
-    :param container_remove: coniguration for removing container
-    :param container_stop: coniguration for stopping a container in case it
-                             is running before removal
-    :raises NonRecoverableError:
-        when 'container' in ctx.instance.runtime_properties is None
-        or 'remove_image' in 'container_remove' is True
-        and 'image' in ctx.instance.runtime_properties is None
-        or when docker.errors.APIError during stop, remove_container,
-        remove_image (for example if image is used by another container).
-
     """
+
     daemon_client = daemon_client or {}
     client = docker_client.get_client(daemon_client)
 

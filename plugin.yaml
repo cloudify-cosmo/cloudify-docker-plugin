@@ -13,7 +13,7 @@ node_types:
     derived_from: cloudify.node.Root
     properties:
       resource_id:
-        description: The name of an existing repository.
+        description: The name of a repository or an image.
         type: string 
       use_existing_resource:
         description: Whether the image already exists or not.
@@ -40,7 +40,7 @@ node_types:
     derived_from: cloudify.docker.Image
     properties:
       resource_id:
-        description: The final image tag.
+        description: The name of a repository or an image.
         type: string 
         default: ''
       use_existing_resource:
@@ -48,7 +48,7 @@ node_types:
         type: boolean
         default: false
       params:
-        description: Any other parameters allowed by the API call that are not listed.
+        description: Any parameters allowed by the API call that are not listed.
         default: {}
     interfaces:
       cloudify.interfaces.lifecycle:

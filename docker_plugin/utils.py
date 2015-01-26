@@ -172,3 +172,36 @@ def get_create_container_params(ctx=ctx):
             d[key] = ctx.node.properties['params'].get(key)
 
     return d
+
+def get_import_image_id(client, import_image_output):
+    # It is useful beacause
+    # import_image returns long string where in the second line
+    # after last status is image id
+
+    try:
+        output_line = import_image_output.split('\n')[-2]
+    except IndexError:
+        _log_and_raise(client, unknow_error_message)
+    position_of_last_status = output_line.rfind('status')
+    if position_of_last_status < 0:
+        # If there was an error, there is no 'status'
+        # in second output line
+        # error message is after last 'error'
+        position_of_error = output_line.rfind('error')
+        try:
+            err_msg = output_line[position_of_error:].\
+                split('"')[_IMAGE_IMPORT_ERROR_POSITION]
+        except IndexError:
+            _log_and_raise(client, unknow_error_message)
+        err_msg = 'Error during image import {}'.format(err_msg)
+        _log_and_raise(client, err_msg)
+    try:
+        image_id = output_line[position_of_last_status:].\
+            split('"')[_IMAGE_IMPORT_ID_POSITION]
+    except IndexError:
+        _log_and_raise(client, unknow_error_message)
+    else:
+        if _is_image_id_valid(image_id):
+            return image_id
+        else:
+            _log_and_raise(client, unknow_error_message)
