@@ -58,7 +58,7 @@ class TestPull(testtools.TestCase):
         return ctx
 
     def test_pull_clean(self):
-        """ This test pulls the docker-dev image from
+        """ This test pulls the docker-test-image image from
             the docker hub and deletes it.
         """
 

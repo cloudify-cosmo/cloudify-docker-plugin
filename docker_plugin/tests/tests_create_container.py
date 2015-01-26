@@ -14,11 +14,12 @@
 #    * limitations under the License.
 
 # Built-in Imports
-import testtools
+import json
 
 # Third Party Imports
 from docker import Client
 from docker import errors
+import testtools
 
 # Cloudify Imports is imported and used in operations
 from docker_plugin import tasks
@@ -44,7 +45,7 @@ class TestCreateContainer(testtools.TestCase):
         test_properties = {
             'resource_id': 'cloudify-test-container',
             'use_external_resource': False,
-            'image': 'docker-dev'
+            'image': 'docker-test-image',
             'port': None,
             'params': {
                 'ports': {
@@ -65,17 +66,19 @@ class TestCreateContainer(testtools.TestCase):
         """ This test pulls the docker-dev image from
             the docker hub and deletes it.
         """
-        good = False
         ctx = self.mock_ctx('test_create_container_clean')
         daemon_client = {}
         client = self.get_client(daemon_client)
+        repository = 'docker-test-image'
+
+        for stream in client.pull(repository, stream=True):
+            streamd = json.loads(stream)
+            if streamd.get('status', 'Downloading') is not 'Downloading':
+                ctx.logger.info('Pulling Image status: {0}.'.format(
+                    streamd['status']))
 
         tasks.create_container(ctx=ctx)
         container_id = ctx.instance.runtime_properties['container_id']
         containers = client.containers(all=True)
-        for c in containers:
-            if c.get('Id') in container_id:
-                good = True
-            else:
-                good = False
-        self.assertEquals(good, True)
+        self.assertTrue(container_id in [c.get('Id') for c in containers])
+        client.remove_container(container_id)
