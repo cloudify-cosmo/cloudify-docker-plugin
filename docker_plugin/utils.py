@@ -172,3 +172,14 @@ def get_create_container_params(ctx=ctx):
             d[key] = ctx.node.properties['params'].get(key)
 
     return d
+
+
+def get_newest_image_id(client):
+
+    try:
+        image_id = [image.get('Id') for image in client.images()][0]
+    except docker.errors.APIError as e:
+        raise NonRecoverableError('Unable to get last created image: '
+                                  '{}'.format(e))
+
+    return image_id
