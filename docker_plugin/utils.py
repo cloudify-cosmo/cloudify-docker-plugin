@@ -12,8 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+# Third-party Imports
+from retrying import retry
+import docker
+
 # Cloudify Imports
 from cloudify import ctx
+from cloudify.exceptions import RecoverableError, NonRecoverableError
 
 
 def build_arg_dict(user_supplied, unsupported):
@@ -39,12 +44,14 @@ def get_container_info(client):
 
     """
 
-    container = ctx.instance.runtime_properties.get('container')
-    if container is not None:
-        for c in client.containers():
-            if container in c.itervalues():
-                return c
-    return None
+    if ctx.instance.runtime_properties.get('container_id') is not None:
+        all_containers = client.containers(all=True)
+        for container in all_containers:
+            if ctx.instance.runtime_properties.get('container_id') in \
+                    container.get('Id'):
+                return container
+            else:
+                return None
 
 
 def inspect_container(client):
@@ -59,7 +66,8 @@ def inspect_container(client):
 
     """
 
-    container = ctx.instance.runtime_properties.get('container')
+    container = ctx.instance.runtime_properties.get('container_id')
+
     if container is not None:
         return client.inspect_container(container)
     return None
@@ -70,3 +78,97 @@ def validate_container_ready(ctx):
         and makes sure the container is ready to be used
     """
     ctx.instance.runtime_properties['container_id']
+
+
+def get_top_info(client):
+    """Get container top info.
+    Get container top info using docker top function with container id
+    from ctx.instance.runtime_properties['container'].
+    Transforms data into a simple top table.
+    :param client: docker client
+    :return: top_table
+    :rtype: str
+    :raises NonRecoverableError:
+        when container in ctx.instance.runtime_properties is None.
+    """
+
+    def format_as_table(top_dict):
+        top_table = ' '.join(top_dict['Titles']) + '\n'
+        top_table += '\n'.join(' '.join(p) for p in top_dict['Processes'])
+        return top_table
+
+    ctx.logger.info('Getting TOP info of container.')
+
+    container = ctx.instance.runtime_properties.get('container_id')
+
+    try:
+        top_dict = client.top(container)
+    except docker.errors.APIError as e:
+        raise NonRecoverableError('Unable get container processes from top: '
+                                  '{}'.format(str(e)))
+    else:
+        return format_as_table(top_dict)
+
+
+@retry
+def wait_for_processes(retry_interval, client, ctx):
+
+    process_names = ctx.node.properties.get('params').get(
+        'processes_to_wait_for', False)
+
+    ctx.logger.info('Waiting for these processes to finish: '
+                    '{}'.format(process_names))
+
+    container = ctx.instance.runtime_properties.get('container_id')
+
+    top_result = client.top(container)
+    top_result_processes = top_result.get('Processes')
+    all_active = all([
+        any([
+            # last element of list is the command executed
+            process_name in top_result_process[-1]
+            for top_result_process in top_result_processes
+        ])
+        for process_name in process_names
+    ])
+    if all_active:
+        ctx.logger.info('Container.top(): {}'.format(top_result))
+        return all_active
+    else:
+        raise RecoverableError('Waiting for all these processes. Retrying...',
+                               retry_after=retry_interval)
+
+
+def get_start_params(ctx):
+
+    d = {}
+
+    supported_params = \
+        ['binds', 'lxc_conf', 'publish_all_ports', 'links',
+            'privileged', 'dns', 'dns_search', 'volumes_from',
+            'network_mode', 'restart_policy', 'cap_add',
+            'cap_drop', 'extra_hosts']
+
+    for key in ctx.node.properties['params'].keys():
+        if key in supported_params:
+            d[key] = ctx.node.properties['params'].get(key)
+
+    return d
+
+
+def get_create_container_params(ctx=ctx):
+
+    d = {}
+
+    supported_params = \
+        ['command', 'hostname', 'user', 'detach', 'stdin_open',
+            'tty', 'mem_limit', 'ports', 'environment', 'dns',
+            'volumes', 'volumes_from', 'network_disabled',
+            'entrypoint', 'cpu_shares', 'working_dir',
+            'domainname', 'memswap_limit', 'host_config']
+
+    for key in ctx.node.properties['params'].keys():
+        if key in supported_params:
+            d[key] = ctx.node.properties['params'].get(key)
+
+    return d
