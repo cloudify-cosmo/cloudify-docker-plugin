@@ -32,6 +32,9 @@ node_types:
         delete:
           implementation: docker.docker_plugin.tasks.remove_image
           description: Removes an image.
+          inputs:
+            force: false
+            noprune: false
 
   cloudify.docker.BuildImage:
     derived_from: cloudify.docker.Image
@@ -52,9 +55,6 @@ node_types:
         create:
           implementation: docker.docker_plugin.tasks.build
           description: Build an image from a Dockerfile.
-        delete:
-          implementation: docker.docker_plugin.tasks.remove_image
-          description: Removes an image.
 
   cloudify.docker.ImportImage:
     derived_from: cloudify.docker.Image
@@ -77,9 +77,6 @@ node_types:
         create:
           implementation: docker.docker_plugin.tasks.import_image
           description: Create a new filesystem image from the contents of a tarball.
-        delete:
-          implementation: docker.docker_plugin.tasks.remove_image
-          description: Removes an image.
 
   cloudify.docker.container:
     derived_from: cloudify.nodes.Container
@@ -115,12 +112,20 @@ node_types:
         start:
           implementation: docker.docker_plugin.tasks.start
           description:  Runs a container.
+          inputs:
+            retry_interval: 10
         stop:
           implementation: docker.docker_plugin.tasks.stop
           description: Stops a container.
+          inputs:
+            timeout: 30
         delete:
           implementation: docker.docker_plugin.tasks.remove_container
           description: Deletes a container.
+          inputs:
+            v: false
+            link: true
+            force: false
       cloudify.interfaces.validation:
         commit:
           implementation: docker.docker_plugin.tasks.commit
