@@ -91,6 +91,9 @@ node_types:
         description: Whether the image already exists or not.
         type: boolean
         default: true
+      image:
+        description: >
+          The image to create from if not using external resource.
       ports:
         description: >
           Key value pairs of port bindings as provided to the start function.
