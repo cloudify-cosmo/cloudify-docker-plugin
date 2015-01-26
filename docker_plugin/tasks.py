@@ -142,7 +142,8 @@ def create_container(daemon_client=None, **_):
     arguments = dict()
     args_to_merge = build_arg_dict(ctx.node.properties['params'].copy(), {})
     arguments.update(args_to_merge)
-    arguments['image'] = ctx.node.properties['resource_id']
+    arguments['name'] = ctx.node.properties['resource_id']
+    arguments['image'] = ctx.node.properties['image']
 
     if ctx.node.properties.get('ports', None) is not None:
         arguments['ports']
@@ -157,8 +158,8 @@ def create_container(daemon_client=None, **_):
         raise NonRecoverableError('Error while creating container: '
                                   '{0}'.format(str(e)))
 
-    ctx.instance.runtime_properties['docker_container'] = container['Id']
-    ctx.logger.info('Container created: {0}.'.format(container['Id']))
+    ctx.instance.runtime_properties['container_id'] = container.get('Id')
+    ctx.logger.info('Container created: {0}.'.format(container.get('Id')))
 
 
 @operation
