@@ -89,7 +89,7 @@ class TestStop(testtools.TestCase):
 
         client.start(**d)
 
-        tasks.stop(20, ctx=ctx)
+        tasks.stop(10, 20, ctx=ctx)
 
         self.assertTrue(
             container.get('Id') in
