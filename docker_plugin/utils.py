@@ -201,3 +201,11 @@ def check_container_status(client, ctx):
     container = get_container_info(client, ctx=ctx)
     status = container.get('Status')
     return status
+
+
+def get_container_id_from_name(name, client, ctx):
+    for n, i in [{c.get('Names', 'Id')} for c in client.containers(all=True)]:
+        if name in n:
+            return i
+        else:
+            raise NonRecoverableError('No such container: {}.'.format(name))

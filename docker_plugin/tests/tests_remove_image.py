@@ -43,9 +43,8 @@ class TestRemoveImage(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
-            'resource_id': 'docker-test-image',
-            'use_external_resource': False,
-            'tag': None,
+            'repository': 'docker-test-image',
+            'tag': 'test_tag',
             'params': {
                 'stream': True
             }
@@ -69,7 +68,7 @@ class TestRemoveImage(testtools.TestCase):
         client = self.get_client(daemon_client)
 
         ctx.instance.runtime_properties['image_id'] = \
-            ctx.node.properties.get('resource_id')
+            ctx.node.properties.get('repository')
         image_id = ctx.instance.runtime_properties['image_id']
 
         for stream in client.pull(image_id, stream=True):
@@ -79,6 +78,6 @@ class TestRemoveImage(testtools.TestCase):
                     streamd['status']))
 
         tasks.remove_image(False, False, ctx=ctx)
-        if not client.images(name=image_id):
+        if image_id not in [i.get('Id') for i in client.images()]:
             test_passed = True
         self.assertEqual(test_passed, True)

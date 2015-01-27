@@ -42,7 +42,7 @@ class TestStop(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
-            '': 'cloudify-test-container',
+            'name': 'cloudify-test-container',
             'use_external_resource': False,
             'image': 'docker-test-image',
             'port': None,
@@ -72,7 +72,7 @@ class TestStop(testtools.TestCase):
         client = self.get_client(daemon_client)
 
         arguments = {}
-        arguments['name'] = ctx.node.properties.get('resource_id')
+        arguments['name'] = ctx.node.properties.get('name')
         arguments['image'] = ctx.node.properties.get('image')
         for key in ctx.node.properties.get('params').keys():
             arguments[key] = ctx.node.properties['params'][key]
@@ -80,9 +80,9 @@ class TestStop(testtools.TestCase):
         container = client.create_container(**arguments)
 
         ctx.node.properties['use_external_resource'] = True
-        ctx.node.properties['resource_id'] = container.get('Id')
+        ctx.node.properties['name'] = container.get('Id')
         ctx.instance.runtime_properties['container_id'] = \
-            ctx.node.properties['resource_id']
+            container.get('Id')
 
         d = {}
         d['container'] = container.get('Id')

@@ -44,11 +44,10 @@ class TestBuild(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
-            'resource_id': '{}{}'.format('test/', test_name),
-            'use_external_resource': False,
+            'tag': 'test_tag',
             'params': {
-                'rm': True,
-                'path': path_dir
+                'path': path_dir,
+                'rm': True
             }
         }
 
@@ -69,8 +68,9 @@ class TestBuild(testtools.TestCase):
         client = self.get_client(daemon_client)
 
         tasks.build(ctx=ctx)
+
         image_id = ctx.instance.runtime_properties['image_id']
-        if client.images(name=image_id) is not None:
+        if image_id in [i.get('Id') for i in client.images()]:
             test_passed = True
             client.remove_image(image_id)
         self.assertEqual(test_passed, True)

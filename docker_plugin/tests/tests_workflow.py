@@ -40,7 +40,8 @@ class TestWorkflows(testtools.TestCase):
                                       'blueprint', 'test_pull.yaml')
 
         inputs = {
-            'test_image_name': 'docker-test-image',
+            'test_repo': 'docker-test-image',
+            'test_tag': 'latest',
             'test_container_name': 'test-container'
         }
 

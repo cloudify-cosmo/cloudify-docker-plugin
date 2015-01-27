@@ -45,8 +45,8 @@ class TestImportImage(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
-            'resource_id': 'example-repo',
-            'use_external_resource': False,
+            'repository': 'example-repo',
+            'tag': 'test_tag',
             'src': source_file,
             'params': {
                 'repository': '{}{}'.format('test/', test_name)
@@ -71,7 +71,7 @@ class TestImportImage(testtools.TestCase):
 
         tasks.import_image(ctx=ctx)
         image_id = ctx.instance.runtime_properties['image_id']
-        if client.images(name=image_id) is not None:
+        if image_id in [i.get('Id') for i in client.images()]:
             test_passed = True
             client.remove_image(image_id)
         self.assertEqual(test_passed, True)

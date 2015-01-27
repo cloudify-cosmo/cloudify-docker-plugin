@@ -43,8 +43,7 @@ class TestCreateContainer(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
-            'resource_id': 'cloudify-test-container',
-            'use_external_resource': False,
+            'name': 'cloudify-test-container',
             'image': 'docker-test-image',
             'port': None,
             'params': {
@@ -69,9 +68,9 @@ class TestCreateContainer(testtools.TestCase):
         ctx = self.mock_ctx('test_create_container_clean')
         daemon_client = {}
         client = self.get_client(daemon_client)
-        repository = 'docker-test-image'
+        image = 'docker-test-image'
 
-        for stream in client.pull(repository, stream=True):
+        for stream in client.pull(image, stream=True):
             streamd = json.loads(stream)
             if streamd.get('status', 'Downloading') is not 'Downloading':
                 ctx.logger.info('Pulling Image status: {0}.'.format(

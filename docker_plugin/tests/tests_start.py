@@ -44,8 +44,7 @@ class TestStart(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
-            '': 'cloudify-test-container',
-            'use_external_resource': False,
+            'name': 'cloudify-test-container',
             'image': 'docker-test-image',
             'port': None,
             'params': {
@@ -72,16 +71,16 @@ class TestStart(testtools.TestCase):
         ctx = self.mock_ctx('test_start_container_clean')
         daemon_client = {}
         client = self.get_client(daemon_client)
-        repository = 'docker-test-image'
+        image = 'docker-test-image'
 
-        for stream in client.pull(repository, stream=True):
+        for stream in client.pull(image, stream=True):
             streamd = json.loads(stream)
             if streamd.get('status', 'Downloading') is not 'Downloading':
                 ctx.logger.info('Pulling Image status: {0}.'.format(
                     streamd['status']))
 
         arguments = {}
-        arguments['name'] = ctx.node.properties.get('resource_id')
+        arguments['name'] = ctx.node.properties.get('name')
         arguments['image'] = ctx.node.properties.get('image')
         for key in ctx.node.properties.get('params').keys():
             arguments[key] = ctx.node.properties['params'][key]
@@ -89,9 +88,9 @@ class TestStart(testtools.TestCase):
         container = client.create_container(**arguments)
 
         ctx.node.properties['use_external_resource'] = True
-        ctx.node.properties['resource_id'] = container.get('Id')
+        ctx.node.properties['name'] = container.get('Id')
         ctx.instance.runtime_properties['container_id'] = \
-            ctx.node.properties['resource_id']
+            container.get('Id')
 
         now = time.time()
         tasks.start(10, ctx=ctx)

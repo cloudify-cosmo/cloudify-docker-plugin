@@ -34,9 +34,7 @@ def pull(daemon_client=None, **_):
     """ cloudify.docker.Image type create lifecycle operation.
         Identical to the docker pull command.
 
-    :node_property use_external_resource: True or False. Use existing
-        instead of creating a new resource.
-    :node_property resource_id: The repository to pull.
+    :node_property repository: The repository to pull.
     :node_property params: (Optional) Use any other parameter allowed
         by the docker API to Docker PY.
     :param daemon_client: optional configuration for client creation
@@ -45,20 +43,15 @@ def pull(daemon_client=None, **_):
     daemon_client = daemon_client or {}
     client = docker_client.get_client(daemon_client)
 
-    if ctx.node.properties.get('use_external_resource'):
-        ctx.instance.runtime_properties['repository'] = \
-            ctx.node.properties.get('resource_id')
-        return
-
     arguments = dict()
     args_to_merge = utils.build_arg_dict(
         ctx.node.properties['params'].copy(), {})
     arguments.update(args_to_merge)
 
-    arguments['repository'] = ctx.node.properties['resource_id']
-    ctx.instance.runtime_properties['repository'] = arguments['repository']
+    arguments['tag'] = ctx.node.properties['tag']
+    arguments['repository'] = ctx.node.properties['repository']
 
-    ctx.logger.info('Pulling repository/image: {0}'.format(
+    ctx.logger.info('Pulling repository: {0}'.format(
         arguments))
 
     try:
@@ -70,7 +63,7 @@ def pull(daemon_client=None, **_):
     except docker.errors.APIError as e:
         raise NonRecoverableError('Unabled to pull image: {0}.'
                                   'Error: {1}.'.format(
-                                      ctx.node.properties['resource_id'],
+                                      arguments,
                                       str(e)))
 
     image_id = utils.get_newest_image_id(client)
@@ -98,20 +91,15 @@ def build(daemon_client=None, **_):
     daemon_client = daemon_client or {}
     client = docker_client.get_client(daemon_client)
 
-    if ctx.node.properties.get('use_external_resource'):
-        ctx.instance.runtime_properties['repository'] = \
-            ctx.node.properties.get('resource_id')
-        return
-
     arguments = dict()
     args_to_merge = utils.build_arg_dict(
         ctx.node.properties['params'].copy(), {})
     arguments.update(args_to_merge)
 
-    arguments['tag'] = ctx.node.properties['resource_id']
+    arguments['tag'] = ctx.node.properties['tag']
 
     ctx.logger.info('Building image.')
-    ctx.logger.debug('Provded params: {}'.format(arguments))
+    ctx.logger.debug('Provided params: {}'.format(arguments))
 
     try:
         response = [line for line in client.build(**arguments)]
@@ -120,6 +108,8 @@ def build(daemon_client=None, **_):
                                   '{0}.'.format(
                                       ctx.node.properties['resource_id'],
                                       str(e)))
+    except TypeError:
+        raise NonRecoverableError('No fileobj or path was provided.')
     except OSError as e:
         raise NonRecoverableError('Error while building image: '
                                   '{0}'.format(str(e)))
@@ -149,17 +139,12 @@ def import_image(daemon_client=None, **_):
     daemon_client = daemon_client or {}
     client = docker_client.get_client(daemon_client)
 
-    if ctx.node.properties.get('use_external_resource'):
-        ctx.instance.runtime_properties['repository'] = \
-            ctx.node.properties.get('resource_id')
-        return
-
     arguments = dict()
     args_to_merge = utils.build_arg_dict(
         ctx.node.properties['params'].copy(), {})
     arguments.update(args_to_merge)
 
-    arguments['repository'] = ctx.node.properties['resource_id']
+    arguments['repository'] = ctx.node.properties['repository']
     arguments['src'] = ctx.node.properties['src']
 
     ctx.logger.info('Importing image.')
@@ -198,19 +183,17 @@ def create_container(daemon_client=None, **_):
     client = docker_client.get_client(daemon_client)
 
     if ctx.node.properties.get('use_external_resource', False):
-        if 'resource_id' not in ctx.node.properties.keys():
+        if 'name' not in ctx.node.properties.keys():
             raise NonRecoverableError('Use external resource, but '
                                       'no resource id provided.')
         ctx.instance.runtime_properties['container_id'] = \
-            ctx.node.properties.get('resource_id')
-        if utils.get_container_info(client, ctx=ctx) is None:
-            raise NonRecoverableError('{} does not exist.'.format(
-                ctx.instance.runtime_properties.get('container_id')))
+            utils.get_container_id_from_name(ctx.node.properties.get(
+                                             'name'), client, ctx=ctx)
         return
 
     arguments = dict()
     arguments = utils.get_create_container_params(ctx=ctx)
-    arguments['name'] = ctx.node.properties['resource_id']
+    arguments['name'] = ctx.node.properties['name']
     arguments['image'] = ctx.node.properties['image']
 
     if ctx.node.properties.get('ports', None) is not None:
