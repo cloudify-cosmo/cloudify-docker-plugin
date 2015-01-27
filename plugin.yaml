@@ -10,31 +10,39 @@ plugins:
 node_types:
 
   cloudify.docker.Image:
-    derived_from: cloudify.node.Root
+    derived_from: cloudify.nodes.Root
     properties:
       resource_id:
         description: The name of a repository or an image.
         type: string 
-      use_existing_resource:
+      use_external_resource:
         description: Whether the image already exists or not.
         type: boolean
         default: false
-      tag:
-        description: The tag.
-        type: string
+      install_agent:
+        description: whether to install the cloudify agent on the host
+        type: boolean
+        default: true
       params:
-        description: Any other parameters allowed by the API call that are not listed.
+        description: Any parameters allowed by the API call that are not listed.
         default: {}
     interfaces:
+      cloudify.interfaces.lifecycle:
         create:
+          #    Identical to the docker pull command.
           implementation: docker.docker_plugin.tasks.pull
-          description: Pull an image or a repository from a Docker registry server.
         delete:
+          #    Remove an image. Similar to the docker rmi command.
           implementation: docker.docker_plugin.tasks.remove_image
-          description: Removes an image.
           inputs:
-            force: false
-            noprune: false
+            force:
+              description: Force removal of the image
+              type: boolean
+              default: false
+            noprune:
+              description: Do not delete untagged parents
+              type: boolean
+              default: false
 
   cloudify.docker.BuildImage:
     derived_from: cloudify.docker.Image
@@ -43,7 +51,7 @@ node_types:
         description: The name of a repository or an image.
         type: string 
         default: ''
-      use_existing_resource:
+      use_external_resource:
         description: Whether the image already exists or not.
         type: boolean
         default: false
@@ -53,16 +61,19 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
+          #    Similar to the docker build command. Either path or fileobj needs
+          #    to be set. path can be a local path (to a directory containing a
+          #    Dockerfile) or a remote URL. fileobj must be a readable file like object
+          #    to a Dockerfile.
           implementation: docker.docker_plugin.tasks.build
-          description: Build an image from a Dockerfile.
 
   cloudify.docker.ImportImage:
     derived_from: cloudify.docker.Image
     properties:
       resource_id:
-        description: The image tag.
+        description: The repository to create.
         type: string 
-      use_existing_resource:
+      use_external_resource:
         description: Whether the image already exists or not.
         type: boolean
         default: false
@@ -75,19 +86,22 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
+          #    Identical to the docker import command. If src is a string or unicode string
+          #    it will be treated as a URL to fetch the image from. To import an image from
+          #    the local machine src needs to be a file like object or bytes collection.
+          #    To import from a tarball use your absolute path to your tarball.
           implementation: docker.docker_plugin.tasks.import_image
-          description: Create a new filesystem image from the contents of a tarball.
 
-  cloudify.docker.container:
+  cloudify.docker.Container:
     derived_from: cloudify.nodes.Container
     properties:
       resource_id:
-        description: The container to start.
+        description: The name of the Docker container.
         type: string 
-      use_existing_resource:
-        description: Whether the image already exists or not.
+      use_external_resource:
+        description: Whether the container already exists or not.
         type: boolean
-        default: true
+        default: false
       image:
         description: >
           The image to create from if not using external resource.
@@ -97,56 +111,65 @@ node_types:
           The create function is designed to get only the keys for assignment
           of the ports parameter.
         default: []
-      volumes:
+      install_agent:
+        description: whether to install the cloudify agent on the host
+        type: boolean
+        default: true
+      params:
         description: >
-          A list of dictinaries describing volume mounts as described in the
-          Using Volumes article in docker-py readthedocs.
-        default: []
-      params: {}
-        description: Any parameters in the create_container function that are not mentioned here.
+          Any parameters in the create_container function that are not mentioned here.
+        default: {}
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
+          #    Creates a container that can then be .start() ed.
+          #    Parameters are similar to those for the docker run command
+          #    except it does not support the attach options.
           implementation: docker.docker_plugin.tasks.create_container
-          description: Creates a container from an image.
         start:
+          #    Similar to the docker start command, but does not support attach options. 
           implementation: docker.docker_plugin.tasks.start
-          description:  Runs a container.
           inputs:
-            retry_interval: 10
+            retry_interval:
+              description: >
+                Before finishing start checks to see that all processes
+                on the container are ready. This is the interval between
+                checks.
+              type: integer
+              default: 10
         stop:
+          #    Stops a container. Similar to the docker stop command.
           implementation: docker.docker_plugin.tasks.stop
-          description: Stops a container.
           inputs:
-            timeout: 30
+            retry_interval:
+              description: >
+                Before finishing start checks to see that all processes
+                on the container are ready. This is the interval between
+                checks.
+              type: integer
+              default: 10
+            timeout:
+              description: >
+                Timeout in seconds to wait for the container to stop before sending a SIGKILL
+              type: integer
+              default: 30
         delete:
+          #    Remove a container. Similar to the docker rm command.
           implementation: docker.docker_plugin.tasks.remove_container
-          description: Deletes a container.
           inputs:
-            v: false
-            link: true
-            force: false
-      cloudify.interfaces.validation:
-        commit:
-          implementation: docker.docker_plugin.tasks.commit
-          description: Create a new image from a container's changes.
-      cloudify.interfaces.docker_lifecycle:
-        attach:
-          implementation: docker.docker_plugin.tasks.attach
-          description: Attach to a running container.
-        copy:
-          implementation: docker.docker_plugin.tasks.copy
-          description: Copy files/folders from a container's filesystem to the host path.
-        execute:
-          implementation: docker.docker_plugin.tasks.execute
-          description: Run a command in a new container.
-        export:
-          implementation: docker.docker_plugin.tasks.export
-          description:  Stream the contents of a container as a tar archive.
-        inspect:
-          implementation: docker.docker_plugin.tasks.inspect
-          description: Return low-level information on a container
+            v:
+              description: Remove the volumes associated with the container
+              type: boolean
+              default: false
+            link:
+              description: Remove the specified link and not the underlying container
+              type: boolean
+              default: true
+            force: 
+              description: Force the removal of a running container (uses SIGKILL)
+              type: boolean
+              default: false
 
 relationships:
-  cloudify.docker.container_based_on_image:
-    derived_from: cloudify.relationships.node_depends_on
+  cloudify.docker.container_depends_on_image:
+    derived_from: cloudify.relationships.depends_on
