@@ -31,34 +31,22 @@ def build_arg_dict(user_supplied, unsupported):
     return arguments
 
 
-def get_container_info(client):
-    """Get container info.
+def get_newest_image_id(client):
 
-    Get list of containers dictionaries from docker containers function.
-    Find container which is specified in
-    ctx.instance.runtime_properties['container'].
+    try:
+        image_id = [image.get('Id') for image in client.images()][0]
+    except docker.errors.APIError as e:
+        raise NonRecoverableError('Unable to get last created image: '
+                                  '{}'.format(e))
 
-    :param client: docker client
-    :return: container_info
-    :rtype: dict
-
-    """
-
-    if ctx.instance.runtime_properties.get('container_id') is not None:
-        all_containers = client.containers(all=True)
-        for container in all_containers:
-            if ctx.instance.runtime_properties.get('container_id') in \
-                    container.get('Id'):
-                return container
-            else:
-                return None
+    return image_id
 
 
 def inspect_container(client):
     """Inspect container.
 
     Call inspect with container id from
-    ctx.instance.runtime_properties['container'].
+    ctx.instance.runtime_properties['container_id'].
 
     :param client: docker client
     :return: container_info
@@ -69,15 +57,15 @@ def inspect_container(client):
     container = ctx.instance.runtime_properties.get('container_id')
 
     if container is not None:
-        return client.inspect_container(container)
-    return None
-
-
-def validate_container_ready(ctx):
-    """ Checks the containers processes
-        and makes sure the container is ready to be used
-    """
-    ctx.instance.runtime_properties['container_id']
+        try:
+            output = client.inspect_container(container)
+        except docker.errors.APIError as e:
+            raise NonRecoverableError('Unable to inspect container: '
+                                      '{}'.format(str(e)))
+        else:
+            return output
+    else:
+        return None
 
 
 def get_top_info(client):
@@ -121,7 +109,12 @@ def wait_for_processes(retry_interval, client, ctx):
 
     container = ctx.instance.runtime_properties.get('container_id')
 
-    top_result = client.top(container)
+    try:
+        top_result = client.top(container)
+    except docker.errors.APIError as e:
+        raise NonRecoverableError('Unable get container processes from top: '
+                                  '{}'.format(str(e)))
+
     top_result_processes = top_result.get('Processes')
     all_active = all([
         any([
@@ -137,6 +130,36 @@ def wait_for_processes(retry_interval, client, ctx):
     else:
         raise RecoverableError('Waiting for all these processes. Retrying...',
                                retry_after=retry_interval)
+
+
+def get_container_info(client, ctx):
+    """Get container info.
+
+    Get list of containers dictionaries from docker containers function.
+    Find container which is specified in
+    ctx.instance.runtime_properties['container'].
+
+    :param client: docker client
+    :return: container_info
+    :rtype: dict
+
+    """
+
+    if ctx.instance.runtime_properties.get('container_id') is None:
+        return None
+
+    try:
+        all_containers = client.containers(all=True)
+    except docker.errors.APIError as e:
+        raise NonRecoverableError('Unable to list all containers: '
+                                  '{}.'.format(str(e)))
+
+    for container in all_containers:
+        if ctx.instance.runtime_properties.get('container_id') in \
+                container.get('Id'):
+            return container
+        else:
+            return None
 
 
 def get_start_params(ctx):
@@ -156,7 +179,7 @@ def get_start_params(ctx):
     return d
 
 
-def get_create_container_params(ctx=ctx):
+def get_create_container_params(ctx):
 
     d = {}
 
@@ -174,12 +197,7 @@ def get_create_container_params(ctx=ctx):
     return d
 
 
-def get_newest_image_id(client):
-
-    try:
-        image_id = [image.get('Id') for image in client.images()][0]
-    except docker.errors.APIError as e:
-        raise NonRecoverableError('Unable to get last created image: '
-                                  '{}'.format(e))
-
-    return image_id
+def check_container_status(client, ctx):
+    container = get_container_info(client, ctx=ctx)
+    status = container.get('Status')
+    return status
