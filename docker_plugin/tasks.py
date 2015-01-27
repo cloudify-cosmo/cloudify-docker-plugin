@@ -20,7 +20,6 @@ import json
 
 # Third-party Imports
 import docker.errors
-from retrying import retry
 
 # Cloudify Imports
 from cloudify import ctx
@@ -286,7 +285,6 @@ def start(retry_interval, daemon_client=None, **_):
         inspect_output.get('Ports', None), top_info))
 
 
-@retry
 @operation
 def stop(retry_interval, timeout, daemon_client=None, **_):
     """ cloudify.docker.container type stop lifecycle operation.
