@@ -10,14 +10,12 @@ plugins:
 node_types:
 
   cloudify.docker.Image:
-    derived_from: cloudify.nodes.Container
+    derived_from: cloudify.nodes.Root
     properties:
       tag:
         description: The image tag.
     interfaces:
       cloudify.interfaces.lifecycle:
-        delete:
-          implementation: docker.docker_plugin.tasks.remove_image
         delete:
           implementation: docker.docker_plugin.tasks.remove_image
           inputs:
@@ -84,10 +82,6 @@ node_types:
           The create function is designed to get only the keys for assignment
           of the ports parameter.
         default: {}
-      install_agent:
-        description: whether to install the cloudify agent on the host
-        type: boolean
-        default: true
       params:
         description: >
           Any parameters in the create_container function that are not mentioned here.
