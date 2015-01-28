@@ -5,7 +5,7 @@
 plugins:
   docker:
     executor: host_agent
-    source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/master.zip
+    source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/CFY-1923-add-docker-contianer-type.zip
 
 node_types:
 
