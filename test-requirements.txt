@@ -2,4 +2,3 @@ nose
 nose-cov
 testfixtures
 testtools
-retrying
