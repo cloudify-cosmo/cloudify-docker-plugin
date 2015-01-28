@@ -14,6 +14,7 @@
 #    * limitations under the License.
 
 # Built-in Imports
+import json
 
 # Third Party Imports
 import testtools
@@ -70,6 +71,13 @@ class TestStop(testtools.TestCase):
         ctx = self.mock_ctx('test_stop_clean')
         daemon_client = {}
         client = self.get_client(daemon_client)
+        image = 'docker-test-image'
+
+        for stream in client.pull(image, stream=True):
+            streamd = json.loads(stream)
+            if streamd.get('status', 'Downloading') is not 'Downloading':
+                ctx.logger.info('Pulling Image status: {0}.'.format(
+                    streamd['status']))
 
         arguments = {}
         arguments['name'] = ctx.node.properties.get('name')
@@ -98,3 +106,6 @@ class TestStop(testtools.TestCase):
             [c.get('Id') for c in client.containers()])
 
         client.remove_container(container.get('Id'))
+        if ['docker-test-image:latest'] in \
+                [i.get('RepoTags') for i in client.images()]:
+            client.remove_image('docker-test-image', force=True)

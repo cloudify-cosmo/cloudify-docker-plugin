@@ -102,3 +102,6 @@ class TestStart(testtools.TestCase):
             self.assertTrue(False)
         client.stop(container.get('Id'))
         client.remove_container(container.get('Id'))
+        if ['docker-test-image:latest'] in \
+                [i.get('RepoTags') for i in client.images()]:
+            client.remove_image('docker-test-image', force=True)

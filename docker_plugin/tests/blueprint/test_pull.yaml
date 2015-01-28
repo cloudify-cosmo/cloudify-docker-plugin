@@ -23,7 +23,6 @@ node_templates:
     properties:
       repository: { get_input: test_repo }
       tag: { get_input: test_tag }
-      install_agent: false
       params:
         stream: true
         insecure_registry: false
@@ -37,7 +36,8 @@ node_templates:
       use_external_resource: false
       name: { get_input: test_container_name }
       image: { get_property: [ test_image, repository ] }
-      install_agent: false
+      install_agent:
+        default: false
       ports:
         22: 22
         80: 80

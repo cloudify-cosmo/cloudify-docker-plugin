@@ -64,6 +64,10 @@ class TestWorkflows(testtools.TestCase):
         daemon_client = {}
         client = self.get_client(daemon_client)
 
+        if ['docker-test-image:latest'] in \
+                [i.get('RepoTags') for i in client.images()]:
+            client.remove_image('docker-test-image', force=True)
+
         # execute install workflow
         self.env.execute('install', task_retries=0)
 
@@ -84,3 +88,6 @@ class TestWorkflows(testtools.TestCase):
             repotags.append(i.get('RepoTags'))
 
         self.assertFalse('docker-test-image' in [tag for tag in repotags])
+        if ['docker-test-image:latest'] in \
+                [i.get('RepoTags') for i in client.images()]:
+            client.remove_image('docker-test-image', force=True)

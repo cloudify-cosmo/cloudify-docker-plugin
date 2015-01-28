@@ -67,6 +67,10 @@ class TestRemoveImage(testtools.TestCase):
         daemon_client = {}
         client = self.get_client(daemon_client)
 
+        if ['docker-test-image:latest'] in \
+                [i.get('RepoTags') for i in client.images()]:
+            client.remove_image('docker-test-image', force=True)
+
         ctx.instance.runtime_properties['image_id'] = \
             ctx.node.properties.get('repository')
         image_id = ctx.instance.runtime_properties['image_id']
