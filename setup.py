@@ -20,14 +20,14 @@ from setuptools import setup
 setup(
 
     name='cloudify-docker-plugin',
-    version='1.2a3',
+    version='1.2a2',
     author='Gigaspaces',
     author_email='cosmo-admin@gigaspaces.com',
     description='A Cloudify plugin enabling it to create'
                 'and manipulate Docker containers.',
     license='LICENCE',
     install_requires=[
-        'cloudify-plugins-common==3.2a3',
+        'cloudify-plugins-common==3.2a2',
         'docker-py==0.7.1',
         'retrying==1.3.3'
     ],
