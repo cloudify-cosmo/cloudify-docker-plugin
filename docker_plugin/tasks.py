@@ -251,6 +251,8 @@ def start(retry_interval, daemon_client=None, **_):
             inspect_output.get('Ports', None)
         ctx.instance.runtime_properties['network_settings'] = \
             inspect_output.get('NetworkSettings', None)
+        ctx.instance.runtime_properties['ip'] = \
+            inspect_output['NetworkSettings'].get('IPAddress')
 
     top_info = utils.get_top_info(client)
 
