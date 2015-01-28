@@ -44,6 +44,7 @@ class TestCreateContainer(testtools.TestCase):
         test_node_id = test_name
         test_properties = {
             'name': 'cloudify-test-container',
+            'use_external_resource': False,
             'image': 'docker-test-image',
             'port': None,
             'params': {
