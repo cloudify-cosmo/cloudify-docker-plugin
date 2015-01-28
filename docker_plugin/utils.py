@@ -13,7 +13,6 @@
 #    under the License.
 
 # Third-party Imports
-from retrying import retry
 import docker
 
 # Cloudify Imports
@@ -98,7 +97,6 @@ def get_top_info(client):
         return format_as_table(top_dict)
 
 
-@retry
 def wait_for_processes(retry_interval, client, ctx):
 
     process_names = ctx.node.properties.get('params').get(
@@ -164,24 +162,16 @@ def get_container_info(client, ctx):
 
 def get_start_params(ctx):
 
-    d = {}
-
     supported_params = \
         ['binds', 'lxc_conf', 'publish_all_ports', 'links',
             'privileged', 'dns', 'dns_search', 'volumes_from',
             'network_mode', 'restart_policy', 'cap_add',
             'cap_drop', 'extra_hosts']
 
-    for key in ctx.node.properties['params'].keys():
-        if key in supported_params:
-            d[key] = ctx.node.properties['params'].get(key)
-
-    return d
+    return get_params(supported_params)
 
 
 def get_create_container_params(ctx):
-
-    d = {}
 
     supported_params = \
         ['command', 'hostname', 'user', 'detach', 'stdin_open',
@@ -189,6 +179,13 @@ def get_create_container_params(ctx):
             'volumes', 'volumes_from', 'network_disabled',
             'entrypoint', 'cpu_shares', 'working_dir',
             'domainname', 'memswap_limit', 'host_config']
+
+    return get_params(supported_params)
+
+
+def get_params(supported_params):
+
+    d = {}
 
     for key in ctx.node.properties['params'].keys():
         if key in supported_params:
@@ -204,7 +201,9 @@ def check_container_status(client, ctx):
 
 
 def get_container_id_from_name(name, client, ctx):
-    for n, i in [{c.get('Names', 'Id')} for c in client.containers(all=True)]:
+    for n, i in \
+            [(c.get('Names'),
+              c.get('Id')) for c in client.containers(all=True)]:
         if name in n:
             return i
         else:
