@@ -9,63 +9,19 @@ plugins:
 
 node_types:
 
-  cloudify.docker.Image:
-    derived_from: cloudify.nodes.Root
-    properties:
-      tag:
-        description: The image tag.
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        delete:
-          implementation: docker.docker_plugin.tasks.remove_image
-          inputs:
-            force:
-              description: Force removal of the image
-              type: boolean
-              default: false
-            noprune:
-              description: Do not delete untagged parents
-              type: boolean
-              default: false
-
-  cloudify.docker.ImageFromScratch:
-    derived_from: cloudify.docker.Image
-    properties:
-      params: {}
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          implementation: docker.docker_plugin.tasks.build
-
-  cloudify.docker.RepositoryImage:
-    derived_from: cloudify.docker.Image
-    properties:
-      repository:
-        description: The repository to pull.
-      params:
-        description: Any parameters allowed by the API call that are not listed.
-        default: {}
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          implementation: docker.docker_plugin.tasks.pull
-
-  cloudify.docker.FileSystemImage:
-    derived_from: cloudify.docker.Image
-    properties:
-      repository: 
-        description: The repository to create.
-      src:
-        description: Path to tarfile or URL.
-        type: string
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          implementation: docker.docker_plugin.tasks.import_image
-
   cloudify.docker.Container:
     derived_from: cloudify.nodes.Root
     properties:
+      image:
+        description: >
+          A dict describing a docker image. If pulling an image from a
+          docker hub, you must specify the repository. You may additionally
+          specify the tag, if none is given, latest is assumed.
+          Alternately, you may import an image from an archive. In this case
+          provide the src, which is path to the archive, as well as a repository
+          name. If you provide src, it is assumed that you are importing
+          an image.
+        default: {}
       name:
         description: The name of the Docker container.
         type: string 
@@ -125,12 +81,8 @@ node_types:
             link:
               description: Remove the specified link and not the underlying container
               type: boolean
-              default: true
+              default: false
             force: 
               description: Force the removal of a running container (uses SIGKILL)
               type: boolean
               default: false
-
-relationships:
-  cloudify.docker.container_depends_on_image:
-    derived_from: cloudify.relationships.depends_on
