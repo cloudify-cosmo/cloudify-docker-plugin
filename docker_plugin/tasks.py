@@ -237,7 +237,7 @@ def pull(client, arguments, ctx):
     try:
         for stream in client.pull(**arguments):
             stream_dict = json.loads(stream)
-            image_id = stream_dict.get('Id', image_id)
+            image_id = stream_dict.get('id', image_id)
             if 'Downloading' not in stream_dict['status']:
                 ctx.logger.info('Pulling Image status: {0}.'.format(
                     stream_dict))
@@ -269,8 +269,6 @@ def import_image(client, arguments, ctx):
 
     ctx.logger.info('Importing image. {}'.format(arguments))
 
-    image_id = None
-
     try:
         output = client.import_image(**arguments)
     except docker.errors.APIError as e:
@@ -278,6 +276,7 @@ def import_image(client, arguments, ctx):
                                   '{0}.'.format(str(e)))
 
     ctx.logger.info('output: {}'.format(output))
+    image_id = json.loads(output).get('status')
 
     image_id = utils.get_image_id(arguments.get('tag'), image_id, client)
     ctx.instance.runtime_properties['image_id'] = image_id
