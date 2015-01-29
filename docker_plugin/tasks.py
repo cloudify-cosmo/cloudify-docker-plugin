@@ -238,8 +238,9 @@ def pull(client, arguments, ctx):
         for stream in client.pull(**arguments):
             stream_dict = json.loads(stream)
             image_id = stream_dict.get('Id', image_id)
-            ctx.logger.info('Pulling Image status: {0}.'.format(
-                stream_dict))
+            if 'Downloading' not in stream_dict['status']:
+                ctx.logger.info('Pulling Image status: {0}.'.format(
+                    stream_dict))
     except docker.errors.APIError as e:
         raise NonRecoverableError('Unabled to pull image: {0}.'
                                   'Error: {1}.'.format(
