@@ -42,9 +42,11 @@ def get_image_id(tag, image_id, client):
     for img in images:
         img_id, tags = (str(img.get('Id')), img.get('RepoTags'))
         if filter(None, [repotag if
-                  tag in repotag else None for repotag in tags]):
+                  tag in repotag else None for repotag in tags]) \
+                and image_id in img_id:
             ctx.logger.debug(
-                'The tags match, assigning this image id: {}.'.format(img_id))
+                'The tags and ids match, '
+                'assigning this image id: {}.'.format(img_id))
             return img_id
         elif str(image_id) in img_id:
             ctx.logger.debug(
