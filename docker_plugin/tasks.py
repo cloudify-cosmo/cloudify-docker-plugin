@@ -30,131 +30,6 @@ from docker_plugin import docker_client
 
 
 @operation
-def pull(daemon_client=None, **_):
-    """ cloudify.docker.Image type create lifecycle operation.
-        Identical to the docker pull command.
-
-    :node_property repository: The repository to pull.
-    :node_property params: (Optional) Use any other parameter allowed
-        by the docker API to Docker PY.
-    :param daemon_client: optional configuration for client creation
-    """
-
-    daemon_client = daemon_client or {}
-    client = docker_client.get_client(daemon_client)
-
-    arguments = dict()
-    arguments['tag'] = ctx.node.properties['tag']
-    arguments['repository'] = ctx.node.properties['repository']
-    arguments.update(ctx.node.properties['params'].copy())
-
-    ctx.logger.info('Pulling repository: {0}'.format(
-        arguments))
-
-    try:
-        for stream in client.pull(**arguments):
-            streamd = json.loads(stream)
-            if streamd.get('status', 'Downloading') is not 'Downloading':
-                ctx.logger.info('Pulling Image status: {0}.'.format(
-                    streamd['status']))
-    except docker.errors.APIError as e:
-        raise NonRecoverableError('Unabled to pull image: {0}.'
-                                  'Error: {1}.'.format(
-                                      arguments,
-                                      str(e)))
-
-    image_id = utils.get_newest_image_id(client)
-    ctx.instance.runtime_properties['image_id'] = image_id
-    ctx.logger.info('Pulled image. Set image_id: {0}'.format(image_id))
-
-
-@operation
-def build(daemon_client=None, **_):
-    """ cloudify.docker.BuildImage type create lifecycle operation.
-        Derives some definition from parent type cloudify.docker.Image.
-        Similar to the docker build command.
-
-    :node_property use_external_resource: True or False. Use existing
-        instead of creating a new resource.
-    :node_property resource_id:  A tag to add to the final image.
-    :node_property params: (Optional) Use any other parameter allowed
-        by the docker API to Docker PY. Either path or fileobj needs
-        to be set. path can be a local path (to a directory containing
-        a Dockerfile) or a remote URL. fileobj must be a readable
-        file-like object to a Dockerfile.
-    :param daemon_client: optional configuration for client creation
-    """
-
-    daemon_client = daemon_client or {}
-    client = docker_client.get_client(daemon_client)
-
-    arguments = dict()
-    arguments['tag'] = ctx.node.properties['tag']
-    arguments.update(ctx.node.properties['params'].copy())
-
-    ctx.logger.info('Building image.')
-    ctx.logger.debug('Provided params: {}'.format(arguments))
-
-    try:
-        response = [line for line in client.build(**arguments)]
-    except docker.errors.APIError as e:
-        raise NonRecoverableError('Error while building image: '
-                                  '{0}.'.format(
-                                      ctx.node.properties['resource_id'],
-                                      str(e)))
-    except TypeError:
-        raise NonRecoverableError('No fileobj or path was provided.')
-    except OSError as e:
-        raise NonRecoverableError('Error while building image: '
-                                  '{0}'.format(str(e)))
-
-    ctx.logger.debug('Response: {}'.format(response))
-
-    image_id = utils.get_newest_image_id(client)
-    ctx.instance.runtime_properties['image_id'] = image_id
-    ctx.logger.info('Build image successful. Image: {0}'.format(image_id))
-
-
-@operation
-def import_image(daemon_client=None, **_):
-    """ cloudify.docker.ImportImage type create lifecycle operation.
-        Derives some definition from parent type cloudify.docker.Image.
-        Identical to the docker import command.
-
-    :node_property use_external_resource: True or False. Use existing
-        instead of creating a new resource.
-    :node_property resource_id:  The repository to create.
-    :node_property src: Path to tarfile or URL.
-    :node_property params: (Optional) Use any other parameter allowed
-        by the docker API to Docker PY.
-    :param daemon_client: optional configuration for client creation
-    """
-
-    daemon_client = daemon_client or {}
-    client = docker_client.get_client(daemon_client)
-
-    arguments = dict()
-    arguments['repository'] = ctx.node.properties['repository']
-    arguments['src'] = ctx.node.properties['src']
-    arguments.update(ctx.node.properties['params'].copy())
-
-    ctx.logger.info('Importing image.')
-    ctx.logger.debug('Provded params: {}'.format(arguments))
-
-    try:
-        output = client.import_image(**arguments)
-    except docker.errors.APIError as e:
-        raise NonRecoverableError('Unable to import image: '
-                                  '{0}.'.format(str(e)))
-
-    ctx.logger.info('output: {}'.format(output))
-
-    image_id = utils.get_newest_image_id(client)
-    ctx.instance.runtime_properties['image_id'] = image_id
-    ctx.logger.info('Image import successful. Image: {0}'.format(image_id))
-
-
-@operation
 def create_container(daemon_client=None, **_):
     """ cloudify.docker.container type create lifecycle operation.
         Creates a container that can then be .start() ed.
@@ -183,15 +58,16 @@ def create_container(daemon_client=None, **_):
         return
 
     arguments = dict()
-    arguments = utils.get_create_container_params(ctx=ctx)
     arguments['name'] = ctx.node.properties['name']
-    arguments['image'] = ctx.node.properties['image']
+    arguments['image'] = get_image(client, ctx=ctx)
+    arguments.update(utils.get_create_container_params(ctx=ctx))
 
     if ctx.node.properties.get('ports'):
         for key in ctx.node.properties['ports'].keys():
-            arguments['ports'] = ctx.node.properties['ports'].get(key, None)
+            arguments['ports'] = ctx.node.properties['ports'][key]
 
     ctx.logger.info('Creating container')
+    ctx.logger.info('Create container arguments: {}'.format(arguments))
 
     try:
         container = client.create_container(**arguments)
@@ -251,8 +127,6 @@ def start(retry_interval, daemon_client=None, **_):
             inspect_output.get('Ports', None)
         ctx.instance.runtime_properties['network_settings'] = \
             inspect_output.get('NetworkSettings', None)
-        ctx.instance.runtime_properties['ip'] = \
-            inspect_output['NetworkSettings'].get('IPAddress')
 
     top_info = utils.get_top_info(client)
 
@@ -322,29 +196,89 @@ def remove_container(v, link, force, daemon_client=None, **_):
     ctx.logger.info('Removed container {}'.format(container))
 
 
-@operation
-def remove_image(force, noprune, daemon_client=None, **_):
-    """ cloudify.docker.Image type delete lifecycle operation.
-        Any properties and runtime_properties set in the create
-        lifecycle operation are also available in delete.
-        Removes an image. Similar to the docker rmi command.
+def get_image(client, ctx):
 
-    :param force: Force removal of the image
-    :param noprune: Do not delete untagged parents
+    arguments = dict()
+
+    if ctx.node.properties['image'].get('src', None) is None and \
+            ctx.node.properties['image'].get('repository') is None:
+        raise NonRecoverableError('You must provide a src or repository '
+                                  'or both the image dictionary. Exiting.')
+    else:
+        arguments['repository'] = \
+            ctx.node.properties['image'].get('repository', ctx.instance.id)
+        arguments['tag'] = ctx.node.properties['image'].get('tag', '')
+
+    if ctx.node.properties['image'].get('src', None) is not None:
+        ctx.logger.info('src provided, importing image. If repository '
+                        'name was specified, that will be the image name, '
+                        'otherwise, the image name will be the instance id.')
+        arguments['src'] = ctx.node.properties['image']['src']
+        return import_image(client, arguments, ctx=ctx)
+    else:
+        return pull(client, arguments, ctx=ctx)
+
+
+def pull(client, arguments, ctx):
+    """ cloudify.docker.Image type create lifecycle operation.
+        Identical to the docker pull command.
+
+    :node_property repository: The repository to pull.
+    :node_property params: (Optional) Use any other parameter allowed
+        by the docker API to Docker PY.
+    :param daemon_client: optional configuration for client creation
     """
 
-    daemon_client = daemon_client or {}
-    client = docker_client.get_client(daemon_client)
+    arguments.update({'stream': True})
+    ctx.logger.info('Pulling repository: {0}'.format(arguments))
 
-    image = ctx.instance.runtime_properties['image_id']
-    ctx.logger.info('Removing image: {}'.format(image))
+    image_id = None
 
     try:
-        client.remove_image(image, force, noprune)
+        for stream in client.pull(**arguments):
+            stream_dict = json.loads(stream)
+            image_id = stream_dict.get('Id', image_id)
+            ctx.logger.info('Pulling Image status: {0}.'.format(
+                stream_dict))
     except docker.errors.APIError as e:
-        raise NonRecoverableError('Failed to delete image: '
-                                  '{}.'.format(str(e)))
-    finally:
-        del(ctx.instance.runtime_properties['image_id'])
+        raise NonRecoverableError('Unabled to pull image: {0}.'
+                                  'Error: {1}.'.format(
+                                      arguments,
+                                      str(e)))
 
-    ctx.logger.info('Removed image: {}'.format(image))
+    image_id = utils.get_image_id(arguments.get('tag'), image_id, client)
+    ctx.instance.runtime_properties['image_id'] = image_id
+    ctx.logger.info('Pulled image, image_id: {0}'.format(image_id))
+    return image_id
+
+
+def import_image(client, arguments, ctx):
+    """ cloudify.docker.ImportImage type create lifecycle operation.
+        Derives some definition from parent type cloudify.docker.Image.
+        Identical to the docker import command.
+
+    :node_property use_external_resource: True or False. Use existing
+        instead of creating a new resource.
+    :node_property resource_id:  The repository to create.
+    :node_property src: Path to tarfile or URL.
+    :node_property params: (Optional) Use any other parameter allowed
+        by the docker API to Docker PY.
+    :param daemon_client: optional configuration for client creation
+    """
+
+    ctx.logger.info('Importing image. {}'.format(arguments))
+
+    image_id = None
+
+    try:
+        output = client.import_image(**arguments)
+    except docker.errors.APIError as e:
+        raise NonRecoverableError('Unable to import image: '
+                                  '{0}.'.format(str(e)))
+
+    ctx.logger.info('output: {}'.format(output))
+
+    image_id = utils.get_image_id(arguments.get('tag'), image_id, client)
+    ctx.instance.runtime_properties['image_id'] = image_id
+    ctx.logger.info('Imported image, image_id {0}'.format(image_id))
+    return image_id
