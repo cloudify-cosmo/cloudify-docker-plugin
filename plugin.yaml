@@ -64,7 +64,7 @@ node_types:
           implementation: docker.docker_plugin.tasks.import_image
 
   cloudify.docker.Container:
-    derived_from: cloudify.nodes.Container
+    derived_from: cloudify.nodes.Root
     properties:
       name:
         description: The name of the Docker container.
