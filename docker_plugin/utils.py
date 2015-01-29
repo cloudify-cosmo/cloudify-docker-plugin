@@ -20,25 +20,42 @@ from cloudify import ctx
 from cloudify.exceptions import RecoverableError, NonRecoverableError
 
 
-def build_arg_dict(user_supplied, unsupported):
+def get_image_id(tag, image_id, client):
 
-    arguments = {}
-    for pair in user_supplied.items():
-        arguments['{0}'.format(pair[0])] = pair[1]
-    for pair in unsupported.items():
-        arguments['{0}'.format(pair[0])] = pair[1]
-    return arguments
-
-
-def get_newest_image_id(client):
+    ctx.logger.debug('This image id {} is an image id stub and '
+                     'was the last image id captured during '
+                     'the pull operation. If you provided a '
+                     'tag, it might not match the image id of '
+                     'the tagged image. So this operation '
+                     'searches for an id that matches that tag. '
+                     'If there is no tag match and only a match '
+                     'between image ids then the complete id is '
+                     'returned. If there is no match at all, the '
+                     'image_id stub is returned.'.format(image_id))
 
     try:
-        image_id = [image.get('Id') for image in client.images()][0]
+        images = client.images()
     except docker.errors.APIError as e:
         raise NonRecoverableError('Unable to get last created image: '
                                   '{}'.format(e))
 
-    return image_id
+    for img in images:
+        img_id, tags = (str(img.get('Id')), img.get('RepoTags'))
+        if filter(None, [repotag if
+                  tag in repotag else None for repotag in tags]):
+            ctx.logger.debug(
+                'The tags match, assigning this image id: {}.'.format(img_id))
+            return img_id
+        elif str(image_id) in img_id:
+            ctx.logger.debug(
+                'No tags match, assigning this image id: {}.'.format(img_id))
+            return img_id
+
+    ctx.logger.debug('Unable to verify that the image id '
+                     'received during pull is valid.')
+
+    ctx.logger.info('Returning image id {}.'.format(image_id))
+    return str(image_id)
 
 
 def inspect_container(client):
