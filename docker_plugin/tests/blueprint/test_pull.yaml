@@ -18,26 +18,14 @@ inputs:
     default: ''
 
 node_templates:
-  test_image:
-    type: cloudify.docker.RepositoryImage
-    properties:
-      repository: { get_input: test_repo }
-      tag: { get_input: test_tag }
-      params:
-        stream: true
-        insecure_registry: false
-    relationships:
-      - type: cloudify.relationships.contained_in
-        target: host
 
   test_container:
     type: cloudify.docker.Container
     properties:
-      use_external_resource: false
       name: { get_input: test_container_name }
-      image: { get_property: [ test_image, repository ] }
-      install_agent:
-        default: false
+      image:
+        repository: docker-test-image
+        tag: latest
       ports:
         22: 22
         80: 80
@@ -46,8 +34,6 @@ node_templates:
         tty: true
         command: /bin/sleep 30
     relationships:
-      - type: cloudify.docker.container_depends_on_image
-        target: test_image
       - type: cloudify.relationships.contained_in
         target: host
 
