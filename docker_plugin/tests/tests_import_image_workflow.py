@@ -31,18 +31,19 @@ IGNORED_LOCAL_WORKFLOW_MODULES = (
 )
 
 
-class TestWorkflows(testtools.TestCase):
+class TestImportImageWorkflow(testtools.TestCase):
 
     def setUp(self):
-        super(TestWorkflows, self).setUp()
+        super(TestImportImageWorkflow, self).setUp()
         # build blueprint path
         blueprint_path = os.path.join(os.path.dirname(__file__),
-                                      'blueprint', 'test_pull.yaml')
+                                      'blueprint', 'test_import_image.yaml')
+        image_source = os.path.join(os.path.dirname(__file__),
+                                    'resources', 'example.tar')
 
         inputs = {
-            'test_repo': 'docker-test-image',
-            'test_tag': 'latest',
-            'test_container_name': 'test-container'
+            'test_image_src': image_source,
+            'test_container_name': 'test-import-image-container'
         }
 
         # setup local workflow execution environment
@@ -51,18 +52,24 @@ class TestWorkflows(testtools.TestCase):
             ignored_modules=IGNORED_LOCAL_WORKFLOW_MODULES)
 
     def get_client(self, daemon_client):
+
         try:
             return Client(**daemon_client)
         except errors.DockerException as e:
             raise NonRecoverableError('Error while getting client: '
                                       '{0}.'.format(str(e)))
 
-    def test_workflow(self):
+    def tests_import_image_workflow(self):
         """ Tests the install workflow using the built in
             workflows.
         """
         daemon_client = {}
         client = self.get_client(daemon_client)
+
+        for container in client.containers(all=True):
+            if 'test-container' in \
+                    ''.join([name for name in container.get('Names')]):
+                client.remove_container('test-container')
 
         if ['docker-test-image:latest'] in \
                 [i.get('RepoTags') for i in client.images()]:
