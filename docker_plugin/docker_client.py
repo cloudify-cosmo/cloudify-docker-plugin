@@ -28,8 +28,6 @@ def get_client(daemon_client):
     :raises NonRecoverableError:
         when docker.errors.APIError during client.
     :return: docker client
-    :rtype: docker.Client
-
     """
 
     try:
