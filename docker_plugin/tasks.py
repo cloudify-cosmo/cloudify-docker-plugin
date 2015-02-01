@@ -107,6 +107,7 @@ def start(retry_interval, daemon_client=None, **_):
         ctx.instance.runtime_properties['container_id']
 
     ctx.logger.info('Starting container.')
+    ctx.logger.info('start container arguments: {}.'.format(arguments))
 
     try:
         response = client.start(**arguments)
