@@ -102,7 +102,7 @@ def start(retry_interval, daemon_client=None, **_):
 
     arguments = dict()
     arguments['port_bindings'] = ctx.node.properties['ports'].copy()
-    arguments = utils.get_start_params(ctx=ctx)
+    arguments.update(utils.get_start_params(ctx=ctx))
     arguments['container'] = \
         ctx.instance.runtime_properties['container_id']
 
