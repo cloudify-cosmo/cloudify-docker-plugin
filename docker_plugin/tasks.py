@@ -60,6 +60,7 @@ def create_container(daemon_client=None, **_):
     arguments = dict()
     arguments['name'] = ctx.node.properties['name']
     arguments['image'] = get_image(client, ctx=ctx)
+    arguments['ports'] = []
     for key in ctx.node.properties['ports'].keys():
         arguments['ports'].append(ctx.node.properties['ports'][key])
 
