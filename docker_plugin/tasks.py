@@ -60,11 +60,9 @@ def create_container(daemon_client=None, **_):
     arguments = dict()
     arguments['name'] = ctx.node.properties['name']
     arguments['image'] = get_image(client, ctx=ctx)
-    arguments.update(utils.get_create_container_params(ctx=ctx))
+    arguments['ports'] = ctx.node.properties['ports'].copy()
 
-    if ctx.node.properties.get('ports'):
-        for key in ctx.node.properties['ports'].keys():
-            arguments['ports'] = ctx.node.properties['ports'][key]
+    arguments.update(utils.get_create_container_params(ctx=ctx))
 
     ctx.logger.info('Creating container')
     ctx.logger.info('Create container arguments: {}'.format(arguments))
