@@ -194,7 +194,7 @@ def get_create_container_params(ctx):
 
     supported_params = \
         ['command', 'hostname', 'user', 'detach', 'stdin_open',
-            'tty', 'mem_limit', 'ports', 'environment', 'dns',
+            'tty', 'mem_limit', 'environment', 'dns',
             'volumes', 'volumes_from', 'network_disabled',
             'entrypoint', 'cpu_shares', 'working_dir',
             'domainname', 'memswap_limit', 'host_config']

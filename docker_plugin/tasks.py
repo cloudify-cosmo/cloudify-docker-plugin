@@ -60,7 +60,8 @@ def create_container(daemon_client=None, **_):
     arguments = dict()
     arguments['name'] = ctx.node.properties['name']
     arguments['image'] = get_image(client, ctx=ctx)
-    arguments['ports'] = ctx.node.properties['ports'].copy()
+    for key in ctx.node.properties['ports'].keys():
+        arguments['ports'].append(ctx.node.properties['ports'][key])
 
     arguments.update(utils.get_create_container_params(ctx=ctx))
 
@@ -99,6 +100,7 @@ def start(retry_interval, daemon_client=None, **_):
                 ctx.instance.runtime_properties.get('container_id')))
 
     arguments = dict()
+    arguments['port_bindings'] = ctx.node.properties['ports'].copy()
     arguments = utils.get_start_params(ctx=ctx)
     arguments['container'] = \
         ctx.instance.runtime_properties['container_id']
