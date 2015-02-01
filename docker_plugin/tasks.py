@@ -192,13 +192,24 @@ def remove_container(v, link, force, daemon_client=None, **_):
     except docker.errors.APIError as e:
         raise NonRecoverableError('Failed to delete container: '
                                   '{0}.'.format(str(e)))
-    finally:
-        del(ctx.instance.runtime_properties['container_id'])
+
+    del(ctx.instance.runtime_properties['container_id'])
 
     ctx.logger.info('Removed container {}'.format(container))
 
 
 def get_image(client, ctx):
+    """ Depending on what you specify in the blueprint, this determines
+        whether to use pull or import_image.
+        If src is specified, import_image will import and image from
+        a tar file.
+        If not then the the plugin will try to pull the image from Docker
+        hub.
+
+    :param client: The Docker client.
+    :param ctx: The Cloudify Context.
+    :return: Returns the image_id to the create_container method.
+    """
 
     arguments = dict()
 
@@ -225,7 +236,6 @@ def pull(client, arguments, ctx):
     """ cloudify.docker.Image type create lifecycle operation.
         Identical to the docker pull command.
 
-    :node_property repository: The repository to pull.
     :node_property params: (Optional) Use any other parameter allowed
         by the docker API to Docker PY.
     :param daemon_client: optional configuration for client creation
@@ -260,9 +270,6 @@ def import_image(client, arguments, ctx):
         Derives some definition from parent type cloudify.docker.Image.
         Identical to the docker import command.
 
-    :node_property use_external_resource: True or False. Use existing
-        instead of creating a new resource.
-    :node_property resource_id:  The repository to create.
     :node_property src: Path to tarfile or URL.
     :node_property params: (Optional) Use any other parameter allowed
         by the docker API to Docker PY.
