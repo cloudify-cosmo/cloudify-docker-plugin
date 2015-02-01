@@ -21,6 +21,21 @@ from cloudify.exceptions import RecoverableError, NonRecoverableError
 
 
 def get_image_id(tag, image_id, client):
+    """ Attempts to get the correct image id from Docker.
+
+    :param tag: The image tag provided in the blueprint.
+    :param image_id: The last id extracted from the stream
+        during the image pull process.
+    :param client: docker client
+    returns image id
+        if the last extracted image id matches the tag
+        and the image id for that tag matches the pulled
+        image id then that image id is used
+        if the image id only matches an image id in docker
+        then that is used
+        if no match is found the image id initially passed is
+        kept
+    """
 
     ctx.logger.debug('This image id {} is an image id stub and '
                      'was the last image id captured during '
@@ -68,8 +83,6 @@ def inspect_container(client):
 
     :param client: docker client
     :return: container_info
-    :rtype: dict
-
     """
 
     container = ctx.instance.runtime_properties.get('container_id')
@@ -91,9 +104,9 @@ def get_top_info(client):
     Get container top info using docker top function with container id
     from ctx.instance.runtime_properties['container'].
     Transforms data into a simple top table.
+
     :param client: docker client
     :return: top_table
-    :rtype: str
     :raises NonRecoverableError:
         when container in ctx.instance.runtime_properties is None.
     """
@@ -117,7 +130,15 @@ def get_top_info(client):
 
 
 def wait_for_processes(retry_interval, client, ctx):
+    """ The user may provide a node param in the blueprint wait_for_processes.
+        This is a list of processes to verify are active on the container
+        before completing the start operation. If all processes are not active
+        the function will be retried.
 
+    :param retry_interval: the number of seconds between retries.
+    :param client: the client. see docker_client.
+    :param ctx: the cloudify context.
+    """
     process_names = ctx.node.properties.get('params').get(
         'processes_to_wait_for', False)
 
@@ -150,16 +171,19 @@ def wait_for_processes(retry_interval, client, ctx):
 
 
 def get_container_info(client, ctx):
-    """Get container info.
+    """ Gets the container ID from the cloudify context.
+        Searches Docker for that container ID.
+        Returns dockers dictionary for that container ID.
+
+
 
     Get list of containers dictionaries from docker containers function.
     Find container which is specified in
     ctx.instance.runtime_properties['container'].
 
-    :param client: docker client
-    :return: container_info
-    :rtype: dict
-
+    :param client: the client. see docker_client.
+    :param ctx: the cloudify context.
+    :return: container dictionary
     """
 
     if ctx.instance.runtime_properties.get('container_id') is None:
@@ -180,6 +204,12 @@ def get_container_info(client, ctx):
 
 
 def get_start_params(ctx):
+    """ Maintain the list of supported parameters for the docker API
+        start function. use this with get_params.
+
+    :param ctx: the cloudify context.
+    returns the dictionary returned from get_params.
+    """
 
     supported_params = \
         ['binds', 'lxc_conf', 'publish_all_ports', 'links',
@@ -191,6 +221,12 @@ def get_start_params(ctx):
 
 
 def get_create_container_params(ctx):
+    """ Maintain the list of supported parameters for the docker API
+        create function. use this with get_params.
+
+    :param ctx: the cloudify context.
+    returns the dictionary returned from get_params.
+    """
 
     supported_params = \
         ['command', 'hostname', 'user', 'detach', 'stdin_open',
@@ -203,6 +239,14 @@ def get_create_container_params(ctx):
 
 
 def get_params(supported_params):
+    """ Give this method a list of supported parameters and it
+        retrieves the node property value provided by the user
+        in the blueprint. This can be used as kwargs in an API
+        call.
+
+    :param supported_params: a list of supported parameters
+    returns a dictionary of parameters
+    """
 
     d = {}
 
@@ -214,12 +258,28 @@ def get_params(supported_params):
 
 
 def check_container_status(client, ctx):
+    """ Gets the status value from the container info dictionary
+
+    :param client: the client. see docker_client.
+    :param ctx: the cloudify context.
+    returns status
+    """
+
     container = get_container_info(client, ctx=ctx)
     status = container.get('Status')
     return status
 
 
 def get_container_id_from_name(name, client, ctx):
+    """ Queries the local list of containers for a container with name.
+
+    :param name: the name of a container.
+    :param client: the client. see docker_client.
+    :param ctx: the cloudify context.
+    if name is in the list of containers return the id of the container.
+    if name is not in the list of containers raise NonRecoverableError
+    """
+
     for n, i in \
             [(c.get('Names'),
               c.get('Id')) for c in client.containers(all=True)]:
