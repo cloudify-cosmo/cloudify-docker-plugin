@@ -170,7 +170,7 @@ def wait_for_processes(retry_interval, client, ctx):
                                retry_after=retry_interval)
 
 
-def get_container_info(client, ctx):
+def get_container_dictionary(client, ctx):
     """ Gets the container ID from the cloudify context.
         Searches Docker for that container ID.
         Returns dockers dictionary for that container ID.
@@ -265,7 +265,7 @@ def check_container_status(client, ctx):
     returns status
     """
 
-    container = get_container_info(client, ctx=ctx)
+    container = get_container_dictionary(client, ctx=ctx)
     status = container.get('Status')
     return status
 

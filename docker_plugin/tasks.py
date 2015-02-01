@@ -96,7 +96,7 @@ def start(retry_interval, daemon_client=None, **_):
     client = docker_client.get_client(daemon_client)
 
     if ctx.node.properties['use_external_resource']:
-        if utils.get_container_info(client, ctx=ctx) is None:
+        if utils.get_container_dictionary(client, ctx=ctx) is None:
             raise NonRecoverableError('{} does not exist.'.format(
                 ctx.instance.runtime_properties.get('container_id')))
 
@@ -123,7 +123,7 @@ def start(retry_interval, daemon_client=None, **_):
     ctx.logger.info('Started container: {0}.'.format(
         ctx.instance.runtime_properties['container_id']))
 
-    if utils.get_container_info(client, ctx=ctx) is not None:
+    if utils.get_container_dictionary(client, ctx=ctx) is not None:
         inspect_output = utils.inspect_container(client)
         ctx.instance.runtime_properties['ports'] = \
             inspect_output.get('Ports', None)
