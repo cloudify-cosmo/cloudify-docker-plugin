@@ -68,11 +68,8 @@ def get_image_id(tag, image_id, client):
                 'No tags match, assigning this image id: {}.'.format(img_id))
             return img_id
 
-    ctx.logger.debug('Unable to verify that the image id '
-                     'received during pull is valid.')
-
-    ctx.logger.info('Returning image id {}.'.format(image_id))
-    return str(image_id)
+    raise NonRecoverableError('Unable to verify that the image id '
+                              'received during pull is valid.')
 
 
 def inspect_container(client):
@@ -266,6 +263,8 @@ def check_container_status(client, ctx):
     """
 
     container = get_container_dictionary(client, ctx=ctx)
+    if container is None:
+        raise NonRecoverableError('Unable to retrieve container status.')
     status = container.get('Status')
     return status
 

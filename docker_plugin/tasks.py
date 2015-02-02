@@ -66,8 +66,7 @@ def create_container(daemon_client=None, **_):
 
     arguments.update(utils.get_create_container_params(ctx=ctx))
 
-    ctx.logger.info('Creating container')
-    ctx.logger.info('Create container arguments: {}'.format(arguments))
+    ctx.logger.info('Creating container with arguments: {}'.format(arguments))
 
     try:
         container = client.create_container(**arguments)
@@ -106,8 +105,7 @@ def start(retry_interval, daemon_client=None, **_):
     arguments['container'] = \
         ctx.instance.runtime_properties['container_id']
 
-    ctx.logger.info('Starting container.')
-    ctx.logger.info('start container arguments: {}.'.format(arguments))
+    ctx.logger.info('Starting container with arguments: {}.'.format(arguments))
 
     try:
         response = client.start(**arguments)

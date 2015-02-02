@@ -83,6 +83,9 @@ class TestPullWorkflow(testtools.TestCase):
             if 'container_id' in instance.runtime_properties.keys():
                 container_instance = instance
 
+        self.assertTrue(container_instance is not None,
+                        'Failed getting container.')
+
         container_id = container_instance.runtime_properties.get(
             'container_id')
         containers = client.containers(all=True)
