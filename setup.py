@@ -34,7 +34,7 @@ if 'CELERY_WORK_DIR' in os.environ:
 setuptools.setup(
 
     name='cloudify-docker-plugin',
-    version='1.2a2',
+    version='1.1',
     author='Gigaspaces',
     author_email='cosmo-admin@gigaspaces.com',
     description='A Cloudify plugin enabling it to create'
