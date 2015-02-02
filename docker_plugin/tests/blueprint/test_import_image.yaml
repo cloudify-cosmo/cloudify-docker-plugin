@@ -1,0 +1,41 @@
+# DSL version, should appear in the main blueprint.yaml
+# and may appear in other imports. In such case, the versions must match
+tosca_definitions_version: cloudify_dsl_1_0
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.1/types.yaml
+  - ../../../plugin.yaml
+
+inputs:
+
+  test_image_src:
+    type: string
+
+  test_container_name:
+    type: string
+    default: ''
+
+node_templates:
+
+  test_container:
+    type: cloudify.docker.Container
+    properties:
+      name: { get_input: test_container_name }
+      image:
+        src: { get_input: test_image_src }
+        repository: whatasave
+      ports:
+        80: 80
+      params:
+        stdin_open: true
+        tty: true
+        command: /bin/sleep 1
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: host
+
+  host:
+    type: cloudify.nodes.Compute
+    properties:
+      ip: localhost
+      install_agent: false

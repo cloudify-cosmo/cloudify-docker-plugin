@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
 import os
 import setuptools
 from setuptools.command.install import install
@@ -31,17 +30,19 @@ if 'CELERY_WORK_DIR' in os.environ:
     additional_configuration.update(
         {'cmdclass': {'install': CustomInstallCommand}})
 
+
 setuptools.setup(
+
     name='cloudify-docker-plugin',
-    version='1.2a3',
+    version='1.1',
     author='Gigaspaces',
     author_email='cosmo-admin@gigaspaces.com',
     description='A Cloudify plugin enabling it to create'
                 'and manipulate Docker containers.',
     license='LICENCE',
     install_requires=[
-        'cloudify-plugins-common==3.2a3',
-        'docker-py==0.6.0',
+        'cloudify-plugins-common==3.1',
+        'docker-py==0.7.1'
     ],
     packages=['docker_plugin'],
     zip_safe=False,

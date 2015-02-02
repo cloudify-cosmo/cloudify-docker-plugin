@@ -3,6 +3,86 @@
 ##################################################################################
 
 plugins:
-    docker:
-        executor: host_agent
-        source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/master.zip
+  docker:
+    executor: host_agent
+    source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/CFY-1923-add-docker-contianer-type.zip
+
+node_types:
+
+  cloudify.docker.Container:
+    derived_from: cloudify.nodes.Root
+    properties:
+      image:
+        description: >
+          A dict describing a docker image. If pulling an image from a
+          docker hub, you must specify the repository. You may additionally
+          specify the tag, if none is given, latest is assumed.
+          Alternately, you may import an image from an archive. In this case
+          provide the src, which is path to the archive, as well as a repository
+          name. If you provide src, it is assumed that you are importing
+          an image.
+        default: {}
+      name:
+        description: The name of the Docker container.
+        type: string 
+      use_external_resource:
+        description: Whether the container already exists or not.
+        type: boolean
+        default: false
+      image:
+        description: >
+          The image to create from if not using external resource.
+      ports:
+        description: >
+          Key value pairs of port bindings as provided to the start function.
+          The create function is designed to get only the keys for assignment
+          of the ports parameter.
+        default: {}
+      params:
+        description: >
+          Any parameters in the create_container function that are not mentioned here.
+        default: {}
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.docker_plugin.tasks.create_container
+        start:
+          implementation: docker.docker_plugin.tasks.start
+          inputs:
+            retry_interval:
+              description: >
+                Before finishing start checks to see that all processes
+                on the container are ready. This is the interval between
+                checks.
+              type: integer
+              default: 10
+        stop:
+          implementation: docker.docker_plugin.tasks.stop
+          inputs:
+            retry_interval:
+              description: >
+                Before finishing start checks to see that all processes
+                on the container are ready. This is the interval between
+                checks.
+              type: integer
+              default: 10
+            timeout:
+              description: >
+                Timeout in seconds to wait for the container to stop before sending a SIGKILL
+              type: integer
+              default: 30
+        delete:
+          implementation: docker.docker_plugin.tasks.remove_container
+          inputs:
+            v:
+              description: Remove the volumes associated with the container
+              type: boolean
+              default: false
+            link:
+              description: Remove the specified link and not the underlying container
+              type: boolean
+              default: false
+            force: 
+              description: Force the removal of a running container (uses SIGKILL)
+              type: boolean
+              default: false
