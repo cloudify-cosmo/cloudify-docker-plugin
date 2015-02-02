@@ -183,7 +183,10 @@ def get_container_dictionary(client, ctx):
     :return: container dictionary
     """
 
-    if ctx.instance.runtime_properties.get('container_id') is None:
+    container_id = ctx.instance.runtime_properties.get('container_id')
+    if container_id is None:
+        ctx.logger.debug('Unable to retrieve container dictionary.'
+                         'ctx container ID value is None')
         return None
 
     try:
@@ -193,10 +196,13 @@ def get_container_dictionary(client, ctx):
                                   '{}.'.format(str(e)))
 
     for container in all_containers:
-        if ctx.instance.runtime_properties.get('container_id') in \
+        if container_id in \
                 container.get('Id'):
             return container
         else:
+            ctx.logger.debug('Unable to retrieve container dictionary.'
+                             'container with ID {} does not exist.'
+                             .format(container_id))
             return None
 
 
@@ -259,14 +265,13 @@ def check_container_status(client, ctx):
 
     :param client: the client. see docker_client.
     :param ctx: the cloudify context.
-    returns status
+    returns status or None if not found.
     """
 
     container = get_container_dictionary(client, ctx=ctx)
     if container is None:
-        raise NonRecoverableError('Unable to retrieve container status.')
-    status = container.get('Status')
-    return status
+        return None
+    return container.get('Status', None)
 
 
 def get_container_id_from_name(name, client, ctx):
