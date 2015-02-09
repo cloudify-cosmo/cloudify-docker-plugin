@@ -29,9 +29,6 @@ node_types:
         description: Whether the container already exists or not.
         type: boolean
         default: false
-      image:
-        description: >
-          The image to create from if not using external resource.
       ports:
         description: >
           Key value pairs of port bindings as provided to the start function.
@@ -61,9 +58,8 @@ node_types:
           inputs:
             retry_interval:
               description: >
-                Before finishing start checks to see that all processes
-                on the container are ready. This is the interval between
-                checks.
+                If Exited is not in the container status, then the plugin will retry. This is
+                the number of seconds between retries.
               type: integer
               default: 10
             timeout:
