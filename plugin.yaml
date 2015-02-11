@@ -5,7 +5,7 @@
 plugins:
   docker:
     executor: host_agent
-    source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/1.2m5.zip
+    source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/1.1.zip
 
 node_types:
 
@@ -14,17 +14,18 @@ node_types:
     properties:
       image:
         description: >
-          A dict describing a docker image. If pulling an image from a
-          docker hub, you must specify the repository. You may additionally
-          specify the tag, if none is given, latest is assumed.
-          Alternately, you may import an image from an archive. In this case
-          provide the src, which is path to the archive, as well as a repository
-          name. If you provide src, it is assumed that you are importing
-          an image.
+          A dict describing a docker image. To import an image from a tarball
+          use the src key. The value will be an absolute path or URL. If pulling
+          an image from docker hub, do not use src. The key is repository. The value is that
+          repository name. You may additionally specify the tag, if none is given,
+          latest is assumed.
         default: {}
       name:
-        description: The name of the Docker container.
-        type: string 
+        description: >
+          The name of the Docker container. This will also be the host name in Docker
+          host config.
+        type: string
+        default: ''
       use_external_resource:
         description: Whether the container already exists or not.
         type: boolean
@@ -37,7 +38,10 @@ node_types:
         default: {}
       params:
         description: >
-          Any parameters in the create_container function that are not mentioned here.
+          Any parameters in the create_container or start functions that are not mentioned here.
+          Additionally, you may pass a list of processes to wait for in the container before
+          finishing the start operation. These will be matched against processes in the output
+          of the Docker top command.
         default: {}
     interfaces:
       cloudify.interfaces.lifecycle:
@@ -52,7 +56,7 @@ node_types:
                 on the container are ready. This is the interval between
                 checks.
               type: integer
-              default: 10
+              default: 1
         stop:
           implementation: docker.docker_plugin.tasks.stop
           inputs:
@@ -66,7 +70,7 @@ node_types:
               description: >
                 Timeout in seconds to wait for the container to stop before sending a SIGKILL
               type: integer
-              default: 30
+              default: 10
         delete:
           implementation: docker.docker_plugin.tasks.remove_container
           inputs:
