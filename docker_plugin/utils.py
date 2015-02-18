@@ -238,7 +238,13 @@ def get_create_container_params(ctx):
             'entrypoint', 'cpu_shares', 'working_dir',
             'domainname', 'memswap_limit', 'host_config']
 
-    return get_params(supported_params)
+    params = get_params(supported_params)
+
+    if ctx.instance.runtime_properties.get('docker_env_var', None):
+        params['environment'].update(
+            ctx.instance.runtime_properties['docker_env_var'])
+
+    return params
 
 
 def get_params(supported_params):
