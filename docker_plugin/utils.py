@@ -220,6 +220,10 @@ def get_start_params(ctx):
             'network_mode', 'restart_policy', 'cap_add',
             'cap_drop', 'extra_hosts']
 
+    if ctx.instance.runtime_properties.get('extra_hosts', None):
+        params['extra_hosts'].update(
+            ctx.instance.runtime_properties['extra_hosts'])
+
     return get_params(supported_params)
 
 
@@ -239,10 +243,6 @@ def get_create_container_params(ctx):
             'domainname', 'memswap_limit', 'host_config']
 
     params = get_params(supported_params)
-
-    if ctx.instance.runtime_properties.get('docker_env_var', None):
-        params['environment'].update(
-            ctx.instance.runtime_properties['docker_env_var'])
 
     return params
 
