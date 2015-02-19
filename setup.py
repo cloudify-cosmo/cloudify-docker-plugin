@@ -12,23 +12,23 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
+# import os
 import setuptools
-from setuptools.command.install import install
+# from setuptools.command.install import install
 
-import docker_installation.apt_get_wrapper
-
-
-class CustomInstallCommand(install):
-    def run(self):
-        docker_installation.apt_get_wrapper.install_docker()
-        install.run(self)
+# import docker_installation.apt_get_wrapper
 
 
-additional_configuration = {}
-if 'CELERY_WORK_DIR' in os.environ:
-    additional_configuration.update(
-        {'cmdclass': {'install': CustomInstallCommand}})
+# class CustomInstallCommand(install):
+#     def run(self):
+#         docker_installation.apt_get_wrapper.install_docker()
+#         install.run(self)
+
+
+# additional_configuration = {}
+# if 'CELERY_WORK_DIR' in os.environ:
+#     additional_configuration.update(
+#         {'cmdclass': {'install': CustomInstallCommand}})
 
 
 setuptools.setup(
@@ -45,6 +45,6 @@ setuptools.setup(
         'docker-py==0.7.1'
     ],
     packages=['docker_plugin'],
-    zip_safe=False,
-    **additional_configuration
+    zip_safe=False
+    # **additional_configuration
 )
