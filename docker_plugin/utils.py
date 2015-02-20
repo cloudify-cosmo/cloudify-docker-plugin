@@ -221,10 +221,12 @@ def get_start_params(ctx):
             'cap_drop', 'extra_hosts']
 
     if ctx.instance.runtime_properties.get('extra_hosts', None):
-        supported_params['extra_hosts'].update(
-            ctx.instance.runtime_properties['extra_hosts'])
+        extra_hosts = ctx.instance.runtime_properties['extra_hosts']
+        supported_params['extra_hosts'].update(extra_hosts)
 
-    return get_params(supported_params)
+    params = get_params(supported_params)
+
+    return params
 
 
 def get_create_container_params(ctx):
