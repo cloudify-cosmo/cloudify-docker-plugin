@@ -220,11 +220,13 @@ def get_start_params(ctx):
             'network_mode', 'restart_policy', 'cap_add',
             'cap_drop', 'extra_hosts']
 
+    params = get_params(supported_params)
+
     if ctx.instance.runtime_properties.get('extra_hosts', None):
         extra_hosts = ctx.instance.runtime_properties['extra_hosts']
-        supported_params['extra_hosts'].update(extra_hosts)
-
-    params = get_params(supported_params)
+        if not params.get('extra_hosts', None):
+            params['extra_hosts'] = dict()
+        params['extra_hosts'].update(extra_hosts)
 
     return params
 
