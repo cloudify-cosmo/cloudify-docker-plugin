@@ -42,7 +42,7 @@ node_types:
           Additionally, you may pass a list of processes to wait for in the container before
           finishing the start operation. These will be matched against processes in the output
           of the Docker top command. You can use connected_to relationships to input values to
-          the parameters to the start function parameters.
+          extra_hosts.
         default: {}
     interfaces:
       cloudify.interfaces.lifecycle:
