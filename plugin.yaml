@@ -5,7 +5,7 @@
 plugins:
   docker:
     executor: host_agent
-    source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/1.2m5.zip
+    source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/docker_env_var_fix.zip
 
 node_types:
 
@@ -30,26 +30,30 @@ node_types:
         description: Whether the container already exists or not.
         type: boolean
         default: false
-      ports:
-        description: >
-          Key value pairs of port bindings as provided to the start function.
-          The create function is designed to get only the keys for assignment
-          of the ports parameter.
-        default: {}
-      params:
-        description: >
-          Any parameters in the create_container or start functions that are not mentioned here.
-          Additionally, you may pass a list of processes to wait for in the container before
-          finishing the start operation. These will be matched against processes in the output
-          of the Docker top command.
-        default: {}
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
           implementation: docker.docker_plugin.tasks.create_container
+          inputs:
+            params:
+              description: >
+                A dictionary of parameters allowed by docker-py to the
+                create_container function.
+              default: {}
         start:
           implementation: docker.docker_plugin.tasks.start
           inputs:
+            params:
+              description: >
+                A dictionary of parameters allowed by docker-py to the
+                start function.
+              default: {}
+            processes_to_wait_for:
+              description: >
+                This is a list of processes to verify are active on the container
+                before completing the start operation. If all processes are not active
+                the function will be retried.
+              default: []
             retry_interval:
               description: >
                 Before finishing start checks to see that all processes
@@ -60,29 +64,22 @@ node_types:
         stop:
           implementation: docker.docker_plugin.tasks.stop
           inputs:
+            params:
+              description: >
+                A dictionary of parameters allowed by docker-py to the
+                stop function.
+              default: {}
             retry_interval:
               description: >
                 If Exited is not in the container status, then the plugin will retry. This is
                 the number of seconds between retries.
               type: integer
               default: 10
-            timeout:
-              description: >
-                Timeout in seconds to wait for the container to stop before sending a SIGKILL
-              type: integer
-              default: 10
         delete:
           implementation: docker.docker_plugin.tasks.remove_container
           inputs:
-            v:
-              description: Remove the volumes associated with the container
-              type: boolean
-              default: false
-            link:
-              description: Remove the specified link and not the underlying container
-              type: boolean
-              default: false
-            force: 
-              description: Force the removal of a running container (uses SIGKILL)
-              type: boolean
-              default: false
+            params:
+              description: >
+                A dictionary of parameters allowed by docker-py to the
+                remove_container function.
+              default: {}

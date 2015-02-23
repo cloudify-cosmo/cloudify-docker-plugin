@@ -96,37 +96,7 @@ def inspect_container(client):
         return None
 
 
-def get_top_info(client):
-    """Get container top info.
-    Get container top info using docker top function with container id
-    from ctx.instance.runtime_properties['container'].
-    Transforms data into a simple top table.
-
-    :param client: docker client
-    :return: top_table
-    :raises NonRecoverableError:
-        when container in ctx.instance.runtime_properties is None.
-    """
-
-    def format_as_table(top_dict):
-        top_table = ' '.join(top_dict['Titles']) + '\n'
-        top_table += '\n'.join(' '.join(p) for p in top_dict['Processes'])
-        return top_table
-
-    ctx.logger.info('Getting TOP info of container.')
-
-    container = ctx.instance.runtime_properties.get('container_id')
-
-    try:
-        top_dict = client.top(container)
-    except docker.errors.APIError as e:
-        raise NonRecoverableError('Unable get container processes from top: '
-                                  '{}'.format(str(e)))
-    else:
-        return format_as_table(top_dict)
-
-
-def wait_for_processes(retry_interval, client, ctx):
+def wait_for_processes(process_names, retry_interval, client, ctx):
     """ The user may provide a node param in the blueprint wait_for_processes.
         This is a list of processes to verify are active on the container
         before completing the start operation. If all processes are not active
@@ -136,8 +106,6 @@ def wait_for_processes(retry_interval, client, ctx):
     :param client: the client. see docker_client.
     :param ctx: the cloudify context.
     """
-    process_names = ctx.node.properties.get('params').get(
-        'processes_to_wait_for', False)
 
     ctx.logger.info('Waiting for these processes to finish: '
                     '{}'.format(process_names))
@@ -206,7 +174,61 @@ def get_container_dictionary(client, ctx):
             return None
 
 
-def get_start_params(ctx):
+def get_remove_container_params(container_id, params, ctx):
+    """ Maintain the list of supported parameters for the docker API
+        remove_container function. use this with get_params.
+
+    :param container_id: the container_id.
+    :param params: The parameters given in the inputs section
+        to the remove_container operation.
+    :param ctx: the cloudify context.
+    returns the dictionary returned from get_params.
+    """
+
+    supported_params = \
+        ['container', 'v', 'link', 'force']
+
+    arguments = get_params(supported_params)
+
+    if arguments.get('container'):
+        ctx.logger.info('Warning. User provided a value for remove container.'
+                        'Ignoring the runtime value {0}.'.format(container_id))
+    else:
+        arguments['container'] = container_id
+
+    ctx.logger.info('docker-py remove_container params: {0}'.format(arguments))
+
+    return arguments
+
+
+def get_stop_params(container_id, params, ctx):
+    """ Maintain the list of supported parameters for the docker API
+        stop function. use this with get_params.
+
+    :param container_id: the container_id.
+    :param params: The parameters given in the inputs section
+        to the stop operation.
+    :param ctx: the cloudify context.
+    returns the dictionary returned from get_params.
+    """
+
+    supported_params = \
+        ['container', 'timeout']
+
+    arguments = get_params(params, supported_params)
+
+    if arguments.get('container'):
+        ctx.logger.info('Warning. User provided a value for stop container.'
+                        'Ignoring the runtime value {0}.'.format(container_id))
+    else:
+        arguments['container'] = container_id
+
+    ctx.logger.info('docker-py stop params: {0}'.format(arguments))
+
+    return arguments
+
+
+def get_start_params(container_id, params, ctx):
     """ Maintain the list of supported parameters for the docker API
         start function. use this with get_params.
 
@@ -218,14 +240,24 @@ def get_start_params(ctx):
         ['binds', 'lxc_conf', 'publish_all_ports', 'links',
             'privileged', 'dns', 'dns_search', 'volumes_from',
             'network_mode', 'restart_policy', 'cap_add',
-            'cap_drop', 'extra_hosts']
+            'cap_drop', 'extra_hosts', 'port_bindings']
 
-    return get_params(supported_params)
+    arguments = get_params(params, supported_params)
+
+    if arguments.get('container'):
+        ctx.logger.info('Warning. User provided a value for start container.'
+                        'Ignoring the runtime value {0}.'.format(container_id))
+    else:
+        arguments['container'] = container_id
+
+    ctx.logger.info('docker-py start params: {0}'.format(arguments))
+
+    return arguments
 
 
-def get_create_container_params(ctx):
+def get_create_container_params(params, ctx):
     """ Maintain the list of supported parameters for the docker API
-        create function. use this with get_params.
+        create_container function. use this with get_params.
 
     :param ctx: the cloudify context.
     returns the dictionary returned from get_params.
@@ -233,15 +265,19 @@ def get_create_container_params(ctx):
 
     supported_params = \
         ['command', 'hostname', 'user', 'detach', 'stdin_open',
-            'tty', 'mem_limit', 'environment', 'dns',
+            'tty', 'mem_limit', 'environment', 'dns', 'ports',
             'volumes', 'volumes_from', 'network_disabled',
             'entrypoint', 'cpu_shares', 'working_dir',
             'domainname', 'memswap_limit', 'host_config']
 
-    return get_params(supported_params)
+    arguments = get_params(params, supported_params)
+
+    ctx.logger.info('docker-py create_container params: {0}'.format(arguments))
+
+    return arguments
 
 
-def get_params(supported_params):
+def get_params(params, supported_params):
     """ Give this method a list of supported parameters and it
         retrieves the node property value provided by the user
         in the blueprint. This can be used as kwargs in an API
@@ -251,13 +287,12 @@ def get_params(supported_params):
     returns a dictionary of parameters
     """
 
-    d = {}
+    for key in params.keys():
+        if key not in supported_params:
+            raise NonRecoverableError('Unsupported value provided in params: '
+                                      '{0}.'.format(key))
 
-    for key in ctx.node.properties['params'].keys():
-        if key in supported_params:
-            d[key] = ctx.node.properties['params'].get(key)
-
-    return d
+    return params
 
 
 def check_container_status(client, ctx):

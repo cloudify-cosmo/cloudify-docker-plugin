@@ -30,7 +30,7 @@ from docker_plugin import docker_client
 
 
 @operation
-def create_container(daemon_client=None, **_):
+def create_container(params, daemon_client=None, **_):
     """ cloudify.docker.container type create lifecycle operation.
         Creates a container that can then be .start() ed.
 
@@ -60,13 +60,7 @@ def create_container(daemon_client=None, **_):
     arguments = dict()
     arguments['name'] = ctx.node.properties['name']
     arguments['image'] = get_image(client, ctx=ctx)
-    arguments['ports'] = []
-    for key in ctx.node.properties['ports'].keys():
-        arguments['ports'].append(ctx.node.properties['ports'][key])
-
-    arguments.update(utils.get_create_container_params(ctx=ctx))
-
-    ctx.logger.info('Creating container with arguments: {}'.format(arguments))
+    arguments.update(utils.get_create_container_params(params, ctx=ctx))
 
     try:
         container = client.create_container(**arguments)
@@ -79,7 +73,8 @@ def create_container(daemon_client=None, **_):
 
 
 @operation
-def start(retry_interval, daemon_client=None, **_):
+def start(params, processes_to_wait_for, retry_interval,
+          daemon_client=None, **_):
     """ cloudify.docker.container type start lifecycle operation.
         Any properties and runtime_properties set in the create
         lifecycle operation also available in start.
@@ -99,13 +94,8 @@ def start(retry_interval, daemon_client=None, **_):
             raise NonRecoverableError('{} does not exist.'.format(
                 ctx.instance.runtime_properties.get('container_id')))
 
-    arguments = dict()
-    arguments['port_bindings'] = ctx.node.properties['ports'].copy()
-    arguments.update(utils.get_start_params(ctx=ctx))
-    arguments['container'] = \
-        ctx.instance.runtime_properties['container_id']
-
-    ctx.logger.info('Starting container with arguments: {}.'.format(arguments))
+    container_id = ctx.instance.runtime_properties['container_id']
+    arguments = utils.get_start_params(container_id, params, ctx=ctx)
 
     try:
         response = client.start(**arguments)
@@ -115,8 +105,9 @@ def start(retry_interval, daemon_client=None, **_):
 
     ctx.logger.info('Container started: {}.'.format(response))
 
-    if ctx.node.properties[('params')].get('processes_to_wait_for', False):
-        utils.wait_for_processes(retry_interval, client, ctx=ctx)
+    if params.get('processes_to_wait_for'):
+        utils.wait_for_processes(processes_to_wait_for, retry_interval,
+                                 client, ctx=ctx)
 
     ctx.logger.info('Started container: {0}.'.format(
         ctx.instance.runtime_properties['container_id']))
@@ -136,7 +127,7 @@ def start(retry_interval, daemon_client=None, **_):
 
 
 @operation
-def stop(retry_interval, timeout, daemon_client=None, **_):
+def stop(retry_interval, params, daemon_client=None, **_):
     """ cloudify.docker.container type stop lifecycle operation.
         Stops a container. Similar to the docker stop command.
         Any properties and runtime_properties set in the create
@@ -150,11 +141,13 @@ def stop(retry_interval, timeout, daemon_client=None, **_):
     daemon_client = daemon_client or {}
     client = docker_client.get_client(daemon_client)
 
-    container = ctx.instance.runtime_properties['container_id']
-    ctx.logger.info('Stopping container: {}'.format(container))
+    container_id = ctx.instance.runtime_properties['container_id']
+    ctx.logger.info('Stopping container: {}'.format(container_id))
+
+    arguments = utils.get_stop_params(container_id, params, ctx=ctx)
 
     try:
-        client.stop(container, timeout)
+        client.stop(**arguments)
     except docker.errors.APIError as e:
         raise NonRecoverableError('Failed to stop container: '
                                   '{0}'.format(str(e)))
@@ -163,11 +156,11 @@ def stop(retry_interval, timeout, daemon_client=None, **_):
         raise RecoverableError('Container still running. Retyring.',
                                retry_after=retry_interval)
 
-    ctx.logger.info('Stopped container: {}'.format(container))
+    ctx.logger.info('Stopped container: {}'.format(container_id))
 
 
 @operation
-def remove_container(v, link, force, daemon_client=None, **_):
+def remove_container(params, daemon_client=None, **_):
     """ cloudify.docker.container type delete lifecycle operation.
         Any properties and runtime_properties set in the create,
         start, and stop lifecycle operations also available in
@@ -182,18 +175,21 @@ def remove_container(v, link, force, daemon_client=None, **_):
     daemon_client = daemon_client or {}
     client = docker_client.get_client(daemon_client)
 
-    container = ctx.instance.runtime_properties['container_id']
-    ctx.logger.info('Removing container {}'.format(container))
+    container_id = ctx.instance.runtime_properties['container_id']
+    ctx.logger.info('Removing container {}'.format(container_id))
+
+    arguments = utils.get_remove_container_params(container_id,
+                                                  params, ctx=ctx)
 
     try:
-        client.remove_container(container, v, link, force)
+        client.remove_container(**arguments)
     except docker.errors.APIError as e:
         raise NonRecoverableError('Failed to delete container: '
                                   '{0}.'.format(str(e)))
 
     del(ctx.instance.runtime_properties['container_id'])
 
-    ctx.logger.info('Removed container {}'.format(container))
+    ctx.logger.info('Removed container {}'.format(container_id))
 
 
 def get_image(client, ctx):
@@ -248,7 +244,7 @@ def pull(client, arguments, ctx):
         for stream in client.pull(**arguments):
             stream_dict = json.loads(stream)
             image_id = stream_dict.get('id', image_id)
-            if 'Downloading' not in stream_dict['status']:
+            if 'Downloading' not in stream_dict.get('status', ''):
                 ctx.logger.info('Pulling Image status: {0}.'.format(
                     stream_dict))
     except docker.errors.APIError as e:
