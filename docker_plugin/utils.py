@@ -260,7 +260,7 @@ def get_start_params(container_id, params, ctx):
         ['binds', 'lxc_conf', 'publish_all_ports', 'links',
             'privileged', 'dns', 'dns_search', 'volumes_from',
             'network_mode', 'restart_policy', 'cap_add',
-            'cap_drop', 'extra_hosts']
+            'cap_drop', 'extra_hosts', 'port_bindings']
 
     arguments = get_params(params, supported_params)
     arguments['container'] = container_id
@@ -280,7 +280,7 @@ def get_create_container_params(params, ctx):
 
     supported_params = \
         ['command', 'hostname', 'user', 'detach', 'stdin_open',
-            'tty', 'mem_limit', 'environment', 'dns',
+            'tty', 'mem_limit', 'environment', 'dns', 'ports',
             'volumes', 'volumes_from', 'network_disabled',
             'entrypoint', 'cpu_shares', 'working_dir',
             'domainname', 'memswap_limit', 'host_config']
