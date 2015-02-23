@@ -188,7 +188,7 @@ def get_remove_container_params(container_id, params, ctx):
     supported_params = \
         ['container', 'v', 'link', 'force']
 
-    arguments = get_params(supported_params)
+    arguments = get_params(params, supported_params)
 
     if arguments.get('container'):
         ctx.logger.info('Warning. User provided a value for remove container.'
