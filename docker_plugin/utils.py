@@ -189,7 +189,12 @@ def get_remove_container_params(container_id, params, ctx):
         ['container', 'v', 'link', 'force']
 
     arguments = get_params(supported_params)
-    arguments['container'] = container_id
+
+    if arguments.get('container'):
+        ctx.logger.info('Warning. User provided a value for remove container.'
+                        'Ignoring the runtime value {0}.'.format(container_id))
+    else:
+        arguments['container'] = container_id
 
     ctx.logger.info('docker-py remove_container params: {0}'.format(arguments))
 
@@ -211,7 +216,12 @@ def get_stop_params(container_id, params, ctx):
         ['container', 'timeout']
 
     arguments = get_params(params, supported_params)
-    arguments['container'] = container_id
+
+    if arguments.get('container'):
+        ctx.logger.info('Warning. User provided a value for stop container.'
+                        'Ignoring the runtime value {0}.'.format(container_id))
+    else:
+        arguments['container'] = container_id
 
     ctx.logger.info('docker-py stop params: {0}'.format(arguments))
 
@@ -233,7 +243,12 @@ def get_start_params(container_id, params, ctx):
             'cap_drop', 'extra_hosts', 'port_bindings']
 
     arguments = get_params(params, supported_params)
-    arguments['container'] = container_id
+
+    if arguments.get('container'):
+        ctx.logger.info('Warning. User provided a value for start container.'
+                        'Ignoring the runtime value {0}.'.format(container_id))
+    else:
+        arguments['container'] = container_id
 
     ctx.logger.info('docker-py start params: {0}'.format(arguments))
 
@@ -277,6 +292,9 @@ def get_params(params, supported_params):
     for key in params.keys():
         if key in supported_params:
             d[key] = params.get(key)
+        else:
+            raise NonRecoverableError('Unsupported value provided in params: '
+                                      '{0}.'.format(key))
 
     return d
 

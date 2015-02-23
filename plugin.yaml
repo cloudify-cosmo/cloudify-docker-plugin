@@ -53,7 +53,7 @@ node_types:
                 This is a list of processes to verify are active on the container
                 before completing the start operation. If all processes are not active
                 the function will be retried.
-              default: {}
+              default: []
             retry_interval:
               description: >
                 Before finishing start checks to see that all processes

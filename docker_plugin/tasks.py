@@ -105,7 +105,7 @@ def start(params, processes_to_wait_for, retry_interval,
 
     ctx.logger.info('Container started: {}.'.format(response))
 
-    if params.get('processes_to_wait_for', False):
+    if params.get('processes_to_wait_for'):
         utils.wait_for_processes(processes_to_wait_for, retry_interval,
                                  client, ctx=ctx)
 
@@ -244,7 +244,7 @@ def pull(client, arguments, ctx):
         for stream in client.pull(**arguments):
             stream_dict = json.loads(stream)
             image_id = stream_dict.get('id', image_id)
-            if 'Downloading' not in stream_dict.get('status', 'status'):
+            if 'Downloading' not in stream_dict.get('status'):
                 ctx.logger.info('Pulling Image status: {0}.'.format(
                     stream_dict))
     except docker.errors.APIError as e:
