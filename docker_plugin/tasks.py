@@ -244,7 +244,7 @@ def pull(client, arguments, ctx):
         for stream in client.pull(**arguments):
             stream_dict = json.loads(stream)
             image_id = stream_dict.get('id', image_id)
-            if 'Downloading' not in stream_dict.get('status'):
+            if 'Downloading' not in stream_dict.get('status', ''):
                 ctx.logger.info('Pulling Image status: {0}.'.format(
                     stream_dict))
     except docker.errors.APIError as e:

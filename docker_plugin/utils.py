@@ -287,16 +287,12 @@ def get_params(params, supported_params):
     returns a dictionary of parameters
     """
 
-    d = {}
-
     for key in params.keys():
-        if key in supported_params:
-            d[key] = params.get(key)
-        else:
+        if key not in supported_params:
             raise NonRecoverableError('Unsupported value provided in params: '
                                       '{0}.'.format(key))
 
-    return d
+    return params
 
 
 def check_container_status(client, ctx):
