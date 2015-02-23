@@ -326,3 +326,32 @@ def get_container_id_from_name(name, client, ctx):
             return i
         else:
             raise NonRecoverableError('No such container: {}.'.format(name))
+
+def get_top_info(client):
+    """Get container top info.
+    Get container top info using docker top function with container id
+    from ctx.instance.runtime_properties['container'].
+    Transforms data into a simple top table.
+
+    :param client: docker client
+    :return: top_table
+    :raises NonRecoverableError:
+        when container in ctx.instance.runtime_properties is None.
+    """
+
+    def format_as_table(top_dict):
+        top_table = ' '.join(top_dict['Titles']) + '\n'
+        top_table += '\n'.join(' '.join(p) for p in top_dict['Processes'])
+        return top_table
+
+    ctx.logger.info('Getting TOP info of container.')
+
+    container = ctx.instance.runtime_properties.get('container_id')
+
+    try:
+        top_dict = client.top(container)
+    except docker.errors.APIError as e:
+        raise NonRecoverableError('Unable get container processes from top: '
+                                  '{}'.format(str(e)))
+    else:
+        return format_as_table(top_dict)
