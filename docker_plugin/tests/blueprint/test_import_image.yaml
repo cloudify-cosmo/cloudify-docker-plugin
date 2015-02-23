@@ -24,12 +24,23 @@ node_templates:
       image:
         src: { get_input: test_image_src }
         repository: whatasave
-      ports:
-        80: 80
-      params:
-        stdin_open: true
-        tty: true
-        command: /bin/sleep 1
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.docker_plugin.tasks.create_container
+          inputs:
+            params:
+              ports:
+                - 80
+              stdin_open: true
+              tty: true
+              command: /bin/sleep 1
+        start:
+          implementation: docker.docker_plugin.tasks.start
+          inputs:
+            params:
+              port_bindings:
+                80: 80
     relationships:
       - type: cloudify.relationships.contained_in
         target: host

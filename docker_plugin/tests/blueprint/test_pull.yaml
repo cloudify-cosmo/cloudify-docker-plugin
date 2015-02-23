@@ -24,15 +24,27 @@ node_templates:
     properties:
       name: { get_input: test_container_name }
       image:
-        repository: docker-test-image
-        tag: latest
-      ports:
-        22: 22
-        80: 80
-      params:
-        stdin_open: true
-        tty: true
-        command: /bin/sleep 30
+        repository: { get_input: test_repo }
+        tag: { get_input: test_tag }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.docker_plugin.tasks.create_container
+          inputs:
+            params:
+              ports:
+                - 22
+                  80
+              stdin_open: true
+              tty: true
+              command: /bin/sleep 30
+        start:
+          implementation: docker.docker_plugin.tasks.start
+          inputs:
+            params:
+              port_bindings:
+                22: 22
+                80: 80
     relationships:
       - type: cloudify.relationships.contained_in
         target: host
