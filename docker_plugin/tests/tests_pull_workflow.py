@@ -19,11 +19,9 @@ import os
 # Third Party Imports
 import testtools
 from docker import Client
-from docker import errors
 
 # Cloudify Imports is imported and used in operations
 from cloudify.workflows import local
-from cloudify.exceptions import NonRecoverableError
 
 IGNORED_LOCAL_WORKFLOW_MODULES = (
     'worker_installer.tasks',
@@ -52,11 +50,7 @@ class TestPullWorkflow(testtools.TestCase):
 
     def get_client(self, daemon_client):
 
-        try:
-            return Client(**daemon_client)
-        except errors.DockerException as e:
-            raise NonRecoverableError('Error while getting client: '
-                                      '{0}.'.format(str(e)))
+        return Client(**daemon_client)
 
     def tests_pull_workflow(self):
         """ Tests the install workflow using the built in
