@@ -30,8 +30,6 @@ class TestUtils(testtools.TestCase):
 
     def setUp(self):
         super(TestUtils, self).setUp()
-        docker_client = self.get_docker_client()
-        self.pull_test_image(docker_client)
 
     def get_mock_context(self, test_name):
 
@@ -57,12 +55,6 @@ class TestUtils(testtools.TestCase):
     def get_docker_client(self):
         return docker.Client()
 
-    def pull_test_image(self, docker_client):
-        output = []
-        for line in docker_client.pull('docker-test-image', stream=True):
-            output.append(json.dumps(json.loads(line)))
-        return output
-
     def get_list_of_docker_image_ids(self, docker_client):
         return [image.get('Id') for image in self.docker_client().images()]
 
@@ -76,10 +68,19 @@ class TestUtils(testtools.TestCase):
         return image.get('Id')
 
     def test_get_image_id(self):
+
+        client = self.get_docker_client()
+
+        output = []
+        for line in client.pull('docker-test-image', stream=True):
+            output.append(json.dumps(json.loads(line)))
+
+        ctx = self.get_mock_context('test_get_image_id')
         image_id = self.get_bad_image_id()
         tag = 'latest'
         client = self.get_docker_client()
         ex = self.assertRaises(
-            NonRecoverableError, utils.get_image_id, tag, image_id, client)
+            NonRecoverableError, utils.get_image_id,
+            tag, image_id, client, ctx=ctx)
         self.assertIn(
             'Unable to verify', ex.message)
