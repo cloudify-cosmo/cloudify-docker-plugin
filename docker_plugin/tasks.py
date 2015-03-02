@@ -253,7 +253,8 @@ def pull(client, arguments, ctx):
                                       arguments,
                                       str(e)))
 
-    image_id = utils.get_image_id(arguments.get('tag'), image_id, client)
+    image_id = utils.get_image_id(
+        arguments.get('tag'), image_id, client, ctx=ctx)
     ctx.instance.runtime_properties['image_id'] = image_id
     ctx.logger.info('Pulled image, image_id: {0}'.format(image_id))
     return image_id
@@ -281,7 +282,8 @@ def import_image(client, arguments, ctx):
     ctx.logger.info('output: {}'.format(output))
     image_id = json.loads(output).get('status')
 
-    image_id = utils.get_image_id(arguments.get('tag'), image_id, client)
+    image_id = utils.get_image_id(
+        arguments.get('tag'), image_id, client, ctx=ctx)
     ctx.instance.runtime_properties['image_id'] = image_id
     ctx.logger.info('Imported image, image_id {0}'.format(image_id))
     return image_id

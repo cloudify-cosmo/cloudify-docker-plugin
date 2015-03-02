@@ -20,7 +20,7 @@ from cloudify import ctx
 from cloudify.exceptions import RecoverableError, NonRecoverableError
 
 
-def get_image_id(tag, image_id, client):
+def get_image_id(tag, image_id, client, ctx):
     """ Attempts to get the correct image id from Docker.
 
     :param tag: The image tag provided in the blueprint.
@@ -326,6 +326,7 @@ def get_container_id_from_name(name, client, ctx):
             return i
         else:
             raise NonRecoverableError('No such container: {}.'.format(name))
+
 
 def get_top_info(client):
     """Get container top info.
