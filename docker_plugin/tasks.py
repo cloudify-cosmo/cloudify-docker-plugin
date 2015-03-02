@@ -113,13 +113,13 @@ def start(params, processes_to_wait_for, retry_interval,
         ctx.instance.runtime_properties['container_id']))
 
     if utils.get_container_dictionary(client, ctx=ctx) is not None:
-        inspect_output = utils.inspect_container(client)
+        inspect_output = utils.inspect_container(client, ctx=ctx)
         ctx.instance.runtime_properties['ports'] = \
             inspect_output.get('Ports', None)
         ctx.instance.runtime_properties['network_settings'] = \
             inspect_output.get('NetworkSettings', None)
 
-    top_info = utils.get_top_info(client)
+    top_info = utils.get_top_info(client, ctx=ctx)
 
     ctx.logger.info('Container: {0} Forwarded ports: {1} Top: {2}.'.format(
         ctx.instance.runtime_properties['container_id'],

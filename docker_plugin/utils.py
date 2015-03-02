@@ -16,7 +16,6 @@
 import docker
 
 # Cloudify Imports
-from cloudify import ctx
 from cloudify.exceptions import RecoverableError, NonRecoverableError
 
 
@@ -72,7 +71,7 @@ def get_image_id(tag, image_id, client, ctx):
                               'received during pull is valid.')
 
 
-def inspect_container(client):
+def inspect_container(client, ctx):
     """Inspect container.
 
     Call inspect with container id from
@@ -328,7 +327,7 @@ def get_container_id_from_name(name, client, ctx):
             raise NonRecoverableError('No such container: {}.'.format(name))
 
 
-def get_top_info(client):
+def get_top_info(client, ctx):
     """Get container top info.
     Get container top info using docker top function with container id
     from ctx.instance.runtime_properties['container'].
