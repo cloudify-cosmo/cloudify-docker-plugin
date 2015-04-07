@@ -1,0 +1,96 @@
+tosca_definitions_version: cloudify_dsl_1_1
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.2m8/types.yaml
+  - http://www.getcloudify.org/spec/aws-plugin/1.2m8/plugin.yaml
+
+inputs:
+
+  aws_access_key_id:
+    description: >
+      The access key of the system test runner.
+
+  aws_secret_access_key:
+    description: >
+      The secret key of the system test runner.
+
+  key_name:
+    description: >
+      The name of the key.
+
+  private_key_path:
+    description: >
+      The path on the current machine.
+
+  image:
+    description: >
+      The AWS AWI ID 
+
+  size:
+    description: >
+      The AWS instance type
+
+  current_ip:
+    description: >
+      The IP of the machine that is running the test.
+      Not the target of the test.
+
+node_templates:
+
+  aws_configuration:
+    type: aws_configuration
+    properties:
+      aws_config:
+        aws_access_key_id: { get_input: aws_access_key_id }
+        aws_secret_access_key: { get_input: aws_secret_access_key }
+
+  docker_system_test_key_pair:
+    type: cloudify.aws.nodes.KeyPair
+    properties:
+      resource_id:  { get_input: key_name }
+      private_key_path: { get_input: private_key_path }
+      aws_config: { get_property: [ aws_configuration, aws_config ] }
+
+  docker_system_test_elastic_ip:
+    type: cloudify.aws.nodes.ElasticIP
+    properties:
+      aws_config: { get_property: [ aws_configuration, aws_config ] }
+
+  docker_system_test_security_group:
+    type: cloudify.aws.nodes.SecurityGroup
+    properties:
+      aws_config: { get_property: [ aws_configuration, aws_config ] }
+      description: Docker System Tests Security Group
+      rules:
+        - ip_protocol: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: { get_input: current_ip }
+
+  docker_system_test_host:
+    derived_from: cloudify.aws.nodes.Instance
+    properties:
+      aws_config: { get_property: [ aws_configuration, aws_config ] }
+      image_id: { get_input: image }
+      instance_type: { get_input: size }
+      parameters:
+        user_data: |
+          #!/bin/bash
+          sudo service ssh stop
+          curl -o install.sh -sSL https://get.docker.com/
+          sudo sh install.sh
+          sudo groupadd docker
+          sudo gpasswd -a ubuntu docker
+          sudo service docker restart
+          sudo service ssh start
+    relationships:
+      - type: cloudify.aws.relationships.instance_connected_to_security_group
+        target: docker_system_test_security_group
+      - type: cloudify.aws.relationships.instance_connected_to_keypair
+        target: docker_system_test_key_pair
+
+outputs:
+  endpoint:
+    description: Web application endpoint
+    value:
+      ip_address: { get_attribute: [ docker_system_test_elastic_ip, aws_resource_id ] }
