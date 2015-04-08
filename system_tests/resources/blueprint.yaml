@@ -3,6 +3,7 @@ tosca_definitions_version: cloudify_dsl_1_1
 imports:
   - http://www.getcloudify.org/spec/cloudify/3.2m8/types.yaml
   - http://www.getcloudify.org/spec/aws-plugin/1.2m8/plugin.yaml
+  - http://www.getcloudify.org/spec/fabric-plugin/1.2m8/plugin.yaml
 
 inputs:
 
@@ -35,6 +36,25 @@ inputs:
       The IP of the machine that is running the test.
       Not the target of the test.
 
+  core_version:
+    description: >
+      The Cloudify Version Tag
+
+  plugins_version:
+    description: >
+      The Cloudify Plugins Version Tag
+
+  agent_user:
+    description: >
+      The user agent user name on the host.
+
+node_types:
+
+  aws_configuration:
+    derived_from: cloudify.nodes.Root
+    properties:
+      aws_config: {}
+
 node_templates:
 
   aws_configuration:
@@ -51,11 +71,6 @@ node_templates:
       private_key_path: { get_input: private_key_path }
       aws_config: { get_property: [ aws_configuration, aws_config ] }
 
-  docker_system_test_elastic_ip:
-    type: cloudify.aws.nodes.ElasticIP
-    properties:
-      aws_config: { get_property: [ aws_configuration, aws_config ] }
-
   docker_system_test_security_group:
     type: cloudify.aws.nodes.SecurityGroup
     properties:
@@ -68,29 +83,45 @@ node_templates:
           cidr_ip: { get_input: current_ip }
 
   docker_system_test_host:
-    derived_from: cloudify.aws.nodes.Instance
+    type: cloudify.aws.nodes.Instance
     properties:
+      install_agent: false
       aws_config: { get_property: [ aws_configuration, aws_config ] }
       image_id: { get_input: image }
       instance_type: { get_input: size }
       parameters:
         user_data: |
-          #!/bin/bash
-          sudo service ssh stop
-          curl -o install.sh -sSL https://get.docker.com/
-          sudo sh install.sh
-          sudo groupadd docker
-          sudo gpasswd -a ubuntu docker
-          sudo service docker restart
-          sudo service ssh start
+            #!/bin/bash
+            sudo service ssh stop
+            while ! (ps ax | grep -v grep | grep 'docker')
+            do
+            curl -o install.sh -sSL https://get.docker.com/
+            sudo sh install.sh
+            sudo groupadd docker
+            sudo gpasswd -a ubuntu docker
+            sudo service docker restart
+            done
+            sudo service ssh start
     relationships:
       - type: cloudify.aws.relationships.instance_connected_to_security_group
         target: docker_system_test_security_group
       - type: cloudify.aws.relationships.instance_connected_to_keypair
         target: docker_system_test_key_pair
 
-outputs:
-  endpoint:
-    description: Web application endpoint
-    value:
-      ip_address: { get_attribute: [ docker_system_test_elastic_ip, aws_resource_id ] }
+  docker_system_test:
+    type: cloudify.nodes.SoftwareComponent
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: docker_system_test_host
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: create.sh
+            CORE_VERSION: { get_input: core_version }
+            PLUGINS_VERSION: { get_input: plugins_version }
+            fabric_env:
+              user: { get_input: agent_user }
+              key_filename: { get_property: [ docker_system_test_key_pair, private_key_path ] }
+              host_string: { get_attribute: [ docker_system_test_host, public_ip_address ] }
