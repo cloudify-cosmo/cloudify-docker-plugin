@@ -62,7 +62,7 @@ class TestDockerPlugin(TestCase):
 
     def tearDown(self):
         super(TestDockerPlugin, self).tearDown()
-        self.env.execute('uninstall', task_retries=10)
+        self.env.execute('uninstall', task_retries=20)
 
     def test_plugin(self):
 
