@@ -62,3 +62,8 @@ docs/_build/
 .qbcache/
 
 .noseids
+
+*.yaml.template
+NOTES
+.cloudify
+local-storage
