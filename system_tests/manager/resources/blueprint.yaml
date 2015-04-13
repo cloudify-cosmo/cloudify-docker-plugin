@@ -1,0 +1,122 @@
+tosca_definitions_version: cloudify_dsl_1_1
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.2rc1/types.yaml
+  - http://www.getcloudify.org/spec/openstack-plugin/1.2rc1/plugin.yaml
+  - http://www.getcloudify.org/spec/fabric-plugin/1.2rc1/plugin.yaml
+
+inputs:
+
+  key_name:
+    type: string
+
+  private_key_path:
+    type: string
+
+  image_id:
+    type: string
+
+  flavor_id:
+    type: string
+
+  current_ip:
+    description: >
+      The IP of the machine that is running the test.
+      Not the target of the test.
+
+  core_branch:
+    description: >
+      The Cloudify Version Tag
+
+  plugins_branch:
+    description: >
+      The Cloudify Plugins Version Tag
+
+  docker_plugin_branch:
+    description: >
+      The Docker Plugin Version if different from the plugins_version (usually the same.)
+
+  agent_user:
+    description: >
+      The user agent user name on the host.
+
+  openstack_config:
+    description: >
+      The Openstack configuration dict.
+
+  external_network_name:
+    description: >
+      The network to get the floating ip on.
+
+node_templates:
+
+  docker_system_test_floating_ip:
+    type: cloudify.openstack.nodes.FloatingIP
+    properties:
+      openstack_config: { get_input: openstack_config }
+      floatingip:
+        floating_network_name: { get_input: external_network_name }
+
+  docker_system_test_keypair:
+    type: cloudify.openstack.nodes.KeyPair
+    properties:
+      openstack_config: { get_input: openstack_config }
+      resource_id: { get_input: key_name }
+      private_key_path: { get_input: private_key_path }
+
+  docker_system_test_security_group:
+    type: cloudify.openstack.nodes.SecurityGroup
+    properties:
+      openstack_config: { get_input: openstack_config }
+      security_group:
+        description: Docker System Tests Security Group
+      rules:
+        - port: 22
+          remote_ip_prefix: { get_input: current_ip }
+
+  docker_system_test_host:
+    type: cloudify.openstack.nodes.Server
+    properties:
+      openstack_config: { get_input: openstack_config }
+      install_agent: false
+      server:
+        image: { get_input: image_id }
+        flavor: { get_input: flavor_id }
+        userdata: |
+          #!/bin/bash
+          sudo service ssh stop
+          while ! (ps ax | grep -v grep | grep 'docker')
+          do
+          curl -o install.sh -sSL https://get.docker.com/
+          sudo sh install.sh
+          sudo groupadd docker
+          sudo gpasswd -a ubuntu docker
+          sudo service docker restart
+          done
+          sudo service ssh start
+    relationships:
+      - type: cloudify.openstack.server_connected_to_security_group
+        target: docker_system_test_security_group
+      - type: cloudify.openstack.server_connected_to_keypair
+        target: docker_system_test_keypair
+      - type: cloudify.openstack.server_connected_to_floating_ip
+        target: docker_system_test_floating_ip
+
+  docker_system_test:
+    type: cloudify.nodes.SoftwareComponent
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: docker_system_test_host
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: create.sh
+            CORE_BRANCH: { get_input: core_branch }
+            PLUGINS_BRANCH: { get_input: plugins_branch }
+            DOCKER_PLUGIN_BRANCH: { get_input: docker_plugin_branch }
+            fabric_env:
+              user: { get_input: agent_user }
+              key_filename: { get_property: [ docker_system_test_keypair, private_key_path ] }
+              host_string: { get_attribute: [ docker_system_test_floating_ip, floating_ip_address ] }
