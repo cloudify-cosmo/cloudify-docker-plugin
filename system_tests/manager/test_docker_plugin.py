@@ -38,7 +38,7 @@ class TestDockerPlugin(TestCase):
 
         inputs = {
             'current_ip': '0.0.0.0/0',
-            'external_network_name': self.external_network_name,
+            'external_network_name': self.env.external_network_name,
             'image_id': self.env.ubuntu_trusty_image_id,
             'flavor_id': self.env.small_flavor_id,
             'key_name': self.docker_host_key_name,
@@ -48,10 +48,10 @@ class TestDockerPlugin(TestCase):
             'docker_plugin_branch': self.docker_plugin_branch,
             'agent_user': 'ubuntu',
             'openstack_config': {
-                'username': self.keystone_username,
-                'password': self.keystone_password,
-                'tenant_name': self.keystone_tenant_name,
-                'auth_url': self.keystone_url
+                'username': self.env.keystone_username,
+                'password': self.env.keystone_password,
+                'tenant_name': self.env.keystone_tenant_name,
+                'auth_url': self.env.keystone_url
             }
         }
 
@@ -102,11 +102,11 @@ class TestDockerPlugin(TestCase):
 
     @property
     def core_branch(self):
-        return 'master'
+        return os.environ.get('BRANCH_NAME_CORE', 'master')
 
     @property
     def plugins_branch(self):
-        return 'master'
+        return os.environ.get('BRANCH_NAME_PLUGINS', 'master')
 
     @property
     def docker_plugin_branch(self):
@@ -119,23 +119,3 @@ class TestDockerPlugin(TestCase):
     @property
     def docker_host_key_path(self):
         return '~/.ssh/docker_system_test_key.pem'
-
-    @property
-    def keystone_username(self):
-        return 'trammell'
-
-    @property
-    def keystone_password(self):
-        return '25YJev6563P73Qh'
-
-    @property
-    def keystone_tenant_name(self):
-        return 'product'
-
-    @property
-    def keystone_url(self):
-        return 'http://192.168.9.161:5000/v2.0'
-
-    @property
-    def external_network_name(self):
-        return 'public'

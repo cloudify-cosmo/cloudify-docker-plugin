@@ -14,12 +14,13 @@
 #    * limitations under the License.
 
 
-from cosmo_tester.framework.testenv import bootstrap, teardown
+from cosmo_tester.framework.testenv import (initialize_without_bootstrap,
+                                            clear_environment)
 
 
 def setUp():
-    bootstrap(task_retries=10)
+    initialize_without_bootstrap()
 
 
 def tearDown():
-    teardown()
+    clear_environment()
