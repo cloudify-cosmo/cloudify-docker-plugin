@@ -13,10 +13,8 @@
 #    * limitations under the License.
 
 import os
-import testtools
 
 from fabric.api import settings, run
-from fabric.api import env as fabric_env
 
 from cloudify.workflows import local
 from cosmo_tester.framework.testenv import TestCase
@@ -73,7 +71,7 @@ class TestDockerPlugin(TestCase):
 
         for node in self.env.storage.get_nodes():
             if 'docker_system_test_keypair' in node.id:
-               keypair = node
+                keypair = node
 
         for node_instance in self.env.storage.get_node_instances():
             if 'docker_system_test_floating_ip' in node_instance.node_id:
