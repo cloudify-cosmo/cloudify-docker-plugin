@@ -18,6 +18,7 @@ from fabric.api import settings, run
 
 from cloudify.workflows import local
 from cosmo_tester.framework.testenv import TestCase
+from cosmo_tester.framework.cfy_helper import cfy
 
 IGNORED_LOCAL_WORKFLOW_MODULES = (
     'worker_installer.tasks',
@@ -33,6 +34,10 @@ class TestDockerPlugin(TestCase):
         self.blueprint_path = \
             os.path.join(os.path.dirname(__file__),
                          'resources', 'blueprint.yaml')
+
+        if self.env.install_plugins:
+            cfy.local.install_plugins(
+                blueprint_path=self.blueprint_path).wait()
 
         inputs = {
             'current_ip': '0.0.0.0/0',
@@ -53,27 +58,27 @@ class TestDockerPlugin(TestCase):
             }
         }
 
-        self.env = local.init_env(
+        self.local_env = local.init_env(
             self.blueprint_path, name=self._testMethodName,
             inputs=inputs,
             ignored_modules=IGNORED_LOCAL_WORKFLOW_MODULES)
 
     def tearDown(self):
         super(TestDockerPlugin, self).tearDown()
-        self.env.execute('uninstall', task_retries=20)
+        self.local_env.execute('uninstall', task_retries=20)
 
     def test_plugin(self):
 
-        self.env.execute('install', task_retries=10)
+        self.local_env.execute('install', task_retries=10)
 
         keypair = {}
         host = {}
 
-        for node in self.env.storage.get_nodes():
+        for node in self.local_env.storage.get_nodes():
             if 'docker_system_test_keypair' in node.id:
                 keypair = node
 
-        for node_instance in self.env.storage.get_node_instances():
+        for node_instance in self.local_env.storage.get_node_instances():
             if 'docker_system_test_floating_ip' in node_instance.node_id:
                 host = node_instance
 
