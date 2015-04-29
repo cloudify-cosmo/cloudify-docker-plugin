@@ -36,7 +36,8 @@ class TestDockerPlugin(TestCase):
                          'resources', 'blueprint.yaml')
 
         if self.env.install_plugins:
-            cfy.local.install_plugins(
+            cfy.local(
+                'install-plugins',
                 blueprint_path=self.blueprint_path).wait()
 
         inputs = {
