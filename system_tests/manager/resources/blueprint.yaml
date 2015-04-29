@@ -48,6 +48,18 @@ inputs:
     description: >
       The network to get the floating ip on.
 
+  router_name:
+    description: >
+      An Openstack router.
+
+  network_name:
+    description: >
+      An Openstack network.
+
+  subnet_name:
+    description: >
+      An Openstack subnet.
+
 node_templates:
 
   docker_system_test_floating_ip:
@@ -64,6 +76,42 @@ node_templates:
       resource_id: { get_input: key_name }
       private_key_path: { get_input: private_key_path }
 
+  docker_system_test_external_network:
+    type: cloudify.openstack.nodes.Network
+    properties:
+      openstack_config: { get_input: openstack_config }
+      use_external_resource: true
+      resource_id: { get_input: external_network_name }
+
+  docker_system_test_router:
+    type: cloudify.openstack.nodes.Router
+    properties:
+      openstack_config: { get_input: openstack_config }
+      resource_id: { get_input: router_name }
+    relationships:
+      - target: docker_system_test_external_network
+        type: cloudify.relationships.connected_to
+
+  docker_system_test_network:
+    type: cloudify.openstack.nodes.Network
+    properties:
+      openstack_config: { get_input: openstack_config }
+      resource_id: { get_input: network_name }
+
+  docker_system_test_subnet:
+    type: cloudify.openstack.nodes.Subnet
+    properties:
+      openstack_config: { get_input: openstack_config }
+      resource_id: { get_input: subnet_name }
+      subnet:
+        ip_version: 4
+        cidr: 10.67.79.0/24
+    relationships:
+      - target: docker_system_test_network
+        type: cloudify.relationships.contained_in
+      - target: docker_system_test_router
+        type: cloudify.openstack.subnet_connected_to_router
+
   docker_system_test_security_group:
     type: cloudify.openstack.nodes.SecurityGroup
     properties:
@@ -79,6 +127,7 @@ node_templates:
     properties:
       openstack_config: { get_input: openstack_config }
       install_agent: false
+      management_network_name: { get_property: [docker_system_test_network, resource_id] }
       server:
         image: { get_input: image_id }
         flavor: { get_input: flavor_id }
