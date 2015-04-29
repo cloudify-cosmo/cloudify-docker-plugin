@@ -1,8 +1,8 @@
-# Cloudify Docker plugin
+# cloudify-openstack-plugin
 
 A Cloudify plugin enabling it to create and manipulate Docker containers.
 
-### Please note this plugin is under development and not yet officially supported.
+Cloudify Docker Plugin
 
 ## Usage
 
