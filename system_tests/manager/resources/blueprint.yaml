@@ -150,6 +150,8 @@ node_templates:
         target: docker_system_test_keypair
       - type: cloudify.openstack.server_connected_to_floating_ip
         target: docker_system_test_floating_ip
+      - type: cloudify.relationships.depends_on
+        target: docker_system_test_subnet
 
   docker_system_test:
     type: cloudify.nodes.SoftwareComponent
