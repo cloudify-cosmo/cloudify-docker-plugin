@@ -127,6 +127,7 @@ node_templates:
     properties:
       openstack_config: { get_input: openstack_config }
       install_agent: false
+      management_network_name: { get_property: [docker_system_test_network, resource_id] }
       server:
         image: { get_input: image_id }
         flavor: { get_input: flavor_id }
