@@ -55,7 +55,8 @@ class TestDockerPlugin(TestCase):
                 'username': self.env.keystone_username,
                 'password': self.env.keystone_password,
                 'tenant_name': self.env.keystone_tenant_name,
-                'auth_url': self.env.keystone_url
+                'auth_url': self.env.keystone_url,
+                'region': self.env.region
             }
         }
 
@@ -68,7 +69,7 @@ class TestDockerPlugin(TestCase):
         super(TestDockerPlugin, self).tearDown()
         self.local_env.execute('uninstall', task_retries=20)
 
-    def test_plugin(self):
+    def test_docker_plugin(self):
 
         self.local_env.execute('install', task_retries=10)
 
