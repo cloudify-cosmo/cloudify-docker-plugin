@@ -43,9 +43,6 @@ class TestDockerPlugin(TestCase):
         inputs = {
             'current_ip': '0.0.0.0/0',
             'external_network_name': self.env.external_network_name,
-            'router_name': 'docker_plugin_system_test_router',
-            'network_name': 'docker_plugin_system_test_network',
-            'subnet_name': 'docker_plugin_system_test_subnet',
             'image_id': self.env.ubuntu_trusty_image_id,
             'flavor_id': self.env.small_flavor_id,
             'key_name': self.docker_host_key_name,
