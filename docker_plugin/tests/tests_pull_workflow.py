@@ -96,4 +96,3 @@ class TestPullWorkflow(testtools.TestCase):
         if ['{0}:latest'.format(TEST_IMAGE)] in \
                 [i.get('RepoTags') for i in client.images()]:
             client.remove_image(TEST_IMAGE, force=True)
-

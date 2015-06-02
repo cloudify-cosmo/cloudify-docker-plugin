@@ -27,6 +27,7 @@ from docker_plugin import utils
 
 TEST_IMAGE = 'tutum/hello-world'
 
+
 class TestUtils(testtools.TestCase):
 
     def setUp(self):

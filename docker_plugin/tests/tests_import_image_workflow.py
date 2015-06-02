@@ -90,8 +90,8 @@ class TestImportImageWorkflow(testtools.TestCase):
         for i in client.images():
             repotags.append(i.get('RepoTags'))
 
-        self.assertFalse('{0}:latest'.format(TEST_IMAGE) in [tag for tag in repotags])
+        self.assertFalse(
+            '{0}:latest'.format(TEST_IMAGE) in [tag for tag in repotags])
         if ['{0}:latest'.format(TEST_IMAGE)] in \
                 [i.get('RepoTags') for i in client.images()]:
             client.remove_image(TEST_IMAGE, force=True)
-
