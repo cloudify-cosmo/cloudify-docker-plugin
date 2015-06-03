@@ -22,6 +22,7 @@ from docker import Client
 
 # Cloudify Imports is imported and used in operations
 from cloudify.workflows import local
+from docker_plugin.tests import TEST_IMAGE
 
 IGNORED_LOCAL_WORKFLOW_MODULES = (
     'worker_installer.tasks',
@@ -65,9 +66,9 @@ class TestImportImageWorkflow(testtools.TestCase):
                     ''.join([name for name in container.get('Names')]):
                 client.remove_container('test-container')
 
-        if ['docker-test-image:latest'] in \
+        if ['{0}:latest'.format(TEST_IMAGE)] in \
                 [i.get('RepoTags') for i in client.images()]:
-            client.remove_image('docker-test-image', force=True)
+            client.remove_image(TEST_IMAGE, force=True)
 
         # execute install workflow
         self.env.execute('install', task_retries=0)
@@ -88,7 +89,8 @@ class TestImportImageWorkflow(testtools.TestCase):
         for i in client.images():
             repotags.append(i.get('RepoTags'))
 
-        self.assertFalse('docker-test-image' in [tag for tag in repotags])
-        if ['docker-test-image:latest'] in \
+        self.assertFalse(
+            '{0}:latest'.format(TEST_IMAGE) in [tag for tag in repotags])
+        if ['{0}:latest'.format(TEST_IMAGE)] in \
                 [i.get('RepoTags') for i in client.images()]:
-            client.remove_image('docker-test-image', force=True)
+            client.remove_image(TEST_IMAGE, force=True)

@@ -24,6 +24,7 @@ import docker
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 from docker_plugin import utils
+from docker_plugin.tests import TEST_IMAGE
 
 
 class TestUtils(testtools.TestCase):
@@ -37,7 +38,7 @@ class TestUtils(testtools.TestCase):
         test_properties = {
             'name': test_name,
             'image': {
-                'repository': 'docker-test-image'
+                'repository': TEST_IMAGE
             }
         }
 
@@ -60,7 +61,7 @@ class TestUtils(testtools.TestCase):
 
     def pull_image(self, client):
         output = []
-        for line in client.pull('docker-test-image', stream=True):
+        for line in client.pull(TEST_IMAGE, stream=True):
             output.append(json.dumps(json.loads(line)))
         return output
 
@@ -100,7 +101,7 @@ class TestUtils(testtools.TestCase):
         ctx = self.get_mock_context(name)
 
         for image in self.get_docker_images(client):
-            if 'docker-test-image:latest' in \
+            if '{0}:latest'.format(TEST_IMAGE) in \
                     self.get_tags_for_docker_image(image):
                 image_id = self.get_id_from_image(image)
 
@@ -139,7 +140,7 @@ class TestUtils(testtools.TestCase):
         ctx = self.get_mock_context(name)
 
         for image in self.get_docker_images(client):
-            if 'docker-test-image:latest' in \
+            if '{0}:latest'.format(TEST_IMAGE) in \
                     self.get_tags_for_docker_image(image):
                 image_id = self.get_id_from_image(image)
 
@@ -174,7 +175,7 @@ class TestUtils(testtools.TestCase):
         ctx = self.get_mock_context(name)
 
         for image in self.get_docker_images(client):
-            if 'docker-test-image:latest' in \
+            if '{0}:latest'.format(TEST_IMAGE) in \
                     self.get_tags_for_docker_image(image):
                 image_id = self.get_id_from_image(image)
 
@@ -247,7 +248,7 @@ class TestUtils(testtools.TestCase):
         ctx = self.get_mock_context(name)
 
         for image in self.get_docker_images(client):
-            if 'docker-test-image:latest' in \
+            if '{0}:latest'.format(TEST_IMAGE) in \
                     self.get_tags_for_docker_image(image):
                 image_id = self.get_id_from_image(image)
 
@@ -266,7 +267,7 @@ class TestUtils(testtools.TestCase):
         ctx = self.get_mock_context(name)
         client = self.get_docker_client()
         for image in self.get_docker_images(client):
-            if 'docker-test-image:latest' in \
+            if '{0}:latest'.format(TEST_IMAGE) in \
                     self.get_tags_for_docker_image(image):
                 image_id = self.get_id_from_image(image)
         container = self.create_container(client, name, image_id)
@@ -312,7 +313,7 @@ class TestUtils(testtools.TestCase):
         ctx = self.get_mock_context(name)
 
         for image in self.get_docker_images(client):
-            if 'docker-test-image:latest' in \
+            if '{0}:latest'.format(TEST_IMAGE) in \
                     self.get_tags_for_docker_image(image):
                 image_id = self.get_id_from_image(image)
 
