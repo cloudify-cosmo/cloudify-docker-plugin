@@ -24,8 +24,7 @@ import docker
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 from docker_plugin import utils
-
-TEST_IMAGE = 'tutum/hello-world'
+from docker_plugin.tests import TEST_IMAGE
 
 
 class TestUtils(testtools.TestCase):

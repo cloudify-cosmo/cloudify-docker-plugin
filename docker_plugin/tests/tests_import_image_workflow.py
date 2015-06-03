@@ -22,13 +22,12 @@ from docker import Client
 
 # Cloudify Imports is imported and used in operations
 from cloudify.workflows import local
+from docker_plugin.tests import TEST_IMAGE
 
 IGNORED_LOCAL_WORKFLOW_MODULES = (
     'worker_installer.tasks',
     'plugin_installer.tasks'
 )
-
-TEST_IMAGE = 'tutum/hello-world'
 
 
 class TestImportImageWorkflow(testtools.TestCase):
