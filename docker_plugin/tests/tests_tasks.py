@@ -124,12 +124,11 @@ class TestTasks(testtools.TestCase):
                 image_id = self.get_id_from_image(image)
 
         container = self.create_container(client, name, image_id)
+        self.addCleanup(client.remove_container, container=container)
+        self.addCleanup(client.stop, container=container, timeout=1)
         ctx.instance.runtime_properties['container_id'] = container.get('Id')
 
         processes = ['/bin/sh']
         params = dict()
 
         tasks.start(params, processes, 1, {}, ctx=ctx)
-        client.stop(container=container, timeout=1)
-        client.remove_container(
-            container=container)

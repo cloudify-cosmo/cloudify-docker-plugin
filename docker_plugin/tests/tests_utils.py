@@ -135,7 +135,8 @@ class TestUtils(testtools.TestCase):
                 image_id = self.get_id_from_image(image)
 
         container = self.create_container(client, name, image_id)
-
+        self.addCleanup(client.remove_container, container=container)
+        self.addCleanup(client.stop, container=container, timeout=1)
         ctx.instance.runtime_properties['container_id'] = container.get('Id')
 
         processes = ['/bin/sh']
@@ -143,9 +144,6 @@ class TestUtils(testtools.TestCase):
         client.start(name)
 
         out = utils.wait_for_processes(processes, 1, client)
-        client.stop(container=container, timeout=1)
-        client.remove_container(
-            container=container)
         self.assertEquals(True, out)
 
     def test_get_container_dictionary_none(self):
@@ -172,13 +170,12 @@ class TestUtils(testtools.TestCase):
                 image_id = self.get_id_from_image(image)
 
         container = self.create_container(client, name, image_id)
+        self.addCleanup(client.remove_container, container=container)
+        self.addCleanup(client.stop, container=container, timeout=1)
 
         ctx.instance.runtime_properties['container_id'] = container.get('Id')
 
         out = utils.get_container_dictionary(client)
-        client.stop(container=container, timeout=1)
-        client.remove_container(
-            container=container)
         self.assertEquals(container['Id'], out['Id'])
 
     def test_get_remove_container_params(self):
@@ -250,13 +247,12 @@ class TestUtils(testtools.TestCase):
                 image_id = self.get_id_from_image(image)
 
         container = self.create_container(client, name, image_id)
+        self.addCleanup(client.remove_container, container=container)
+        self.addCleanup(client.stop, container=container, timeout=1)
 
         ctx.instance.runtime_properties['container_id'] = container.get('Id')
-        client.start(name)
+        client.start(container)
         out = utils.check_container_status(client)
-        client.stop(container=container, timeout=1)
-        client.remove_container(
-            container=container)
         self.assertIn('Up', out)
 
     def test_get_container_id_from_name(self):
@@ -269,13 +265,12 @@ class TestUtils(testtools.TestCase):
                     self.get_tags_for_docker_image(image):
                 image_id = self.get_id_from_image(image)
         container = self.create_container(client, name, image_id)
+        self.addCleanup(client.remove_container, container=container)
         ex = self.assertRaises(
             NonRecoverableError, utils.get_container_id_from_name,
             name, client)
         self.assertIn(
             'No such container', ex.message)
-        client.remove_container(
-            container=container)
 
     def test_get_top_info_bad_container(self):
 
@@ -310,19 +305,18 @@ class TestUtils(testtools.TestCase):
         self.pull_image(client)
         ctx = self.get_mock_context(name)
         current_ctx.set(ctx=ctx)
-
+        bad_container_id = self.get_bad_container_id()
         for image in self.get_docker_images(client):
             if '{0}:latest'.format(TEST_IMAGE) in \
                     self.get_tags_for_docker_image(image):
                 image_id = self.get_id_from_image(image)
 
         container = self.create_container(client, name, image_id)
+        self.addCleanup(client.remove_container, container=container)
+        self.addCleanup(client.stop, container=container, timeout=1)
 
         ctx.instance.runtime_properties['container_id'] = \
-            self.get_bad_container_id()
+            bad_container_id
 
         out = utils.get_container_dictionary(client)
-        client.stop(container=container, timeout=1)
-        client.remove_container(
-            container=container)
         self.assertIsNone(out)
