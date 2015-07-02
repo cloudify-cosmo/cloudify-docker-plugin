@@ -22,6 +22,7 @@ import docker
 
 # Cloudify Imports is imported and used in operations
 from cloudify.mocks import MockCloudifyContext
+from cloudify.state import current_ctx
 from cloudify.exceptions import NonRecoverableError
 from docker_plugin import utils
 from docker_plugin.tests import TEST_IMAGE
@@ -79,26 +80,13 @@ class TestUtils(testtools.TestCase):
     def get_id_from_image(self, image):
         return image.get('Id')
 
-    def test_get_image_id_no_image_id(self):
-        name = 'test_get_image_id_no_image_id'
-        client = self.get_docker_client()
-        self.pull_image(client)
-        ctx = self.get_mock_context(name)
-        image_id = self.get_bad_image_id()
-        tag = 'latest'
-        client = self.get_docker_client()
-        ex = self.assertRaises(
-            NonRecoverableError, utils.get_image_id,
-            tag, image_id, client, ctx=ctx)
-        self.assertIn(
-            'Unable to verify', ex.message)
-
     def test_inspect_container_no_container(self):
 
         name = 'test_inspect_container_no_container'
         client = self.get_docker_client()
         self.pull_image(client)
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
 
         for image in self.get_docker_images(client):
             if '{0}:latest'.format(TEST_IMAGE) in \
@@ -112,7 +100,7 @@ class TestUtils(testtools.TestCase):
             container=container)
 
         ex = self.assertRaises(
-            NonRecoverableError, utils.inspect_container, client, ctx=ctx)
+            NonRecoverableError, utils.inspect_container, client)
         self.assertIn('Unable to inspect container', ex.message)
 
     def test_wait_for_processes_bad_container(self):
@@ -120,6 +108,7 @@ class TestUtils(testtools.TestCase):
         name = 'test_inspect_container_no_container'
         client = self.get_docker_client()
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
 
         ctx.instance.runtime_properties['container_id'] = \
             self.get_bad_container_id()
@@ -128,7 +117,7 @@ class TestUtils(testtools.TestCase):
 
         ex = self.assertRaises(
             NonRecoverableError, utils.wait_for_processes,
-            processes, 1, client, ctx=ctx)
+            processes, 1, client)
 
         self.assertIn('Unable get container processes from top', ex.message)
 
@@ -138,6 +127,7 @@ class TestUtils(testtools.TestCase):
         client = self.get_docker_client()
         self.pull_image(client)
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
 
         for image in self.get_docker_images(client):
             if '{0}:latest'.format(TEST_IMAGE) in \
@@ -152,7 +142,7 @@ class TestUtils(testtools.TestCase):
 
         client.start(name)
 
-        out = utils.wait_for_processes(processes, 1, client, ctx=ctx)
+        out = utils.wait_for_processes(processes, 1, client)
         client.stop(container=container, timeout=1)
         client.remove_container(
             container=container)
@@ -163,8 +153,9 @@ class TestUtils(testtools.TestCase):
         name = 'test_get_container_dictionary_none'
         client = self.get_docker_client()
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
         ctx.instance.runtime_properties['container_id'] = None
-        out = utils.get_container_dictionary(client, ctx=ctx)
+        out = utils.get_container_dictionary(client)
         self.assertIsNone(out)
 
     def test_get_container_dictionary(self):
@@ -173,6 +164,7 @@ class TestUtils(testtools.TestCase):
         client = self.get_docker_client()
         self.pull_image(client)
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
 
         for image in self.get_docker_images(client):
             if '{0}:latest'.format(TEST_IMAGE) in \
@@ -183,7 +175,7 @@ class TestUtils(testtools.TestCase):
 
         ctx.instance.runtime_properties['container_id'] = container.get('Id')
 
-        out = utils.get_container_dictionary(client, ctx=ctx)
+        out = utils.get_container_dictionary(client)
         client.stop(container=container, timeout=1)
         client.remove_container(
             container=container)
@@ -192,6 +184,7 @@ class TestUtils(testtools.TestCase):
     def test_get_remove_container_params(self):
         name = 'test_get_remove_container_params'
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
         container_id = self.get_bad_container_id()
         ctx.instance.runtime_properties['container_id'] = \
             container_id
@@ -201,13 +194,14 @@ class TestUtils(testtools.TestCase):
             'link': False,
             'force': True
         }
-        out = utils.get_remove_container_params(container_id, params, ctx=ctx)
+        out = utils.get_remove_container_params(container_id, params)
 
         self.assertEquals(params, out)
 
     def test_get_container_stop_params(self):
         name = 'test_get_container_stop_params'
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
         container_id = self.get_bad_container_id()
         ctx.instance.runtime_properties['container_id'] = \
             container_id
@@ -215,29 +209,31 @@ class TestUtils(testtools.TestCase):
             'container': container_id,
             'timeout': 1
         }
-        out = utils.get_stop_params(container_id, params, ctx=ctx)
+        out = utils.get_stop_params(container_id, params)
 
         self.assertEquals(params, out)
 
     def test_get_start_params(self):
         name = 'test_get_start_params'
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
         container_id = self.get_bad_container_id()
         ctx.instance.runtime_properties['container_id'] = \
             container_id
         params = dict()
-        out = utils.get_start_params(container_id, params, ctx=ctx)
+        out = utils.get_start_params(container_id, params)
 
         self.assertEquals(params, out)
 
     def test_get_create_container_params(self):
         name = 'test_get_create_container_params'
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
         container_id = self.get_bad_container_id()
         ctx.instance.runtime_properties['container_id'] = \
             container_id
         params = dict()
-        out = utils.get_create_container_params(params, ctx=ctx)
+        out = utils.get_create_container_params(params)
         self.assertEquals(params, out)
 
     def test_check_container_status(self):
@@ -246,6 +242,7 @@ class TestUtils(testtools.TestCase):
         client = self.get_docker_client()
         self.pull_image(client)
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
 
         for image in self.get_docker_images(client):
             if '{0}:latest'.format(TEST_IMAGE) in \
@@ -256,7 +253,7 @@ class TestUtils(testtools.TestCase):
 
         ctx.instance.runtime_properties['container_id'] = container.get('Id')
         client.start(name)
-        out = utils.check_container_status(client, ctx=ctx)
+        out = utils.check_container_status(client)
         client.stop(container=container, timeout=1)
         client.remove_container(
             container=container)
@@ -265,6 +262,7 @@ class TestUtils(testtools.TestCase):
     def test_get_container_id_from_name(self):
         name = 'test_get_container_id_from_name'
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
         client = self.get_docker_client()
         for image in self.get_docker_images(client):
             if '{0}:latest'.format(TEST_IMAGE) in \
@@ -273,7 +271,7 @@ class TestUtils(testtools.TestCase):
         container = self.create_container(client, name, image_id)
         ex = self.assertRaises(
             NonRecoverableError, utils.get_container_id_from_name,
-            name, client, ctx=ctx)
+            name, client)
         self.assertIn(
             'No such container', ex.message)
         client.remove_container(
@@ -284,12 +282,12 @@ class TestUtils(testtools.TestCase):
         name = 'test_get_top_info_bad_container'
         client = self.get_docker_client()
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
         ctx.instance.runtime_properties['container_id'] = \
             self.get_bad_container_id()
 
         ex = self.assertRaises(
-            NonRecoverableError, utils.get_top_info,
-            client, ctx=ctx)
+            NonRecoverableError, utils.get_top_info, client)
 
         self.assertIn('Unable get container processes from top', ex.message)
 
@@ -311,6 +309,7 @@ class TestUtils(testtools.TestCase):
         client = self.get_docker_client()
         self.pull_image(client)
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
 
         for image in self.get_docker_images(client):
             if '{0}:latest'.format(TEST_IMAGE) in \
@@ -322,7 +321,7 @@ class TestUtils(testtools.TestCase):
         ctx.instance.runtime_properties['container_id'] = \
             self.get_bad_container_id()
 
-        out = utils.get_container_dictionary(client, ctx=ctx)
+        out = utils.get_container_dictionary(client)
         client.stop(container=container, timeout=1)
         client.remove_container(
             container=container)
