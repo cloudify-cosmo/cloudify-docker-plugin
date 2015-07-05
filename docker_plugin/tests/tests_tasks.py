@@ -23,6 +23,7 @@ import docker
 # Cloudify Imports is imported and used in operations
 from cloudify.mocks import MockCloudifyContext
 from docker_plugin import tasks
+from cloudify.state import current_ctx
 from cloudify.exceptions import NonRecoverableError
 from docker_plugin.tests import TEST_IMAGE
 
@@ -36,15 +37,21 @@ class TestTasks(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
+            'use_external_resource': False,
             'name': test_name,
             'image': {
                 'repository': TEST_IMAGE
             }
         }
 
+        operation = {
+            'retry_number': 0
+        }
+
         ctx = MockCloudifyContext(
             node_id=test_node_id,
-            properties=test_properties
+            properties=test_properties,
+            operation=operation
         )
 
         return ctx
@@ -82,6 +89,7 @@ class TestTasks(testtools.TestCase):
     def test_create_container_external_no_name(self):
         name = 'test_create_container_external_no_name'
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = True
         del(ctx.node.properties['name'])
         params = dict()
@@ -92,12 +100,13 @@ class TestTasks(testtools.TestCase):
     def test_get_image_no_src_or_repo(self):
         name = 'test_get_image_no_src_or_repo'
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['image']['src'] = None
         ctx.node.properties['image']['repository'] = None
         client = self.get_docker_client()
         ex = self.assertRaises(
             NonRecoverableError, tasks.get_image,
-            client, ctx=ctx)
+            client)
         self.assertIn('You must provide', ex.message)
 
     def test_start_wait_for_processes(self):
@@ -106,6 +115,7 @@ class TestTasks(testtools.TestCase):
         client = self.get_docker_client()
         self.pull_image(client)
         ctx = self.get_mock_context(name)
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = True
 
         for image in self.get_docker_images(client):
@@ -114,12 +124,11 @@ class TestTasks(testtools.TestCase):
                 image_id = self.get_id_from_image(image)
 
         container = self.create_container(client, name, image_id)
+        self.addCleanup(client.remove_container, container=container)
+        self.addCleanup(client.stop, container=container, timeout=1)
         ctx.instance.runtime_properties['container_id'] = container.get('Id')
 
         processes = ['/bin/sh']
         params = dict()
 
         tasks.start(params, processes, 1, {}, ctx=ctx)
-        client.stop(container=container, timeout=1)
-        client.remove_container(
-            container=container)

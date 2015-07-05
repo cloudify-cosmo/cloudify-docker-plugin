@@ -12,8 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+
 # Third-party Imports
-import docker
+from docker.client import Client
+from docker.errors import DockerException
 
 # Cloudify Imports
 from cloudify.exceptions import NonRecoverableError
@@ -31,7 +33,7 @@ def get_client(daemon_client):
     """
 
     try:
-        return docker.Client(**daemon_client)
-    except docker.errors.DockerException as e:
-        raise NonRecoverableError('Error while getting client: '
-                                  '{0}.'.format(str(e)))
+        return Client(**daemon_client)
+    except DockerException as e:
+        raise NonRecoverableError(
+            'Error while getting client: {0}.'.format(str(e)))
