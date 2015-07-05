@@ -12,4 +12,4 @@ See [Docker Plugin](http://getcloudify.org/guide/plugin-docker.html)
 
 Default API version is 1.12 (support for docker 1.0)
 
-Docker Python Client 0.7.1 (Plugin installs this package)
+Docker Python Client 1.2.3 (Plugin installs this package)
