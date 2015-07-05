@@ -113,7 +113,7 @@ def start(params, processes_to_wait_for, retry_interval,
     ctx.logger.info('Started container: {0}.'.format(
         ctx.instance.runtime_properties['container_id']))
 
-    if utils.get_container_dictionary(client) is not None:
+    if utils.get_container_dictionary(client):
         inspect_output = utils.inspect_container(client)
         ctx.instance.runtime_properties['ports'] = \
             inspect_output.get('Ports', None)
