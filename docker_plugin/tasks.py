@@ -61,7 +61,7 @@ def create_container(params, daemon_client=None, **_):
     arguments = dict()
     arguments['name'] = ctx.node.properties['name']
     arguments['image'] = get_image(client)
-    arguments.update(utils.get_create_container_params(params))
+    arguments.update(params)
 
     try:
         container = client.create_container(**arguments)
@@ -96,7 +96,8 @@ def start(params, processes_to_wait_for, retry_interval,
                 ctx.instance.runtime_properties.get('container_id')))
 
     container_id = ctx.instance.runtime_properties['container_id']
-    arguments = utils.get_start_params(container_id, params)
+    arguments = {}
+    arguments.update(params)
 
     try:
         response = client.start(**arguments)
@@ -145,7 +146,8 @@ def stop(retry_interval, params, daemon_client=None, **_):
     container_id = ctx.instance.runtime_properties['container_id']
     ctx.logger.info('Stopping container: {}'.format(container_id))
 
-    arguments = utils.get_stop_params(container_id, params)
+    arguments = {}
+    arguments.update(params)
 
     try:
         client.stop(**arguments)
@@ -179,7 +181,8 @@ def remove_container(params, daemon_client=None, **_):
     container_id = ctx.instance.runtime_properties['container_id']
     ctx.logger.info('Removing container {}'.format(container_id))
 
-    arguments = utils.get_remove_container_params(container_id, params)
+    arguments = {}
+    arguments.update(params)
 
     try:
         client.remove_container(**arguments)
