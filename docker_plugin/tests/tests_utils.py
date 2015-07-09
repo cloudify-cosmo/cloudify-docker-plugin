@@ -286,17 +286,6 @@ class TestUtils(testtools.TestCase):
 
         self.assertIn('Unable get container processes from top', ex.message)
 
-    def test_get_params_bad_param(self):
-        supported_params = ['good', 'evil']
-        params = {
-            'good': True,
-            'evil': True,
-            'ambiguety': False
-        }
-        ex = self.assertRaises(
-            NonRecoverableError, utils.get_params,
-            params, supported_params)
-        self.assertIn('Unsupported', ex.message)
 
     def test_get_container_dictionary_bad_id(self):
 
