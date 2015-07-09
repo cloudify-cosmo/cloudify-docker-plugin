@@ -96,7 +96,7 @@ def start(params, processes_to_wait_for, retry_interval,
                 ctx.instance.runtime_properties.get('container_id')))
 
     container_id = ctx.instance.runtime_properties['container_id']
-    arguments = {}
+    arguments = { 'container': container_id }
     arguments.update(params)
 
     try:
