@@ -178,60 +178,6 @@ class TestUtils(testtools.TestCase):
         out = utils.get_container_dictionary(client)
         self.assertEquals(container['Id'], out['Id'])
 
-    def test_get_remove_container_params(self):
-        name = 'test_get_remove_container_params'
-        ctx = self.get_mock_context(name)
-        current_ctx.set(ctx=ctx)
-        container_id = self.get_bad_container_id()
-        ctx.instance.runtime_properties['container_id'] = \
-            container_id
-        params = {
-            'container': container_id,
-            'v': True,
-            'link': False,
-            'force': True
-        }
-        out = utils.get_remove_container_params(container_id, params)
-
-        self.assertEquals(params, out)
-
-    def test_get_container_stop_params(self):
-        name = 'test_get_container_stop_params'
-        ctx = self.get_mock_context(name)
-        current_ctx.set(ctx=ctx)
-        container_id = self.get_bad_container_id()
-        ctx.instance.runtime_properties['container_id'] = \
-            container_id
-        params = {
-            'container': container_id,
-            'timeout': 1
-        }
-        out = utils.get_stop_params(container_id, params)
-
-        self.assertEquals(params, out)
-
-    def test_get_start_params(self):
-        name = 'test_get_start_params'
-        ctx = self.get_mock_context(name)
-        current_ctx.set(ctx=ctx)
-        container_id = self.get_bad_container_id()
-        ctx.instance.runtime_properties['container_id'] = \
-            container_id
-        params = dict()
-        out = utils.get_start_params(container_id, params)
-
-        self.assertEquals(params, out)
-
-    def test_get_create_container_params(self):
-        name = 'test_get_create_container_params'
-        ctx = self.get_mock_context(name)
-        current_ctx.set(ctx=ctx)
-        container_id = self.get_bad_container_id()
-        ctx.instance.runtime_properties['container_id'] = \
-            container_id
-        params = dict()
-        out = utils.get_create_container_params(params)
-        self.assertEquals(params, out)
 
     def test_check_container_status(self):
 
