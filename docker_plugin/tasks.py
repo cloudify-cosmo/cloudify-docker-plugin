@@ -98,7 +98,7 @@ def start(params, processes_to_wait_for, retry_interval,
                 ctx.instance.runtime_properties.get('container_id')))
 
     container_id = ctx.instance.runtime_properties['container_id']
-    arguments = { 'container': container_id }
+    arguments = {'container': container_id}
     arguments.update(params)
 
     ctx.logger.info('Start arguments: {0}'.format(arguments))
@@ -150,7 +150,8 @@ def stop(retry_interval, params, daemon_client=None, **_):
     container_id = ctx.instance.runtime_properties['container_id']
     ctx.logger.info('Stopping container: {}'.format(container_id))
 
-    arguments = dict()
+    container_id = ctx.instance.runtime_properties['container_id']
+    arguments = {'container': container_id}
     arguments.update(params)
 
     try:
@@ -185,7 +186,8 @@ def remove_container(params, daemon_client=None, **_):
     container_id = ctx.instance.runtime_properties['container_id']
     ctx.logger.info('Removing container {}'.format(container_id))
 
-    arguments = dict()
+    container_id = ctx.instance.runtime_properties['container_id']
+    arguments = {'container': container_id}
     arguments.update(params)
 
     try:

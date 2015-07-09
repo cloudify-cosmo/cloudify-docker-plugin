@@ -178,7 +178,6 @@ class TestUtils(testtools.TestCase):
         out = utils.get_container_dictionary(client)
         self.assertEquals(container['Id'], out['Id'])
 
-
     def test_check_container_status(self):
 
         name = 'test_check_container_status'
@@ -231,7 +230,6 @@ class TestUtils(testtools.TestCase):
             NonRecoverableError, utils.get_top_info, client)
 
         self.assertIn('Unable get container processes from top', ex.message)
-
 
     def test_get_container_dictionary_bad_id(self):
 
