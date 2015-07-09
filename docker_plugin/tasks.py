@@ -63,6 +63,8 @@ def create_container(params, daemon_client=None, **_):
     arguments['image'] = get_image(client)
     arguments.update(params)
 
+    ctx.logger.info('Create container arguments: {0}'.format(arguments))
+
     try:
         container = client.create_container(**arguments)
     except APIError as e:
@@ -98,6 +100,8 @@ def start(params, processes_to_wait_for, retry_interval,
     container_id = ctx.instance.runtime_properties['container_id']
     arguments = { 'container': container_id }
     arguments.update(params)
+
+    ctx.logger.info('Start arguments: {0}'.format(arguments))
 
     try:
         response = client.start(**arguments)
@@ -146,7 +150,7 @@ def stop(retry_interval, params, daemon_client=None, **_):
     container_id = ctx.instance.runtime_properties['container_id']
     ctx.logger.info('Stopping container: {}'.format(container_id))
 
-    arguments = {}
+    arguments = dict()
     arguments.update(params)
 
     try:
@@ -181,7 +185,7 @@ def remove_container(params, daemon_client=None, **_):
     container_id = ctx.instance.runtime_properties['container_id']
     ctx.logger.info('Removing container {}'.format(container_id))
 
-    arguments = {}
+    arguments = dict()
     arguments.update(params)
 
     try:
