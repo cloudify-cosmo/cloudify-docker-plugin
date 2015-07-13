@@ -173,7 +173,6 @@ def get_container_dictionary(client, ctx):
             return None
 
 
-
 def check_container_status(client):
     """ Gets the status value from the container info dictionary
 
