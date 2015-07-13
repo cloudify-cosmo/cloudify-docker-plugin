@@ -154,6 +154,8 @@ def stop(retry_interval, params, daemon_client=None, **_):
     arguments = {'container': container_id}
     arguments.update(params)
 
+    ctx.logger.info('Stop arguments: {0}'.format(arguments))
+
     try:
         client.stop(**arguments)
     except APIError as e:
@@ -189,6 +191,8 @@ def remove_container(params, daemon_client=None, **_):
     container_id = ctx.instance.runtime_properties['container_id']
     arguments = {'container': container_id}
     arguments.update(params)
+
+    ctx.logger.info('Remove container arguments: {0}'.format(arguments))
 
     try:
         client.remove_container(**arguments)
@@ -245,7 +249,7 @@ def pull(client, arguments):
     """
 
     arguments.update({'stream': True})
-    ctx.logger.info('Pulling repository: {0}'.format(arguments))
+    ctx.logger.info('Pull arguments: {0}'.format(arguments))
 
     image_id = None
 
@@ -280,7 +284,7 @@ def import_image(client, arguments):
     :param daemon_client: optional configuration for client creation
     """
 
-    ctx.logger.info('Importing image. {}'.format(arguments))
+    ctx.logger.info('Import image arguments {}'.format(arguments))
 
     try:
         output = client.import_image(**arguments)
