@@ -61,7 +61,9 @@ def create_container(params, daemon_client=None, **_):
     arguments = dict()
     arguments['name'] = ctx.node.properties['name']
     arguments['image'] = get_image(client)
-    arguments.update(utils.get_create_container_params(params))
+    arguments.update(params)
+
+    ctx.logger.info('Create container arguments: {0}'.format(arguments))
 
     try:
         container = client.create_container(**arguments)
@@ -96,7 +98,10 @@ def start(params, processes_to_wait_for, retry_interval,
                 ctx.instance.runtime_properties.get('container_id')))
 
     container_id = ctx.instance.runtime_properties['container_id']
-    arguments = utils.get_start_params(container_id, params)
+    arguments = {'container': container_id}
+    arguments.update(params)
+
+    ctx.logger.info('Start arguments: {0}'.format(arguments))
 
     try:
         response = client.start(**arguments)
@@ -145,7 +150,11 @@ def stop(retry_interval, params, daemon_client=None, **_):
     container_id = ctx.instance.runtime_properties['container_id']
     ctx.logger.info('Stopping container: {}'.format(container_id))
 
-    arguments = utils.get_stop_params(container_id, params)
+    container_id = ctx.instance.runtime_properties['container_id']
+    arguments = {'container': container_id}
+    arguments.update(params)
+
+    ctx.logger.info('Stop arguments: {0}'.format(arguments))
 
     try:
         client.stop(**arguments)
@@ -179,7 +188,11 @@ def remove_container(params, daemon_client=None, **_):
     container_id = ctx.instance.runtime_properties['container_id']
     ctx.logger.info('Removing container {}'.format(container_id))
 
-    arguments = utils.get_remove_container_params(container_id, params)
+    container_id = ctx.instance.runtime_properties['container_id']
+    arguments = {'container': container_id}
+    arguments.update(params)
+
+    ctx.logger.info('Remove container arguments: {0}'.format(arguments))
 
     try:
         client.remove_container(**arguments)
@@ -236,7 +249,7 @@ def pull(client, arguments):
     """
 
     arguments.update({'stream': True})
-    ctx.logger.info('Pulling repository: {0}'.format(arguments))
+    ctx.logger.info('Pull arguments: {0}'.format(arguments))
 
     image_id = None
 
@@ -271,7 +284,7 @@ def import_image(client, arguments):
     :param daemon_client: optional configuration for client creation
     """
 
-    ctx.logger.info('Importing image. {}'.format(arguments))
+    ctx.logger.info('Import image arguments {}'.format(arguments))
 
     try:
         output = client.import_image(**arguments)
