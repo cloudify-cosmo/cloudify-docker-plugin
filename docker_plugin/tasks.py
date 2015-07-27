@@ -19,7 +19,7 @@
 import json
 
 # Third-party Imports
-import docker.errors
+from docker.errors import APIError
 
 # Cloudify Imports
 from cloudify import ctx
@@ -50,11 +50,12 @@ def create_container(params, daemon_client=None, **_):
 
     if ctx.node.properties['use_external_resource']:
         if 'name' not in ctx.node.properties:
-            raise NonRecoverableError('Use external resource, but '
-                                      'no resource id provided.')
+            raise NonRecoverableError(
+                'Use external resource, but '
+                'no resource id provided.')
         ctx.instance.runtime_properties['container_id'] = \
-            utils.get_container_id_from_name(ctx.node.properties['name'],
-                                             client, ctx=ctx)
+            utils.get_container_id_from_name(
+                ctx.node.properties['name'], client)
         return
 
     arguments = dict()
@@ -66,9 +67,9 @@ def create_container(params, daemon_client=None, **_):
 
     try:
         container = client.create_container(**arguments)
-    except docker.errors.APIError as e:
-        raise NonRecoverableError('Error while creating container: '
-                                  '{0}'.format(str(e)))
+    except APIError as e:
+        raise NonRecoverableError(
+            'Error while creating container: {0}'.format(str(e)))
 
     ctx.instance.runtime_properties['container_id'] = container.get('Id')
     ctx.logger.info('Container created: {0}.'.format(container.get('Id')))
@@ -92,7 +93,7 @@ def start(params, processes_to_wait_for, retry_interval,
     client = docker_client.get_client(daemon_client)
 
     if ctx.node.properties['use_external_resource']:
-        if utils.get_container_dictionary(client, ctx=ctx) is None:
+        if utils.get_container_dictionary(client) is None:
             raise NonRecoverableError('{} does not exist.'.format(
                 ctx.instance.runtime_properties.get('container_id')))
 
@@ -104,27 +105,27 @@ def start(params, processes_to_wait_for, retry_interval,
 
     try:
         response = client.start(**arguments)
-    except docker.errors.APIError as e:
-        raise NonRecoverableError('Failed to start container: '
-                                  '{0}.'.format(str(e)))
+    except APIError as e:
+        raise NonRecoverableError(
+            'Failed to start container: {0}.'.format(str(e)))
 
     ctx.logger.info('Container started: {}.'.format(response))
 
     if params.get('processes_to_wait_for'):
         utils.wait_for_processes(processes_to_wait_for, retry_interval,
-                                 client, ctx=ctx)
+                                 client)
 
     ctx.logger.info('Started container: {0}.'.format(
         ctx.instance.runtime_properties['container_id']))
 
-    if utils.get_container_dictionary(client, ctx=ctx) is not None:
-        inspect_output = utils.inspect_container(client, ctx=ctx)
+    if utils.get_container_dictionary(client):
+        inspect_output = utils.inspect_container(client)
         ctx.instance.runtime_properties['ports'] = \
             inspect_output.get('Ports', None)
         ctx.instance.runtime_properties['network_settings'] = \
             inspect_output.get('NetworkSettings', None)
 
-    top_info = utils.get_top_info(client, ctx=ctx)
+    top_info = utils.get_top_info(client)
 
     ctx.logger.info('Container: {0} Forwarded ports: {1} Top: {2}.'.format(
         ctx.instance.runtime_properties['container_id'],
@@ -157,11 +158,11 @@ def stop(retry_interval, params, daemon_client=None, **_):
 
     try:
         client.stop(**arguments)
-    except docker.errors.APIError as e:
-        raise NonRecoverableError('Failed to stop container: '
-                                  '{0}'.format(str(e)))
+    except APIError as e:
+        raise NonRecoverableError(
+            'Failed to start container: {0}.'.format(str(e)))
 
-    if 'Exited' not in utils.check_container_status(client, ctx=ctx):
+    if 'Exited' not in utils.check_container_status(client):
         raise RecoverableError('Container still running. Retyring.',
                                retry_after=retry_interval)
 
@@ -195,16 +196,16 @@ def remove_container(params, daemon_client=None, **_):
 
     try:
         client.remove_container(**arguments)
-    except docker.errors.APIError as e:
-        raise NonRecoverableError('Failed to delete container: '
-                                  '{0}.'.format(str(e)))
+    except APIError as e:
+        raise NonRecoverableError(
+            'Failed to start container: {0}.'.format(str(e)))
 
     del(ctx.instance.runtime_properties['container_id'])
 
     ctx.logger.info('Removed container {}'.format(container_id))
 
 
-def get_image(client, ctx):
+def get_image(client):
     """ Depending on what you specify in the blueprint, this determines
         whether to use pull or import_image.
         If src is specified, import_image will import and image from
@@ -233,12 +234,12 @@ def get_image(client, ctx):
                         'name was specified, that will be the image name, '
                         'otherwise, the image name will be the instance id.')
         arguments['src'] = ctx.node.properties['image']['src']
-        return import_image(client, arguments, ctx=ctx)
+        return import_image(client, arguments)
     else:
-        return pull(client, arguments, ctx=ctx)
+        return pull(client, arguments)
 
 
-def pull(client, arguments, ctx):
+def pull(client, arguments):
     """ cloudify.docker.Image type create lifecycle operation.
         Identical to the docker pull command.
 
@@ -255,24 +256,24 @@ def pull(client, arguments, ctx):
     try:
         for stream in client.pull(**arguments):
             stream_dict = json.loads(stream)
-            image_id = stream_dict.get('id', image_id)
+            if 'id' in stream_dict:
+                image_id = stream_dict.get('id')
             if 'Downloading' not in stream_dict.get('status', ''):
                 ctx.logger.info('Pulling Image status: {0}.'.format(
                     stream_dict))
-    except docker.errors.APIError as e:
-        raise NonRecoverableError('Unabled to pull image: {0}.'
-                                  'Error: {1}.'.format(
-                                      arguments,
-                                      str(e)))
+    except APIError as e:
+        raise NonRecoverableError(
+            'Unabled to pull image: {0}. Error: {1}.'
+            .format(arguments, str(e)))
 
     image_id = utils.get_image_id(
-        arguments.get('tag'), image_id, client, ctx=ctx)
+        arguments.get('tag'), image_id, client)
     ctx.instance.runtime_properties['image_id'] = image_id
     ctx.logger.info('Pulled image, image_id: {0}'.format(image_id))
     return image_id
 
 
-def import_image(client, arguments, ctx):
+def import_image(client, arguments):
     """ cloudify.docker.ImportImage type create lifecycle operation.
         Derives some definition from parent type cloudify.docker.Image.
         Identical to the docker import command.
@@ -287,15 +288,15 @@ def import_image(client, arguments, ctx):
 
     try:
         output = client.import_image(**arguments)
-    except docker.errors.APIError as e:
-        raise NonRecoverableError('Unable to import image: '
-                                  '{0}.'.format(str(e)))
+    except APIError as e:
+        raise NonRecoverableError(
+            'Failed to start container: {0}.'.format(str(e)))
 
     ctx.logger.info('output: {}'.format(output))
     image_id = json.loads(output).get('status')
 
     image_id = utils.get_image_id(
-        arguments.get('tag'), image_id, client, ctx=ctx)
+        arguments.get('tag'), image_id, client)
     ctx.instance.runtime_properties['image_id'] = image_id
     ctx.logger.info('Imported image, image_id {0}'.format(image_id))
     return image_id
