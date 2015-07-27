@@ -13,65 +13,64 @@
 #    under the License.
 
 # Third-party Imports
-import docker
+from docker.errors import APIError
 
 # Cloudify Imports
+from cloudify import ctx
 from cloudify.exceptions import RecoverableError, NonRecoverableError
 
 
-def get_image_id(tag, image_id, client, ctx):
+def get_image_id(tag, image_id, client):
     """ Attempts to get the correct image id from Docker.
 
     :param tag: The image tag provided in the blueprint.
     :param image_id: The last id extracted from the stream
         during the image pull process.
     :param client: docker client
-    returns image id
-        if the last extracted image id matches the tag
-        and the image id for that tag matches the pulled
-        image id then that image id is used
-        if the image id only matches an image id in docker
-        then that is used
-        if no match is found the image id initially passed is
-        kept
+    returns image_id or
+    raises NonRecoverableError
     """
 
-    ctx.logger.debug('This image id {} is an image id stub and '
-                     'was the last image id captured during '
-                     'the pull operation. If you provided a '
-                     'tag, it might not match the image id of '
-                     'the tagged image. So this operation '
-                     'searches for an id that matches that tag. '
-                     'If there is no tag match and only a match '
-                     'between image ids then the complete id is '
-                     'returned. If there is no match at all, the '
-                     'image_id stub is returned.'.format(image_id))
+    ctx.logger.debug(
+        'This image id {0} was the last image id '
+        'captured during the pull operation. This '
+        'operation searches for an id and tag pair. '
+        'If there is no tag match and only a match '
+        'between image ids then the complete id is '
+        'returned. Then it tries the repository and '
+        'tag combination. If there is no match, the '
+        'image_id stub is returned.'.format(image_id))
+
+    reponame = str(ctx.node.properties['image'].get('repository'))
+    possible_image_id = '{0}:{1}'.format(reponame, str(tag))
 
     try:
         images = client.images()
-    except docker.errors.APIError as e:
-        raise NonRecoverableError('Unable to get last created image: '
-                                  '{}'.format(e))
+    except APIError as e:
+        raise NonRecoverableError(
+            'Unable to get last created image: {0}'.format(e))
 
     for img in images:
         img_id, tags = (str(img.get('Id')), img.get('RepoTags'))
-        if filter(None, [repotag if
-                  tag in repotag else None for repotag in tags]) \
-                and str(image_id) in img_id:
+        repotags = [repotag if tag in repotag else None for repotag in tags]
+        if filter(None, repotags) and img_id in str(image_id):
             ctx.logger.debug(
                 'The tags and ids match, '
-                'assigning this image id: {}.'.format(img_id))
+                'assigning this image id: {0}.'.format(img_id))
             return img_id
-        elif str(image_id) in img_id:
+        elif img_id in str(image_id):
             ctx.logger.debug(
-                'No tags match, assigning this image id: {}.'.format(img_id))
+                'No tags match, assigning this image id: {0}.'.format(img_id))
+            return img_id
+        elif possible_image_id in repotags:
+            ctx.logger.debug('stream_dict assigned the tag as image_id')
             return img_id
 
-    raise NonRecoverableError('Unable to verify that the image id '
-                              'received during pull is valid.')
+    raise NonRecoverableError(
+        'Unable to verify that the image id received during pull is valid.')
 
 
-def inspect_container(client, ctx):
+def inspect_container(client):
     """Inspect container.
 
     Call inspect with container id from
@@ -86,16 +85,16 @@ def inspect_container(client, ctx):
     if container is not None:
         try:
             output = client.inspect_container(container)
-        except docker.errors.APIError as e:
-            raise NonRecoverableError('Unable to inspect container: '
-                                      '{}'.format(str(e)))
+        except APIError as e:
+            raise NonRecoverableError(
+                'Unable to inspect container: {0}'.format(str(e)))
         else:
             return output
     else:
         return None
 
 
-def wait_for_processes(process_names, retry_interval, client, ctx):
+def wait_for_processes(process_names, retry_interval, client):
     """ The user may provide a node param in the blueprint wait_for_processes.
         This is a list of processes to verify are active on the container
         before completing the start operation. If all processes are not active
@@ -113,9 +112,9 @@ def wait_for_processes(process_names, retry_interval, client, ctx):
 
     try:
         top_result = client.top(container)
-    except docker.errors.APIError as e:
-        raise NonRecoverableError('Unable get container processes from top: '
-                                  '{}'.format(str(e)))
+    except APIError as e:
+        raise NonRecoverableError(
+            'Unable get container processes from top: {0}'.format(str(e)))
 
     top_result_processes = top_result.get('Processes')
     all_active = all([
@@ -127,19 +126,18 @@ def wait_for_processes(process_names, retry_interval, client, ctx):
         for process_name in process_names
     ])
     if all_active:
-        ctx.logger.info('Container.top(): {}'.format(top_result))
+        ctx.logger.info('Container.top(): {0}'.format(top_result))
         return all_active
     else:
-        raise RecoverableError('Waiting for all these processes. Retrying...',
-                               retry_after=retry_interval)
+        raise RecoverableError(
+            'Waiting for all these processes. Retrying...',
+            retry_after=retry_interval)
 
 
-def get_container_dictionary(client, ctx):
+def get_container_dictionary(client):
     """ Gets the container ID from the cloudify context.
         Searches Docker for that container ID.
         Returns dockers dictionary for that container ID.
-
-
 
     Get list of containers dictionaries from docker containers function.
     Find container which is specified in
@@ -152,24 +150,26 @@ def get_container_dictionary(client, ctx):
 
     container_id = ctx.instance.runtime_properties.get('container_id')
     if container_id is None:
-        ctx.logger.debug('Unable to retrieve container dictionary.'
-                         'ctx container ID value is None')
+        ctx.logger.debug(
+            'Unable to retrieve container dictionary.'
+            'ctx container ID value is None')
         return None
 
     try:
         all_containers = client.containers(all=True)
-    except docker.errors.APIError as e:
-        raise NonRecoverableError('Unable to list all containers: '
-                                  '{}.'.format(str(e)))
+    except APIError as e:
+        raise NonRecoverableError(
+            'Unable to list all containers: {0}.'.format(str(e)))
 
     for container in all_containers:
         if container_id in \
                 container.get('Id'):
             return container
         else:
-            ctx.logger.debug('Unable to retrieve container dictionary.'
-                             'container with ID {} does not exist.'
-                             .format(container_id))
+            ctx.logger.debug(
+                'Unable to retrieve container dictionary.'
+                'container with ID {} does not exist.'
+                .format(container_id))
             return None
 
 
@@ -181,13 +181,13 @@ def check_container_status(client):
     returns status or None if not found.
     """
 
-    container = get_container_dictionary(client, ctx=ctx)
+    container = get_container_dictionary(client)
     if container is None:
         return None
     return container.get('Status', None)
 
 
-def get_container_id_from_name(name, client, ctx):
+def get_container_id_from_name(name, client):
     """ Queries the local list of containers for a container with name.
 
     :param name: the name of a container.
@@ -203,10 +203,11 @@ def get_container_id_from_name(name, client, ctx):
         if name in n:
             return i
         else:
-            raise NonRecoverableError('No such container: {}.'.format(name))
+            raise NonRecoverableError(
+                'No such container: {0}.'.format(name))
 
 
-def get_top_info(client, ctx):
+def get_top_info(client):
     """Get container top info.
     Get container top info using docker top function with container id
     from ctx.instance.runtime_properties['container'].
@@ -229,8 +230,8 @@ def get_top_info(client, ctx):
 
     try:
         top_dict = client.top(container)
-    except docker.errors.APIError as e:
-        raise NonRecoverableError('Unable get container processes from top: '
-                                  '{}'.format(str(e)))
+    except APIError as e:
+        raise NonRecoverableError(
+            'Unable get container processes from top: {0}'.format(str(e)))
     else:
         return format_as_table(top_dict)
