@@ -22,7 +22,9 @@ from cosmo_tester.framework.cfy_helper import cfy
 
 IGNORED_LOCAL_WORKFLOW_MODULES = (
     'worker_installer.tasks',
-    'plugin_installer.tasks'
+    'plugin_installer.tasks',
+    'cloudify_agent.operations',
+    'cloudify_agent.installer.operations',
 )
 
 
