@@ -267,7 +267,8 @@ def pull(client, arguments):
             .format(arguments, str(e)))
 
     image_id = utils.get_image_id(
-        arguments.get('tag'), image_id, client)
+        arguments.get('tag', 'latest'), arguments.get('repository'), client)
+
     ctx.instance.runtime_properties['image_id'] = image_id
     ctx.logger.info('Pulled image, image_id: {0}'.format(image_id))
     return image_id
