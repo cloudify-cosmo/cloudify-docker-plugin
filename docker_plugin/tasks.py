@@ -258,8 +258,8 @@ def pull(client, arguments):
             stream_dict = json.loads(stream)
             if 'id' in stream_dict:
                 image_id = stream_dict.get('id')
-            if 'Downloading' not in stream_dict.get('status', ''):
-                ctx.logger.info('Pulling Image status: {0}.'.format(
+            if 'Complete' in stream_dict.get('status', ''):
+                ctx.logger.info('docker_plugin.tasks.pull: {0}.'.format(
                     stream_dict))
     except APIError as e:
         raise NonRecoverableError(
@@ -267,7 +267,8 @@ def pull(client, arguments):
             .format(arguments, str(e)))
 
     image_id = utils.get_image_id(
-        arguments.get('tag', 'latest'), arguments.get('repository'), client)
+        arguments.get('tag', 'latest'),
+        arguments.get('repository'), client)
 
     ctx.instance.runtime_properties['image_id'] = image_id
     ctx.logger.info('Pulled image, image_id: {0}'.format(image_id))
@@ -297,7 +298,9 @@ def import_image(client, arguments):
     image_id = json.loads(output).get('status')
 
     image_id = utils.get_image_id(
-        arguments.get('tag'), image_id, client)
+        arguments.get('tag', 'latest'),
+        arguments.get('repository'), client)
+
     ctx.instance.runtime_properties['image_id'] = image_id
     ctx.logger.info('Imported image, image_id {0}'.format(image_id))
     return image_id
