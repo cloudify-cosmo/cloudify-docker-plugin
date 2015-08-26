@@ -227,7 +227,7 @@ def get_image(client):
     else:
         arguments['repository'] = \
             ctx.node.properties['image'].get('repository', ctx.instance.id)
-        arguments['tag'] = ctx.node.properties['image'].get('tag', '')
+        arguments['tag'] = ctx.node.properties['image'].get('tag', 'latest')
 
     if ctx.node.properties['image'].get('src', None) is not None:
         ctx.logger.info('src provided, importing image. If repository '
@@ -267,8 +267,7 @@ def pull(client, arguments):
             .format(arguments, str(e)))
 
     image_id = utils.get_image_id(
-        arguments.get('tag', 'latest'),
-        arguments.get('repository'), client)
+        arguments['tag'], arguments['repository'], client)
 
     ctx.instance.runtime_properties['image_id'] = image_id
     ctx.logger.info('Pulled image, image_id: {0}'.format(image_id))
@@ -298,8 +297,7 @@ def import_image(client, arguments):
     image_id = json.loads(output).get('status')
 
     image_id = utils.get_image_id(
-        arguments.get('tag', 'latest'),
-        arguments.get('repository'), client)
+        arguments.get('tag'), arguments.get('repository'), client)
 
     ctx.instance.runtime_properties['image_id'] = image_id
     ctx.logger.info('Imported image, image_id {0}'.format(image_id))
