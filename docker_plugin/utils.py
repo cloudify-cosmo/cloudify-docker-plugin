@@ -20,29 +20,7 @@ from cloudify import ctx
 from cloudify.exceptions import RecoverableError, NonRecoverableError
 
 
-def get_image_id(tag, image_id, client):
-    """ Attempts to get the correct image id from Docker.
-
-    :param tag: The image tag provided in the blueprint.
-    :param image_id: The last id extracted from the stream
-        during the image pull process.
-    :param client: docker client
-    returns image_id or
-    raises NonRecoverableError
-    """
-
-    ctx.logger.debug(
-        'This image id {0} was the last image id '
-        'captured during the pull operation. This '
-        'operation searches for an id and tag pair. '
-        'If there is no tag match and only a match '
-        'between image ids then the complete id is '
-        'returned. Then it tries the repository and '
-        'tag combination. If there is no match, the '
-        'image_id stub is returned.'.format(image_id))
-
-    reponame = str(ctx.node.properties['image'].get('repository'))
-    possible_image_id = '{0}:{1}'.format(reponame, str(tag))
+def get_image_id(tag, repository, client):
 
     try:
         images = client.images()
@@ -50,24 +28,13 @@ def get_image_id(tag, image_id, client):
         raise NonRecoverableError(
             'Unable to get last created image: {0}'.format(e))
 
-    for img in images:
-        img_id, tags = (str(img.get('Id')), img.get('RepoTags'))
-        repotags = [repotag if tag in repotag else None for repotag in tags]
-        if filter(None, repotags) and img_id in str(image_id):
-            ctx.logger.debug(
-                'The tags and ids match, '
-                'assigning this image id: {0}.'.format(img_id))
-            return img_id
-        elif img_id in str(image_id):
-            ctx.logger.debug(
-                'No tags match, assigning this image id: {0}.'.format(img_id))
-            return img_id
-        elif possible_image_id in repotags:
-            ctx.logger.debug('stream_dict assigned the tag as image_id')
-            return img_id
+    for image in images:
+        if '{0}:{1}'.format(repository, tag) in image.get('RepoTags'):
+            return image.get('Id')
 
     raise NonRecoverableError(
-        'Unable to verify that the image id received during pull is valid.')
+        'Could not find an image that matches repository:tag'
+        ' {0}:{1}.'.format(repository, tag))
 
 
 def inspect_container(client):
