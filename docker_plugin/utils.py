@@ -33,7 +33,7 @@ def get_image_id(tag, repository, client):
             return image.get('Id')
 
     raise NonRecoverableError('Unable to get image id.')
-    
+
 
 def inspect_container(client):
     """Inspect container.
