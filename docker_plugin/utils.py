@@ -32,7 +32,9 @@ def get_image_id(tag, repository, client):
         if '{0}:{1}'.format(repository, tag) in image.get('RepoTags'):
             return image.get('Id')
 
-    raise NonRecoverableError('Unable to get image id.')
+    raise NonRecoverableError(
+        'Could not find an image that matches repository:tag'
+        ' {0}:{1}.'.format(repository, tag))
 
 
 def inspect_container(client):
