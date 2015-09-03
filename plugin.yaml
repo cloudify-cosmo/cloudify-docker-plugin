@@ -4,7 +4,7 @@
 
 plugins:
   docker:
-    executor: host_agent
+    executor: central_deployment_agent
     source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/1.3m5.zip
 
 node_types:
@@ -40,6 +40,18 @@ node_types:
                 A dictionary of parameters allowed by docker-py to the
                 create_container function.
               default: {}
+            connection_credentials:
+              description: >
+                connection description dict
+                base_url
+                version
+                timeout
+                TLS
+              default:
+                base_url: tcp://localhost:2375
+                version: 1.19
+                timeout: 60
+                tls: false
         start:
           implementation: docker.docker_plugin.tasks.start
           inputs:
@@ -61,6 +73,18 @@ node_types:
                 checks.
               type: integer
               default: 1
+            connection_credentials:
+              description: >
+                connection description dict
+                base_url
+                version
+                timeout
+                TLS
+              default:
+                base_url: tcp://localhost:2375
+                version: 1.19
+                timeout: 60
+                tls: false
         stop:
           implementation: docker.docker_plugin.tasks.stop
           inputs:
@@ -75,6 +99,18 @@ node_types:
                 the number of seconds between retries.
               type: integer
               default: 10
+            connection_credentials:
+              description: >
+                connection description dict
+                base_url
+                version
+                timeout
+                TLS
+              default:
+                base_url: tcp://localhost:2375
+                version: 1.19
+                timeout: 60
+                tls: false
         delete:
           implementation: docker.docker_plugin.tasks.remove_container
           inputs:
@@ -83,3 +119,15 @@ node_types:
                 A dictionary of parameters allowed by docker-py to the
                 remove_container function.
               default: {}
+            connection_credentials:
+              description: >
+                connection description dict
+                base_url
+                version
+                timeout
+                TLS
+              default:
+                base_url: tcp://localhost:2375
+                version: 1.19
+                timeout: 60
+                tls: false
