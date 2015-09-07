@@ -73,7 +73,7 @@ def wait_for_processes(process_names, retry_interval, client):
     """
 
     ctx.logger.info('Waiting for these processes to finish: '
-                    '{}'.format(process_names))
+                    '{0}'.format(process_names))
 
     container = ctx.instance.runtime_properties.get('container_id')
 
@@ -129,13 +129,12 @@ def get_container_dictionary(client):
             'Unable to list all containers: {0}.'.format(str(e)))
 
     for container in all_containers:
-        if container_id in \
-                container.get('Id'):
+        if container_id in container.get('Id'):
             return container
         else:
             ctx.logger.debug(
                 'Unable to retrieve container dictionary.'
-                'container with ID {} does not exist.'
+                'container with ID {0} does not exist.'
                 .format(container_id))
             return None
 
@@ -164,9 +163,8 @@ def get_container_id_from_name(name, client):
     if name is not in the list of containers raise NonRecoverableError
     """
 
-    for n, i in \
-            [(c.get('Names'),
-              c.get('Id')) for c in client.containers(all=True)]:
+    for n, i in [(c.get('Names'), c.get('Id'))
+                 for c in client.containers(all=True)]:
         if name in n:
             return i
         else:

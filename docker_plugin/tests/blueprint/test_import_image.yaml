@@ -35,12 +35,23 @@ node_templates:
               stdin_open: true
               tty: true
               command: /bin/sleep 1
+          connection_credentials:
+            base_url: tcp://localhost:2375
+            version: 1.19
+            timeout: 60
+            tls: false
+
         start:
           implementation: docker.docker_plugin.tasks.start
           inputs:
             params:
               port_bindings:
                 80: 80
+          connection_credentials:
+            base_url: tcp://localhost:2375
+            version: 1.19
+            timeout: 60
+            tls: false
     relationships:
       - type: cloudify.relationships.contained_in
         target: host
