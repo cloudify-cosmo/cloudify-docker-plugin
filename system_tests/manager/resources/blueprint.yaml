@@ -121,6 +121,8 @@ node_templates:
       rules:
         - port: 22
           remote_ip_prefix: { get_input: current_ip }
+        - port: 2375
+          remote_ip_prefix: { get_input: current_ip }
 
   docker_system_test_host:
     type: cloudify.openstack.nodes.Server
@@ -138,8 +140,9 @@ node_templates:
           do
           curl -o install.sh -sSL https://get.docker.com/
           sudo sh install.sh
-          sudo groupadd docker
+          sudo groupadd docker | true
           sudo gpasswd -a ubuntu docker
+          echo -e 'DOCKER_OPTS="--dns 8.8.8.8 --dns 8.8.4.4 -H tcp://0.0.0.0:2375"' | sudo tee -a /etc/default/docker
           sudo service docker restart
           done
           sudo service ssh start

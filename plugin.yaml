@@ -4,7 +4,7 @@
 
 plugins:
   docker:
-    executor: host_agent
+    executor: central_deployment_agent
     source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/1.3m5.zip
 
 node_types:
@@ -40,6 +40,16 @@ node_types:
                 A dictionary of parameters allowed by docker-py to the
                 create_container function.
               default: {}
+            daemon_client:
+              description: >
+              Docker client information necessary to connect to Docker service
+                - transport_protocol
+                - localhost
+                - host_port
+                - api_version
+                - connection_timeout
+                - enable_tls
+              default: {}
         start:
           implementation: docker.docker_plugin.tasks.start
           inputs:
@@ -61,6 +71,16 @@ node_types:
                 checks.
               type: integer
               default: 1
+            daemon_client:
+              description: >
+              Docker client information necessary to connect to Docker service
+                - transport_protocol
+                - localhost
+                - host_port
+                - api_version
+                - connection_timeout
+                - enable_tls
+              default: {}
         stop:
           implementation: docker.docker_plugin.tasks.stop
           inputs:
@@ -75,6 +95,16 @@ node_types:
                 the number of seconds between retries.
               type: integer
               default: 10
+            daemon_client:
+              description: >
+              Docker client information necessary to connect to Docker service
+                - transport_protocol
+                - localhost
+                - host_port
+                - api_version
+                - connection_timeout
+                - enable_tls
+              default: {}
         delete:
           implementation: docker.docker_plugin.tasks.remove_container
           inputs:
@@ -82,4 +112,14 @@ node_types:
               description: >
                 A dictionary of parameters allowed by docker-py to the
                 remove_container function.
+              default: {}
+            daemon_client:
+              description: >
+              Docker client information necessary to connect to Docker service
+                - transport_protocol
+                - localhost
+                - host_port
+                - api_version
+                - connection_timeout
+                - enable_tls
               default: {}

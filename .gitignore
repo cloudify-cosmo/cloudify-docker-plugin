@@ -67,3 +67,8 @@ docs/_build/
 NOTES
 .cloudify
 local-storage
+
+.idea/
+.venv/
+cover/
+src/
