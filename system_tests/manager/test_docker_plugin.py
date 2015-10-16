@@ -18,7 +18,6 @@ from fabric.api import settings, run
 from fabric.network import disconnect_all
 from cloudify.workflows import local
 from cosmo_tester.framework.testenv import TestCase
-from cosmo_tester.framework.cfy_helper import cfy
 
 IGNORED_LOCAL_WORKFLOW_MODULES = (
     'worker_installer.tasks',
@@ -102,7 +101,7 @@ class TestDockerPlugin(TestCase):
                   'nosetests --with-cov --cov-report term-missing ' \
                   '--cov docker_system_test/docker_plugin ' \
                   'docker_system_test/docker_plugin/tests'
-            
+
         disconnect_all()
 
         with settings(**fabric_env):
@@ -116,7 +115,7 @@ class TestDockerPlugin(TestCase):
 
     @property
     def docker_plugin_branch(self):
-        return '1.3.1'
+        return '1.3.2'
 
     @property
     def docker_host_key_name(self):
