@@ -6,6 +6,8 @@ plugins:
   docker:
     executor: host_agent
     source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/1.3rc1.zip
+    package_name: cloudify-docker-plugin
+    package_version: 1.3rc1
 
 node_types:
 
