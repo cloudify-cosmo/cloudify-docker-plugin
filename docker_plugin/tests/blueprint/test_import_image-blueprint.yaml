@@ -1,9 +1,9 @@
 # DSL version, should appear in the main blueprint.yaml
 # and may appear in other imports. In such case, the versions must match
-tosca_definitions_version: cloudify_dsl_1_0
+tosca_definitions_version: cloudify_dsl_1_2
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/3.2m4/types.yaml
+  - http://www.getcloudify.org/spec/cloudify/3.3m7/types.yaml
   - ../../../plugin.yaml
 
 inputs:
@@ -49,4 +49,5 @@ node_templates:
     type: cloudify.nodes.Compute
     properties:
       ip: localhost
-      install_agent: false
+      agent_config:
+        install_method: none

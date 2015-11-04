@@ -76,7 +76,7 @@ class TestDockerPlugin(TestCase):
 
     def test_docker_plugin(self):
 
-        self.local_env.execute('install', task_retries=10)
+        self.local_env.execute('install', task_retries=20)
 
         keypair = {}
         host = {}
@@ -112,15 +112,15 @@ class TestDockerPlugin(TestCase):
 
     @property
     def core_branch(self):
-        return os.environ.get('BRANCH_NAME_CORE', 'master')
+        return os.environ.get('BRANCH_NAME_CORE', '3.3m7')
 
     @property
     def plugins_branch(self):
-        return os.environ.get('BRANCH_NAME_PLUGINS', 'master')
+        return os.environ.get('BRANCH_NAME_PLUGINS', '1.3m7')
 
     @property
     def docker_plugin_branch(self):
-        return self.plugins_branch
+        return 'fix-system-test'
 
     @property
     def docker_host_key_name(self):
