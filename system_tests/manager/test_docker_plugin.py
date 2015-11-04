@@ -76,7 +76,7 @@ class TestDockerPlugin(TestCase):
 
     def test_docker_plugin(self):
 
-        self.local_env.execute('install', task_retries=10)
+        self.local_env.execute('install', task_retries=20)
 
         keypair = {}
         host = {}
