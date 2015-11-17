@@ -38,7 +38,8 @@ class TestImportImageWorkflow(testtools.TestCase):
         super(TestImportImageWorkflow, self).setUp()
         # build blueprint path
         blueprint_path = os.path.join(os.path.dirname(__file__),
-                                      'blueprint', 'test_import_image.yaml')
+                                      'blueprint',
+                                      'test_import_image-blueprint.yaml')
         image_source = os.path.join(os.path.dirname(__file__),
                                     'resources', 'example.tar')
 

@@ -1,16 +1,14 @@
 # DSL version, should appear in the main blueprint.yaml
 # and may appear in other imports. In such case, the versions must match
-tosca_definitions_version: cloudify_dsl_1_0
+tosca_definitions_version: cloudify_dsl_1_2
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/3.2m4/types.yaml
+  - http://www.getcloudify.org/spec/cloudify/3.3/types.yaml
   - ../../../plugin.yaml
 
 inputs:
-  test_repo:
-    type: string
 
-  test_tag:
+  test_image_src:
     type: string
 
   test_container_name:
@@ -24,8 +22,8 @@ node_templates:
     properties:
       name: { get_input: test_container_name }
       image:
-        repository: { get_input: test_repo }
-        tag: { get_input: test_tag }
+        src: { get_input: test_image_src }
+        repository: whatasave
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -33,18 +31,16 @@ node_templates:
           inputs:
             params:
               ports:
-                - 3306
-                - 8080
+                - 80
               stdin_open: true
               tty: true
-              command: /bin/sleep 30
+              command: /bin/sleep 1
         start:
           implementation: docker.docker_plugin.tasks.start
           inputs:
             params:
               port_bindings:
-                3306: 3306
-                8080: 8080
+                80: 80
     relationships:
       - type: cloudify.relationships.contained_in
         target: host
@@ -53,4 +49,5 @@ node_templates:
     type: cloudify.nodes.Compute
     properties:
       ip: localhost
-      install_agent: false
+      agent_config:
+        install_method: none
