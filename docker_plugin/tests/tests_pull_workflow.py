@@ -38,7 +38,8 @@ class TestPullWorkflow(testtools.TestCase):
         super(TestPullWorkflow, self).setUp()
         # build blueprint path
         blueprint_path = os.path.join(os.path.dirname(__file__),
-                                      'blueprint', 'test_pull.yaml')
+                                      'blueprint',
+                                      'test_pull-blueprint.yaml')
 
         inputs = {
             'test_repo': TEST_IMAGE,
