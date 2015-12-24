@@ -24,7 +24,7 @@ setuptools.setup(
                 'and manipulate Docker containers.',
     license='LICENCE',
     install_requires=[
-        'cloudify-plugins-common>=3.4a1',
+        'cloudify-plugins-common>=3.3.1',
         'docker-py==1.2.3'
     ],
     packages=['docker_plugin'],
