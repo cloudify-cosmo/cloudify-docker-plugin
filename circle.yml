@@ -16,3 +16,10 @@ dependencies:
 test:
   override:
     - tox -e flake8
+
+deployment:
+  release:
+    tag: /[0-9]+(\.[0-9]+)*/
+    owner: circleci
+    commands:
+      - "true" 
