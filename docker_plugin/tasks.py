@@ -294,6 +294,13 @@ def import_image(client, arguments):
             'Failed to start container: {0}.'.format(str(e)))
 
     ctx.logger.info('output: {}'.format(output))
+
+    # json.loads crashes when trying to import a URL image because
+    # output have more than one JSON object solution, skip every
+    # JSON until the result JSON arrives (last one)
+    lines = output.split('\n', (output.count('\n')+1))
+    output = lines[len(lines)-1]
+
     image_id = json.loads(output).get('status')
 
     image_id = utils.get_image_id(
