@@ -28,10 +28,6 @@ inputs:
     description: >
       The Cloudify Version Tag
 
-  plugins_branch:
-    description: >
-      The Cloudify Plugins Version Tag
-
   docker_plugin_branch:
     description: >
       The Docker Plugin Version if different from the plugins_version (usually the same.)
@@ -166,7 +162,6 @@ node_templates:
           inputs:
             script_path: create.sh
             CORE_BRANCH: { get_input: core_branch }
-            PLUGINS_BRANCH: { get_input: plugins_branch }
             DOCKER_PLUGIN_BRANCH: { get_input: docker_plugin_branch }
             fabric_env:
               user: { get_input: agent_user }

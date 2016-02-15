@@ -52,7 +52,6 @@ class TestDockerPlugin(TestCase):
             'key_name': self.docker_host_key_name,
             'private_key_path': self.docker_host_key_path,
             'core_branch': self.core_branch,
-            'plugins_branch': self.plugins_branch,
             'docker_plugin_branch': self.docker_plugin_branch,
             'agent_user': 'ubuntu',
             'openstack_config': {
@@ -114,12 +113,8 @@ class TestDockerPlugin(TestCase):
         return os.environ.get('BRANCH_NAME_CORE', 'master')
 
     @property
-    def plugins_branch(self):
-        return os.environ.get('BRANCH_NAME_PLUGINS', 'master')
-
-    @property
     def docker_plugin_branch(self):
-        return self.plugins_branch
+        return '1.3.1'
 
     @property
     def docker_host_key_name(self):
