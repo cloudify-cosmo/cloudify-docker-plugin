@@ -37,8 +37,8 @@ class TestDockerPlugin(TestCase):
                          'resources', 'blueprint.yaml')
 
         if self.env.install_plugins:
-            self.cfy.install_plugins_locally(
-                blueprint_path=self.blueprint_path)
+            # sh doesn't auto convert _ to -, so can't do .install_plugins
+            self.cfy.blueprints('install-plugins', self.blueprint_path)
 
         inputs = {
             'current_ip': '0.0.0.0/0',
