@@ -53,6 +53,8 @@ Complete Example
 For a complete working example, please see the `cloudify-nodecellar-docker-example <https://github.com/cloudify-cosmo/cloudify-nodecellar-docker-example>`_.
 
 
+.. _os_example:
+
 Create a suitable Docker host (OpenStack)
 -----------------------------------------
 This example node type configures an :cfy:node:`cloudify.openstack.nodes.Server` instance for use with the docker plugin::
