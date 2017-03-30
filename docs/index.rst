@@ -9,7 +9,7 @@ Cloudify Docker Plugin
 .. note::
     The plugin is designed to follow the Docker Py Docker Python API library
     and not the Docker CLI.
-    This menas it differs from the Docker CLI in some respects.
+    This means it differs from the Docker CLI in some respects.
     For example, ``docker run`` is split into ``create`` and ``start``.
 
 Contents
