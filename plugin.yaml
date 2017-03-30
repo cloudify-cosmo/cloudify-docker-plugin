@@ -15,12 +15,29 @@ node_types:
     derived_from: cloudify.nodes.Root
     properties:
       image:
-        description: >
-          A dict describing a docker image. To import an image from a tarball
-          use the src key. The value will be an absolute path or URL. If pulling
-          an image from docker hub, do not use src. The key is repository. The value is that
-          repository name. You may additionally specify the tag, if none is given,
+        description: |
+          A dict describing a docker image.
+          To import an image from a tarball use the src key.
+          The value will be an absolute path or URL.
+          If pulling an image from docker hub, do not use src.
+          The key is repository. The value is that repository name.
+          You may additionally specify the tag, if none is given,
           latest is assumed.
+
+          * If ``src`` is provided,
+            then it must point to a file or URL where the image's tarball is imported from.
+
+            * If ``repository`` is also provided,
+              then its value will be used as the name of the repository once the image is downloaded.
+            * Otherwise,
+              the plugin will name the repository after the Cloudify instance ID.
+
+          * Otherwise,
+            ``repository`` must be provided,
+            and contain the name of the Docker image to pull.
+
+          If you pull an image from a Docker hub, ``repository`` is required. If you are importing an image, you leave it blank. The plugin will name the
+          repository by the Cloudify instance ID.
         default: {}
       name:
         description: >
