@@ -101,6 +101,8 @@ class TestDockerPlugin(TestCase):
                   'nosetests --with-cov --cov-report term-missing ' \
                   '--cov docker_system_test/docker_plugin ' \
                   'docker_system_test/docker_plugin/tests'
+            
+        disconnect_all()
 
         disconnect_all()
 
