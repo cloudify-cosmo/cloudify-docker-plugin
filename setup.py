@@ -1,32 +1,40 @@
-# coding=utf-8
+########
+# Copyright (c) 2014-2020 GigaSpaces Technologies Ltd. All rights reserved
 #
-#    Licensed under the Apache License, Version 2.0 (the "License"); you may
-#    not use this file except in compliance with the License. You may obtain
-#    a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#         http://www.apache.org/licenses/LICENSE-2.0
+#        http://www.apache.org/licenses/LICENSE-2.0
 #
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-#    License for the specific language governing permissions and limitations
-#    under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-import setuptools
 
-setuptools.setup(
+from setuptools import setup
+
+setup(
 
     name='cloudify-docker-plugin',
-    version='1.3.2',
-    author='Gigaspaces',
-    author_email='cosmo-admin@gigaspaces.com',
-    description='A Cloudify plugin enabling it to create'
-                'and manipulate Docker containers.',
-    license='LICENCE',
+    version='1.0',
+    author='Cloudify Platform LTD',
+    author_email='hello@cloudify.co',
+    description='Manage Docker nodes/containers by Cloudify.',
+    packages=['cloudify_docker'],
+    license='LICENSE',
+    zip_safe=False,
     install_requires=[
-        'cloudify-plugins-common>=3.3.1',
-        'docker-py==1.4.0'
+        "cloudify-common>=4.5.5",
+        "docker-py",
+        "cloudify-utilities-plugins-sdk==0.0.18",  # Shared Resource Downloader
+        "Fabric==1.13.1" # to copy files to docker machine
     ],
-    packages=['docker_plugin'],
-    zip_safe=False
+    test_requires=[
+        "cloudify-common>=4.5.5",
+        "docker-py",
+        "nose",
+    ]
 )
