@@ -19,7 +19,7 @@ from setuptools import setup
 setup(
 
     name='cloudify-docker-plugin',
-    version='1.0',
+    version='2.0.0',
     author='Cloudify Platform LTD',
     author_email='hello@cloudify.co',
     description='Manage Docker nodes/containers by Cloudify.',
@@ -29,7 +29,7 @@ setup(
     install_requires=[
         "cloudify-common>=4.5.5",
         "docker-py",
-        "cloudify-utilities-plugins-sdk==0.0.18",  # Shared Resource Downloader
+        "cloudify-utilities-plugins-sdk==0.0.19",  # Shared Resource Downloader
         "Fabric==1.13.1" # to copy files to docker machine
     ],
     test_requires=[

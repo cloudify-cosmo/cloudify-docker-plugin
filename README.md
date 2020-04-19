@@ -18,7 +18,8 @@ This plugin provides the following functionality:
   * Handle Ansible Playbook inside a docker container given the same node_type
     as in [cloudify-ansible-plugin](https://github.com/cloudify-cosmo/cloudify-ansible-plugin)
 
-    **NOTE** in addition to the properties, some more were added in order to specify
+    **NOTE**
+    * in addition to the properties, some more were added in order to specify
     which docker machine to execute that container on
 
   * Handle Terraform module inside a docker container given the same node_type
@@ -58,6 +59,11 @@ This plugin provides the following functionality:
 One more thing if you want to provision a host given a Cloudify manager,
 you could use a blueprint that handles that task of configure docker,
 see [Blueprints](https://github.com/cloudify-community/blueprint-examples/tree/master/docker-machine-example)
+
+## Examples
+
+For official blueprint examples using this Cloudify plugin, please see [Cloudify Community Blueprints Examples](https://github.com/cloudify-community/blueprint-examples/).
+
 
 
 ## Usage
