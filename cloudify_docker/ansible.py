@@ -372,7 +372,7 @@ def create_ansible_playbook(ctx, **kwargs):
                 playbook_path, additional_playbook_files, ctx)
         playbook_args = {
             'playbook_path': playbook_path,
-            'sources': handle_sources(sources, os.path.dirname(playbook_path),
+            'sources': handle_sources(sources, playbook_path,
                                       ctx,
                                       ctx.node.properties.get(
                                         'docker_machine', {}).get(
@@ -395,7 +395,7 @@ def create_ansible_playbook(ctx, **kwargs):
     # it will be in the kwargs [playbook_args.playbook_path]
     playbook_path = playbook_args.get("playbook_path", "")
     debug_level = playbook_args.get("debug_level", 2)
-    destination = os.path.dirname(os.path.dirname(playbook_path))
+    destination = os.path.dirname(playbook_path)
     verbosity = '-v'
     for i in range(1, debug_level):
         verbosity += 'v'
