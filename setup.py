@@ -19,7 +19,7 @@ from setuptools import setup
 setup(
 
     name='cloudify-docker-plugin',
-    version='2.0.0',
+    version='2.0.1',
     author='Cloudify Platform LTD',
     author_email='hello@cloudify.co',
     description='Manage Docker nodes/containers by Cloudify.',
