@@ -922,7 +922,7 @@ since it is unreachable""".format(stop_command))
                 buffer += data
             ctx.logger.info("Stop command result {0}".format(buffer))
         except docker.errors.APIError as ae:
-            ctx.logger.error("APIError {1}".format(str(ae)))
+            ctx.logger.error("APIError {0}".format(str(ae)))
         except Exception as e:
             message = e.message if hasattr(e, 'message') else e
             # response = e.response if hasattr(e, 'response') else e
