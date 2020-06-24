@@ -1,4 +1,4 @@
-cloudify==4.5.5
+cloudify>=4.5.5
 docker-py
 Fabric==1.13.1
 nose
