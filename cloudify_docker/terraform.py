@@ -106,7 +106,7 @@ def prepare_terraform_files(ctx, **kwargs):
         backend_options = ""
         for option_name, option_value in \
                 backend.get("options", {}).items():
-            if isinstance(option_value, basestring):
+            if isinstance(option_value, text_type):
                 backend_options += "{0} = \"{1}\"".format(option_name,
                                                           option_value)
             else:

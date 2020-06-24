@@ -39,6 +39,7 @@ from cloudify_common_sdk.resource_downloader import unzip_archive
 from cloudify_common_sdk.resource_downloader import untar_archive
 from cloudify_common_sdk.resource_downloader import get_shared_resource
 from cloudify_common_sdk.resource_downloader import TAR_FILE_EXTENSTIONS
+from cloudify_common_sdk._compat import text_type
 
 HOSTS = 'hosts'
 PLAYBOOK_PATH = "playbook_path"
@@ -370,7 +371,7 @@ def prepare_container_files(ctx, **kwargs):
             backend_options = ""
             for option_name, option_value in \
                     terraform_backend.get("options", {}).items():
-                if isinstance(option_value, basestring):
+                if isinstance(option_value, text_type):
                     backend_options += "{0} = \"{1}\"".format(option_name,
                                                               option_value)
                 else:

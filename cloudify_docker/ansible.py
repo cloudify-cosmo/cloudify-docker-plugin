@@ -35,6 +35,7 @@ from cloudify_common_sdk.resource_downloader import unzip_archive
 from cloudify_common_sdk.resource_downloader import untar_archive
 from cloudify_common_sdk.resource_downloader import get_shared_resource
 from cloudify_common_sdk.resource_downloader import TAR_FILE_EXTENSTIONS
+from cloudify_common_sdk._compat import text_type
 
 from .tasks import HOSTS
 from .tasks import LOCAL_HOST_ADDRESSES
@@ -138,7 +139,7 @@ def create_ansible_playbook(ctx, **kwargs):
                     raise
             return _ctx.download_resource(file_path, new_full_path)
 
-        if not isinstance(file_path, basestring):
+        if not isinstance(file_path, text_type):
             raise NonRecoverableError(
                 'The variable file_path {0} is a {1},'
                 'expected a string.'.format(file_path, type(file_path)))
@@ -294,7 +295,7 @@ def create_ansible_playbook(ctx, **kwargs):
                     'Overwriting existing file.'.format(hosts_abspath))
             with open(hosts_abspath, 'w') as outfile:
                 yaml.safe_dump(data, outfile, default_flow_style=False)
-        elif isinstance(data, basestring):
+        elif isinstance(data, text_type):
             hosts_abspath = handle_source_from_string(data, _ctx,
                                                       hosts_abspath)
         return hosts_abspath
@@ -315,7 +316,7 @@ def create_ansible_playbook(ctx, **kwargs):
                 del key
                 continue
             key = key.replace("_", "-")
-            if isinstance(value, basestring):
+            if isinstance(value, text_type):
                 value = value.encode('utf-8')
             elif isinstance(value, dict):
                 value = json.dumps(value)
