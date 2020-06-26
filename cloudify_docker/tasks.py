@@ -30,7 +30,7 @@ import docker
 from uuid import uuid1
 from functools import wraps
 from contextlib import contextmanager
-from fabric.connection import settings, put, sudo
+from fabric.connection import Connection, put, sudo
 
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
@@ -104,7 +104,7 @@ def get_fabric_settings(ctx, server_ip, server_user, server_private_key):
         ctx.logger.info("server_private_key {0}".format(server_private_key))
         ctx.logger.info("server_private_key there? {0}".format(
             os.path.isfile(server_private_key)))
-        yield settings(
+        yield Connection(
             connection_attempts=5,
             disable_known_hosts=True,
             warn_only=True,
