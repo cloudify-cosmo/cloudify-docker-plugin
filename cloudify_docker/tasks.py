@@ -30,7 +30,7 @@ import docker
 from uuid import uuid1
 from functools import wraps
 from contextlib import contextmanager
-from fabric.api import settings, put, sudo
+from fabric.connection import settings, put, sudo
 
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError

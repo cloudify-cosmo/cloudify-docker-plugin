@@ -21,7 +21,7 @@ import getpass
 import tempfile
 
 from uuid import uuid1
-from fabric.api import put, sudo
+from fabric.connection import put, sudo
 
 from .tasks import get_lan_ip
 from .tasks import get_fabric_settings

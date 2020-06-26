@@ -19,7 +19,7 @@ import getpass
 import tempfile
 
 from uuid import uuid1
-from fabric.api import put, sudo
+from fabric.connection import put, sudo
 
 from .tasks import move_files
 from .tasks import get_lan_ip
