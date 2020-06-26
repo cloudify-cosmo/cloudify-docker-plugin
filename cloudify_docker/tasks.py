@@ -529,7 +529,7 @@ def install_docker(ctx, **kwargs):
                 output = \
                     s.sudo('curl -fsSL -o get-docker.sh {0}; '
                            'sh get-docker.sh && {1}'.format(
-                           docker_install_url, "{0}".format(final_file)))
+                                docker_install_url, "{0}".format(final_file)))
                 ctx.logger.info("Installation output : {0}".format(output))
             else:
                 # docker is installed ,
