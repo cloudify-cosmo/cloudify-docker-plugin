@@ -431,7 +431,7 @@ terraform state pull
                 if destination_parent != '/tmp':
                     s.sudo('mkdir -p {0}'.format(destination_parent))
                     s.sudo("chown -R {0}:{0} {1}".format(docker_user,
-                                                        destination_parent))
+                                                         destination_parent))
                 s.put(destination, destination_parent, mirror_local_mode=True)
 
 
@@ -528,8 +528,8 @@ def install_docker(ctx, **kwargs):
                 s.sudo("chmod a+x {0}".format(final_file))
                 output = \
                     s.sudo('curl -fsSL -o get-docker.sh {0}; '
-                        'sh get-docker.sh && {1}'.format(
-                            docker_install_url, "{0}".format(final_file)))
+                           'sh get-docker.sh && {1}'.format(
+                           docker_install_url, "{0}".format(final_file)))
                 ctx.logger.info("Installation output : {0}".format(output))
             else:
                 # docker is installed ,
@@ -551,9 +551,9 @@ def uninstall_docker(ctx, **kwargs):
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
         with s:
             os_type = s.sudo("echo $(python -c "
-                            "'import platform; "
-                            "print(platform.linux_distribution("
-                            "full_distribution_name=False)[0])')")
+                             "'import platform; "
+                             "print(platform.linux_distribution("
+                             "full_distribution_name=False)[0])')")
             os_type = os_type.splitlines()
             value = ""
             # sometimes ubuntu print the message when using sudo
