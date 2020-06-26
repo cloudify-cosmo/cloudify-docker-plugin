@@ -433,7 +433,7 @@ def create_ansible_playbook(ctx, **kwargs):
                 if destination_parent != '/tmp':
                     s.sudo('mkdir -p {0}'.format(destination_parent))
                     s.sudo("chown -R {0}:{0} {1}".format(docker_user,
-                                                       destination_parent))
+                                                destination_parent))
                 s.put(destination, destination_parent, mirror_local_mode=True)
 
 
