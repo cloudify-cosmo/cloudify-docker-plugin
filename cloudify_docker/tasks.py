@@ -513,7 +513,7 @@ def install_docker(ctx, **kwargs):
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
         with s:
             docker_installed = False
-            output = sudo('which docker')
+            output = s.sudo('which docker')
             ctx.logger.info("output {0}".format(output))
             docker_installed = output is not None \
                 and 'no docker' not in output \
