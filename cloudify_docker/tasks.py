@@ -30,7 +30,7 @@ import docker
 from uuid import uuid1
 from functools import wraps
 from contextlib import contextmanager
-from fabric.connection import Connection, put, sudo
+from fabric.connection import Connection
 
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
@@ -429,10 +429,10 @@ terraform state pull
             with s:
                 destination_parent = destination.rsplit('/', 1)[0]
                 if destination_parent != '/tmp':
-                    sudo('mkdir -p {0}'.format(destination_parent))
-                    sudo("chown -R {0}:{0} {1}".format(docker_user,
+                    s.sudo('mkdir -p {0}'.format(destination_parent))
+                    s.sudo("chown -R {0}:{0} {1}".format(docker_user,
                                                        destination_parent))
-                put(destination, destination_parent, mirror_local_mode=True)
+                s.put(destination, destination_parent, mirror_local_mode=True)
 
 
 @operation
@@ -454,7 +454,7 @@ def remove_container_files(ctx, **kwargs):
     if docker_ip not in LOCAL_HOST_ADDRESSES and not docker_ip == get_lan_ip():
         with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
             with s:
-                sudo("rm -rf {0}".format(destination))
+                s.sudo("rm -rf {0}".format(destination))
 
 
 @operation
@@ -522,19 +522,19 @@ def install_docker(ctx, **kwargs):
                 "Is Docker installed ? : {0}".format(docker_installed))
             if not docker_installed:  # docker is not installed
                 ctx.logger.info("Installing docker from the provided link")
-                put(final_file, "/tmp")
+                s.put(final_file, "/tmp")
                 final_file = final_file.replace(
                     os.path.dirname(final_file), "/tmp")
-                sudo("chmod a+x {0}".format(final_file))
+                s.sudo("chmod a+x {0}".format(final_file))
                 output = \
-                    sudo('curl -fsSL -o get-docker.sh {0}; '
+                    s.sudo('curl -fsSL -o get-docker.sh {0}; '
                          'sh get-docker.sh && {1}'.format(
                             docker_install_url, "{0}".format(final_file)))
                 ctx.logger.info("Installation output : {0}".format(output))
             else:
                 # docker is installed ,
                 # we need to check if the api port is enabled
-                output = sudo('docker -H tcp://0.0.0.0:2375 ps')
+                output = s.sudo('docker -H tcp://0.0.0.0:2375 ps')
                 if 'Is the docker daemon running?' not in output:
                     ctx.logger.info("your docker installation is good to go")
                     return
@@ -550,7 +550,7 @@ def uninstall_docker(ctx, **kwargs):
     docker_ip, docker_user, docker_key, _ = get_docker_machine_from_ctx(ctx)
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
         with s:
-            os_type = sudo("echo $(python -c "
+            os_type = s.sudo("echo $(python -c "
                            "'import platform; "
                            "print(platform.linux_distribution("
                            "full_distribution_name=False)[0])')")
@@ -566,9 +566,9 @@ def uninstall_docker(ctx, **kwargs):
             ctx.logger.info("os_type {0}".format(os_type))
             result = ""
             if os_type.lower() in REDHAT_OS_VERS:
-                result = sudo("yum remove -y docker*")
+                result = s.sudo("yum remove -y docker*")
             elif os_type.lower() in DEBIAN_OS_VERS:
-                result = sudo("apt-get remove -y docker*")
+                result = s.sudo("apt-get remove -y docker*")
             ctx.logger.info("uninstall result {0}".format(result))
 
 
@@ -871,7 +871,7 @@ def stop_container(ctx, docker_client, stop_command, **kwargs):
                 with get_fabric_settings(ctx, docker_ip, docker_user,
                                          docker_key) as s:
                     with s:
-                        put(script, script, mirror_local_mode=True)
+                        s.put(script, script, mirror_local_mode=True)
             # now we can restart the container , and it will
             # run with the overriden script that contain the
             # stop_command

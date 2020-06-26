@@ -21,7 +21,7 @@ import getpass
 import tempfile
 
 from uuid import uuid1
-from fabric.connection import put, sudo
+from fabric.connection import Connection
 
 from .tasks import get_lan_ip
 from .tasks import get_fabric_settings
@@ -432,10 +432,10 @@ def create_ansible_playbook(ctx, **kwargs):
             with s:
                 destination_parent = destination.rsplit('/', 1)[0]
                 if destination_parent != '/tmp':
-                    sudo('mkdir -p {0}'.format(destination_parent))
-                    sudo("chown -R {0}:{0} {1}".format(docker_user,
+                    s.sudo('mkdir -p {0}'.format(destination_parent))
+                    s.sudo("chown -R {0}:{0} {1}".format(docker_user,
                                                        destination_parent))
-                put(destination, destination_parent, mirror_local_mode=True)
+                s.put(destination, destination_parent, mirror_local_mode=True)
 
 
 @operation
@@ -459,4 +459,4 @@ def remove_ansible_playbook(ctx, **kwargs):
     if docker_ip not in LOCAL_HOST_ADDRESSES and not docker_ip == get_lan_ip():
         with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
             with s:
-                sudo("rm -rf {0}".format(destination))
+                s.sudo("rm -rf {0}".format(destination))
