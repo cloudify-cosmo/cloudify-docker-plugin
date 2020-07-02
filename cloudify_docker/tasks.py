@@ -64,12 +64,14 @@ def call_sudo(command, fab_ctx=None):
         return sudo(command)
 
 
-def call_put(
-    destination, destination_parent, mirror_local_mode=None, fab_ctx=None):
-        if FABRIC_VER == 2:
-            return fab_ctx.put(destination, destination_parent, mirror_local_mode)
-        elif FABRIC_VER == 1:
-            return put(destination, destination_parent, mirror_local_mode)
+def call_put(destination,
+             destination_parent,
+             mirror_local_mode=None,
+             fab_ctx=None):
+    if FABRIC_VER == 2:
+        return fab_ctx.put(destination, destination_parent, mirror_local_mode)
+    elif FABRIC_VER == 1:
+        return put(destination, destination_parent, mirror_local_mode)
 
 
 def get_lan_ip():
