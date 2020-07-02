@@ -430,16 +430,18 @@ def create_ansible_playbook(ctx, **kwargs):
         with get_fabric_settings(ctx, docker_ip,
                                  docker_user,
                                  docker_key) as s:
-            destination_parent = destination.rsplit('/', 1)[0]
-            if destination_parent != '/tmp':
-                call_sudo('mkdir -p {0}'.format(destination_parent), fab_ctx=s)
-                call_sudo("chown -R {0}:{0} {1}".format(
-                    docker_user, destination_parent), fab_ctx=s)
-            call_put(
-                destination,
-                destination_parent,
-                mirror_local_mode=True,
-                fab_ctx=s)
+            with s:
+                destination_parent = destination.rsplit('/', 1)[0]
+                if destination_parent != '/tmp':
+                    call_sudo('mkdir -p {0}'.format(
+                        destination_parent), fab_ctx=s)
+                    call_sudo("chown -R {0}:{0} {1}".format(
+                        docker_user, destination_parent), fab_ctx=s)
+                call_put(
+                    destination,
+                    destination_parent,
+                    mirror_local_mode=True,
+                    fab_ctx=s)
 
 
 @operation
@@ -462,4 +464,5 @@ def remove_ansible_playbook(ctx, **kwargs):
         return
     if docker_ip not in LOCAL_HOST_ADDRESSES and not docker_ip == get_lan_ip():
         with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
-            call_sudo("rm -rf {0}".format(destination), fab_ctx=s)
+            with s:
+                call_sudo("rm -rf {0}".format(destination), fab_ctx=s)

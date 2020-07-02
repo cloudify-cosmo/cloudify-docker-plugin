@@ -466,18 +466,20 @@ terraform state pull
         with get_fabric_settings(ctx, docker_ip,
                                  docker_user,
                                  docker_key) as s:
-            destination_parent = destination.rsplit('/', 1)[0]
-            if destination_parent != '/tmp':
-                call_sudo('mkdir -p {0}'.format(destination_parent), fab_ctx=s)
-                call_sudo(
-                    "chown -R {0}:{0} {1}".format(
-                        docker_user, destination_parent),
+            with s:
+                destination_parent = destination.rsplit('/', 1)[0]
+                if destination_parent != '/tmp':
+                    call_sudo('mkdir -p {0}'.format(
+                        destination_parent), fab_ctx=s)
+                    call_sudo(
+                        "chown -R {0}:{0} {1}".format(
+                            docker_user, destination_parent),
+                        fab_ctx=s)
+                call_put(
+                    destination,
+                    destination_parent,
+                    mirror_local_mode=True,
                     fab_ctx=s)
-            call_put(
-                destination,
-                destination_parent,
-                mirror_local_mode=True,
-                fab_ctx=s)
 
 
 @operation
@@ -498,7 +500,8 @@ def remove_container_files(ctx, **kwargs):
     ctx.instance.runtime_properties.pop('destination', None)
     if docker_ip not in LOCAL_HOST_ADDRESSES and not docker_ip == get_lan_ip():
         with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
-            call_sudo("rm -rf {0}".format(destination), fab_ctx=s)
+            with s:
+                call_sudo("rm -rf {0}".format(destination), fab_ctx=s)
 
 
 @operation
@@ -555,37 +558,38 @@ def install_docker(ctx, **kwargs):
         return
 
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
-        docker_installed = False
-        output = call_sudo('which docker', fab_ctx=s)
-        ctx.logger.info("output {0}".format(output))
-        docker_installed = output is not None \
-            and 'no docker' not in output \
-            and '/docker' in output
-        ctx.logger.info(
-            "Is Docker installed ? : {0}".format(docker_installed))
-        if not docker_installed:  # docker is not installed
-            ctx.logger.info("Installing docker from the provided link")
-            call_put(final_file, "/tmp", fab_ctx=s)
-            final_file = final_file.replace(
-                os.path.dirname(final_file), "/tmp")
-            call_sudo("chmod a+x {0}".format(final_file), fab_ctx=s)
-            output = \
-                call_sudo('curl -fsSL -o get-docker.sh {0}; '
-                          'sh get-docker.sh && {1}'.format(
-                                docker_install_url, "{0}".format(final_file)),
-                          fab_ctx=s)
-            ctx.logger.info("Installation output : {0}".format(output))
-        else:
-            # docker is installed ,
-            # we need to check if the api port is enabled
-            output = call_sudo('docker -H tcp://0.0.0.0:2375 ps', fab_ctx=s)
-            if 'Is the docker daemon running?' not in output:
-                ctx.logger.info("your docker installation is good to go")
-                return
+        with s:
+            docker_installed = False
+            output = call_sudo('which docker', fab_ctx=s)
+            ctx.logger.info("output {0}".format(output))
+            docker_installed = output is not None \
+                and 'no docker' not in output \
+                and '/docker' in output
+            ctx.logger.info(
+                "Is Docker installed ? : {0}".format(docker_installed))
+            if not docker_installed:  # docker is not installed
+                ctx.logger.info("Installing docker from the provided link")
+                call_put(final_file, "/tmp", fab_ctx=s)
+                final_file = final_file.replace(
+                    os.path.dirname(final_file), "/tmp")
+                call_sudo("chmod a+x {0}".format(final_file), fab_ctx=s)
+                output = \
+                    call_sudo('curl -fsSL -o get-docker.sh {0}; '
+                              'sh get-docker.sh && {1}'.format(
+                                    docker_install_url, "{0}".format(
+                                        final_file)), fab_ctx=s)
+                ctx.logger.info("Installation output : {0}".format(output))
             else:
-                ctx.logger.info(
-                    "your docker installation need to enable API access")
-                return
+                # docker is installed ,
+                # we need to check if the api port is enabled
+                output = call_sudo('docker -H tcp://0.0.0.0:2375 ps', fab_ctx=s)
+                if 'Is the docker daemon running?' not in output:
+                    ctx.logger.info("your docker installation is good to go")
+                    return
+                else:
+                    ctx.logger.info(
+                        "your docker installation need to enable API access")
+                    return
 
 
 @operation
@@ -593,27 +597,28 @@ def uninstall_docker(ctx, **kwargs):
     # fetch the data needed for installation
     docker_ip, docker_user, docker_key, _ = get_docker_machine_from_ctx(ctx)
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
-        os_type = call_sudo("echo $(python -c "
-                            "'import platform; "
-                            "print(platform.linux_distribution("
-                            "full_distribution_name=False)[0])')",
-                            fab_ctx=s)
-        os_type = os_type.splitlines()
-        value = ""
-        # sometimes ubuntu print the message when using sudo
-        for line in os_type:
-            if "unable to resolve host" in line:
-                continue
-            else:
-                value += line
-        os_type = value.strip()
-        ctx.logger.info("os_type {0}".format(os_type))
-        result = ""
-        if os_type.lower() in REDHAT_OS_VERS:
-            result = call_sudo("yum remove -y docker*", fab_ctx=s)
-        elif os_type.lower() in DEBIAN_OS_VERS:
-            result = call_sudo("apt-get remove -y docker*", fab_ctx=s)
-        ctx.logger.info("uninstall result {0}".format(result))
+        with s:
+            os_type = call_sudo("echo $(python -c "
+                                "'import platform; "
+                                "print(platform.linux_distribution("
+                                "full_distribution_name=False)[0])')",
+                                fab_ctx=s)
+            os_type = os_type.splitlines()
+            value = ""
+            # sometimes ubuntu print the message when using sudo
+            for line in os_type:
+                if "unable to resolve host" in line:
+                    continue
+                else:
+                    value += line
+            os_type = value.strip()
+            ctx.logger.info("os_type {0}".format(os_type))
+            result = ""
+            if os_type.lower() in REDHAT_OS_VERS:
+                result = call_sudo("yum remove -y docker*", fab_ctx=s)
+            elif os_type.lower() in DEBIAN_OS_VERS:
+                result = call_sudo("apt-get remove -y docker*", fab_ctx=s)
+            ctx.logger.info("uninstall result {0}".format(result))
 
 
 @operation
@@ -914,8 +919,9 @@ def stop_container(ctx, docker_client, stop_command, **kwargs):
                     and not docker_ip == get_lan_ip():
                 with get_fabric_settings(ctx, docker_ip, docker_user,
                                          docker_key) as s:
-                    call_put(
-                        script, script, mirror_local_mode=True, fab_ctx=s)
+                    with s:
+                        call_put(
+                            script, script, mirror_local_mode=True, fab_ctx=s)
             # now we can restart the container , and it will
             # run with the overriden script that contain the
             # stop_command
