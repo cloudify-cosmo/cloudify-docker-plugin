@@ -582,7 +582,8 @@ def install_docker(ctx, **kwargs):
             else:
                 # docker is installed ,
                 # we need to check if the api port is enabled
-                output = call_sudo('docker -H tcp://0.0.0.0:2375 ps', fab_ctx=s)
+                output = call_sudo(
+                    'docker -H tcp://0.0.0.0:2375 ps', fab_ctx=s)
                 if 'Is the docker daemon running?' not in output:
                     ctx.logger.info("your docker installation is good to go")
                     return
