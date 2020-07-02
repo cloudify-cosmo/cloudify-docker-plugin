@@ -64,11 +64,12 @@ def call_sudo(command, fab_ctx=None):
         return sudo(command)
 
 
-def call_put(destination, destination_parent, mirror_local_mode=None, fab_ctx=None):
-    if FABRIC_VER == 2:
-        return fab_ctx.put(destination, destination_parent, mirror_local_mode)
-    elif FABRIC_VER == 1:
-        return put(destination, destination_parent, mirror_local_mode)
+def call_put(
+    destination, destination_parent, mirror_local_mode=None, fab_ctx=None):
+        if FABRIC_VER == 2:
+            return fab_ctx.put(destination, destination_parent, mirror_local_mode)
+        elif FABRIC_VER == 1:
+            return put(destination, destination_parent, mirror_local_mode)
 
 
 def get_lan_ip():
@@ -568,9 +569,9 @@ def install_docker(ctx, **kwargs):
             call_sudo("chmod a+x {0}".format(final_file), fab_ctx=s)
             output = \
                 call_sudo('curl -fsSL -o get-docker.sh {0}; '
-                           'sh get-docker.sh && {1}'.format(
+                          'sh get-docker.sh && {1}'.format(
                                 docker_install_url, "{0}".format(final_file)),
-                           fab_ctx=s)
+                          fab_ctx=s)
             ctx.logger.info("Installation output : {0}".format(output))
         else:
             # docker is installed ,
@@ -591,10 +592,10 @@ def uninstall_docker(ctx, **kwargs):
     docker_ip, docker_user, docker_key, _ = get_docker_machine_from_ctx(ctx)
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
         os_type = call_sudo("echo $(python -c "
-                             "'import platform; "
-                             "print(platform.linux_distribution("
-                             "full_distribution_name=False)[0])')",
-                             fab_ctx=s)
+                            "'import platform; "
+                            "print(platform.linux_distribution("
+                            "full_distribution_name=False)[0])')",
+                            fab_ctx=s)
         os_type = os_type.splitlines()
         value = ""
         # sometimes ubuntu print the message when using sudo
