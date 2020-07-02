@@ -1,4 +1,4 @@
-########
+call_sudo########
 # Copyright (c) 2014-2020 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,6 +24,8 @@ from .tasks import move_files
 from .tasks import get_lan_ip
 from .tasks import get_fabric_settings
 from .tasks import get_docker_machine_from_ctx
+from .tasks import call_sudo
+from .tasks import call_put
 
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
@@ -186,13 +188,16 @@ terraform state pull
         with get_fabric_settings(ctx, docker_ip,
                                  docker_user,
                                  docker_key) as s:
-            with s:
-                destination_parent = destination.rsplit('/', 1)[0]
-                if destination_parent != '/tmp':
-                    s.sudo('mkdir -p {0}'.format(destination_parent))
-                    s.sudo("chown -R {0}:{0} {1}".format(docker_user,
-                                                         destination_parent))
-                s.put(destination, destination_parent, mirror_local_mode=True)
+            destination_parent = destination.rsplit('/', 1)[0]
+            if destination_parent != '/tmp':
+                call_sudo('mkdir -p {0}'.format(destination_parent), fab_ctx=s)
+                call_sudo("chown -R {0}:{0} {1}".format(
+                    docker_user, destination_parent), fab_ctx=s)
+            call_put(
+                destination,
+                destination_parent,
+                mirror_local_mode=True,
+                fab_ctx=s)
 
 
 @operation
@@ -216,5 +221,4 @@ def remove_terraform_files(ctx, **kwargs):
         return
     if docker_ip not in LOCAL_HOST_ADDRESSES and not docker_ip == get_lan_ip():
         with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
-            with s:
-                s.sudo("rm -rf {0}".format(destination))
+            s.sudo("rm -rf {0}".format(destination))
