@@ -11,33 +11,54 @@ checkout:
 
 jobs:
 
-  unittests:
+  py3_compat:
+    docker:
+      - image: circleci/python:2.7
+    steps:
+      - checkout
+      - run:
+          name: install futurize
+          command: pip install future --user
+      - run:
+          name: find python3-incompatible code
+          command: |
+            FUTURIZE="futurize ."
+            while read line; do
+              [[ "$line" =~ ^#.* ]] && continue
+              FUTURIZE="${FUTURIZE} ${line}"
+            done<.circleci/py3fixers
+            echo "Running: $FUTURIZE"
+            $FUTURIZE>futurize_diffs
+      - run:
+          name: check that there is no python3-incompatible code
+          command: |
+            if [[ -s futurize_diffs ]]; then
+              echo "Python-3-incompatible code found"
+              cat futurize_diffs
+              exit 1
+            fi
+
+  unittests_py27:
     docker:
       - image: circleci/python:2.7.15-stretch
     steps:
       - checkout
       - run:
-          name: "Pull Submodules"
-          command: |
-            git submodule init
-            git submodule update --remote
-      - run:
-          name: Download pip
-          command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
-      - run:
-          name: Install pip
-          command: sudo python get-pip.py
-      - run:
-          name: Install virtualenv
-          command: pip install --user virtualenv
-      - run:
-          name: Init virtualenv
-          command: virtualenv env && source env/bin/activate
+          name: install tox
+          command: pip install --user tox
+      - run: /home/circleci/.local/bin/tox -e flake8
+      - run: /home/circleci/.local/bin/tox -e nosetests
+
+  unittests_py36:
+    docker:
+      - image: circleci/python:3.6-stretch
+    steps:
+      - checkout
       - run:
           name: install tox
           command: pip install --user tox
       - run: /home/circleci/.local/bin/tox -e flake8
-      - run: /home/circleci/.local/bin/tox -e py27
+      - run: /home/circleci/.local/bin/tox -e nosetests
 
   wagon:
     docker:
@@ -146,9 +167,42 @@ jobs:
           name: Wagon upload
           command: cfy plugins upload workspace/build/cloudify_docker_plugin-*-py27-none-linux_x86_64-centos-Core.wgn -y plugin.yaml || true
 
-  release:
+  release_py27:
     docker:
       - image: circleci/python:2.7.15-stretch
+    steps:
+      - checkout
+      - run:
+          name: "Pull Submodules"
+          command: |
+            git submodule init
+            git submodule update --remote
+      - run:
+          name: Download pip
+          command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+      - run:
+          name: Install pip
+          command: sudo python get-pip.py
+      - run:
+          name: Install virtualenv
+          command: pip install --user virtualenv
+      - run:
+          name: Init virtualenv
+          command: virtualenv env
+      - run:
+          name: install tox
+          command: pip install --user pygithub pyyaml==3.10
+      - run:
+          name: upgrade setuptools
+          command: pip install --upgrade setuptools
+      - run:
+          name: install local project
+          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
+      - run: python .circleci/package_release.py
+
+  release_py36:
+    docker:
+      - image: circleci/python:3.6-stretch
     steps:
       - checkout
       - run:
@@ -183,7 +237,9 @@ workflows:
   version: 2
   tests:
     jobs:
-      - unittests
+      - py3_compat
+      - unittests_py27
+      - unittests_py36
       - wagon:
           filters:
             branches:
@@ -196,7 +252,8 @@ workflows:
       - cloudify-manager:
           context: ecosystem
           requires:
-            - unittests
+            - unittests_py27
+            - unittests_py36
             - wagon
           filters:
             branches:

@@ -19,12 +19,13 @@ import getpass
 import tempfile
 
 from uuid import uuid1
-from fabric.api import put, sudo
 
 from .tasks import move_files
 from .tasks import get_lan_ip
 from .tasks import get_fabric_settings
 from .tasks import get_docker_machine_from_ctx
+from .tasks import call_sudo
+from .tasks import call_put
 
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
@@ -33,6 +34,7 @@ from cloudify_common_sdk.resource_downloader import unzip_archive
 from cloudify_common_sdk.resource_downloader import untar_archive
 from cloudify_common_sdk.resource_downloader import get_shared_resource
 from cloudify_common_sdk.resource_downloader import TAR_FILE_EXTENSTIONS
+from cloudify_common_sdk._compat import text_type
 
 from .tasks import LOCAL_HOST_ADDRESSES
 
@@ -106,7 +108,7 @@ def prepare_terraform_files(ctx, **kwargs):
         backend_options = ""
         for option_name, option_value in \
                 backend.get("options", {}).items():
-            if isinstance(option_value, basestring):
+            if isinstance(option_value, text_type):
                 backend_options += "{0} = \"{1}\"".format(option_name,
                                                           option_value)
             else:
@@ -189,10 +191,15 @@ terraform state pull
             with s:
                 destination_parent = destination.rsplit('/', 1)[0]
                 if destination_parent != '/tmp':
-                    sudo('mkdir -p {0}'.format(destination_parent))
-                    sudo("chown -R {0}:{0} {1}".format(docker_user,
-                                                       destination_parent))
-                put(destination, destination_parent, mirror_local_mode=True)
+                    call_sudo('mkdir -p {0}'.format(
+                        destination_parent), fab_ctx=s)
+                    call_sudo("chown -R {0}:{0} {1}".format(
+                        docker_user, destination_parent), fab_ctx=s)
+                call_put(
+                    destination,
+                    destination_parent,
+                    mirror_local_mode=True,
+                    fab_ctx=s)
 
 
 @operation
@@ -217,4 +224,4 @@ def remove_terraform_files(ctx, **kwargs):
     if docker_ip not in LOCAL_HOST_ADDRESSES and not docker_ip == get_lan_ip():
         with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
             with s:
-                sudo("rm -rf {0}".format(destination))
+                call_sudo("rm -rf {0}".format(destination), fab_ctx=s)
