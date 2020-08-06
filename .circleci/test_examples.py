@@ -34,8 +34,8 @@ SECRETS_TO_CREATE = {
 prepare_test(secrets=SECRETS_TO_CREATE)
 
 blueprint_list = ['examples/docker/docker/general/any-container.yaml']
-vm = 'examples/blueprint-examples/hello-world-example/gcp.yaml'
-docker = 'docker/installation/install-docker.yaml'
+vm = 'examples/hello-world-example/gcp.yaml'
+docker = 'examples/docker/installation/install-docker.yaml'
 
 
 @pytest.fixture(scope='function', params=blueprint_list)
@@ -44,7 +44,7 @@ def blueprint_examples(request):
         blueprints_upload(vm, 'vm')
         deployments_create('vm')
         executions_start('install', 'vm')
-        blueprints_upload(vm, 'docker')
+        blueprints_upload(docker, 'docker')
         deployments_create('docker')
         executions_start('install', 'docker')
         try:
