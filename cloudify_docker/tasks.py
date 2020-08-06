@@ -17,6 +17,8 @@ import os
 import json
 import yaml
 import fabric
+import fcntl
+import struct
 import socket
 import shutil
 import getpass
@@ -28,10 +30,11 @@ import subprocess
 import docker
 
 from uuid import uuid1
+import patchwork.transfers
 from functools import wraps
 from contextlib import contextmanager
-from fabric.api import settings, put, sudo
 
+from cloudify import ctx
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
 
@@ -39,6 +42,17 @@ from cloudify_common_sdk.resource_downloader import unzip_archive
 from cloudify_common_sdk.resource_downloader import untar_archive
 from cloudify_common_sdk.resource_downloader import get_shared_resource
 from cloudify_common_sdk.resource_downloader import TAR_FILE_EXTENSTIONS
+from cloudify_common_sdk._compat import text_type, PY2
+
+try:
+    if PY2:
+        from fabric.api import settings, sudo, put
+        FABRIC_VER = 1
+    else:
+        from fabric import Connection, Config
+        FABRIC_VER = 2
+except (ImportError, BaseException):
+    FABRIC_VER = 'unclear'
 
 HOSTS = 'hosts'
 PLAYBOOK_PATH = "playbook_path"
@@ -50,12 +64,32 @@ ANSIBLE_PRIVATE_KEY = 'ansible_ssh_private_key_file'
 LOCAL_HOST_ADDRESSES = ("127.0.0.1", "localhost", "host.docker.internal")
 
 
+def call_sudo(command, fab_ctx=None):
+    ctx.logger.info('Executing: {0}'.format(command))
+    if FABRIC_VER == 2:
+        out = fab_ctx.sudo(command)
+        ctx.logger.info('Out: {0}'.format(out))
+        return out
+    elif FABRIC_VER == 1:
+        return sudo(command)
+
+
+def call_put(destination,
+             destination_parent,
+             mirror_local_mode=None,
+             fab_ctx=None):
+    ctx.logger.info('Copying: {0} {1}'.format(destination, destination_parent))
+    if FABRIC_VER == 2:
+        return patchwork.transfers.rsync(
+            fab_ctx, destination, destination_parent, exclude='.git')
+    elif FABRIC_VER == 1:
+        return put(destination, destination_parent, mirror_local_mode)
+
+
 def get_lan_ip():
 
     def get_interface_ip(ifname):
         if os.name != "nt":
-            import fcntl
-            import struct
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             return socket.inet_ntoa(fcntl.ioctl(
                 s.fileno(),
@@ -83,8 +117,12 @@ def get_lan_ip():
 
 @contextmanager
 def get_fabric_settings(ctx, server_ip, server_user, server_private_key):
-    ctx.logger.info(
-        "fabric version : {0}".format(fabric.version.get_version()))
+    if FABRIC_VER == 2:
+        ctx.logger.info(
+            "Fabric version : {0}".format(fabric.__version__))
+    elif FABRIC_VER == 1:
+        ctx.logger.info(
+            "Fabric version : {0}".format(fabric.version.get_version()))
     try:
         is_file_path = os.path.exists(server_private_key)
     except TypeError:
@@ -103,13 +141,26 @@ def get_fabric_settings(ctx, server_ip, server_user, server_private_key):
         ctx.logger.info("server_private_key {0}".format(server_private_key))
         ctx.logger.info("server_private_key there? {0}".format(
             os.path.isfile(server_private_key)))
-        yield settings(
-            connection_attempts=5,
-            disable_known_hosts=True,
-            warn_only=True,
-            host_string=server_ip,
-            key_filename=server_private_key,
-            user=server_user)
+        if FABRIC_VER == 2:
+            yield Connection(
+                host=server_ip,
+                connect_kwargs={
+                    "key_filename": server_private_key
+                },
+                user=server_user,
+                config=Config(
+                    overrides={
+                        "run": {
+                            "warn": True
+                        }}))
+        elif FABRIC_VER == 1:
+            yield settings(
+                connection_attempts=5,
+                disable_known_hosts=True,
+                warn_only=True,
+                host_string=server_ip,
+                key_filename=server_private_key,
+                user=server_user)
     finally:
         ctx.logger.info("Terminating ssh connection to {0}".format(server_ip))
         if not is_file_path:
@@ -370,7 +421,7 @@ def prepare_container_files(ctx, **kwargs):
             backend_options = ""
             for option_name, option_value in \
                     terraform_backend.get("options", {}).items():
-                if isinstance(option_value, basestring):
+                if isinstance(option_value, text_type):
                     backend_options += "{0} = \"{1}\"".format(option_name,
                                                               option_value)
                 else:
@@ -428,10 +479,17 @@ terraform state pull
             with s:
                 destination_parent = destination.rsplit('/', 1)[0]
                 if destination_parent != '/tmp':
-                    sudo('mkdir -p {0}'.format(destination_parent))
-                    sudo("chown -R {0}:{0} {1}".format(docker_user,
-                                                       destination_parent))
-                put(destination, destination_parent, mirror_local_mode=True)
+                    call_sudo('mkdir -p {0}'.format(
+                        destination_parent), fab_ctx=s)
+                    call_sudo(
+                        "chown -R {0}:{0} {1}".format(
+                            docker_user, destination_parent),
+                        fab_ctx=s)
+                call_put(
+                    destination,
+                    destination_parent,
+                    mirror_local_mode=True,
+                    fab_ctx=s)
 
 
 @operation
@@ -453,7 +511,7 @@ def remove_container_files(ctx, **kwargs):
     if docker_ip not in LOCAL_HOST_ADDRESSES and not docker_ip == get_lan_ip():
         with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
             with s:
-                sudo("rm -rf {0}".format(destination))
+                call_sudo("rm -rf {0}".format(destination), fab_ctx=s)
 
 
 @operation
@@ -466,81 +524,25 @@ def list_images(ctx, docker_client, **kwargs):
 @operation
 @handle_docker_exception
 def install_docker(ctx, **kwargs):
-
-    def dump_to_file(content):
-        dump_file = \
-            os.path.join(tempfile.mkdtemp(), str(uuid1()))
-        with open(dump_file, 'w') as outfile:
-            outfile.write(content)
-        return dump_file
-
     # fetch the data needed for installation
     docker_ip, docker_user, docker_key, _ = get_docker_machine_from_ctx(ctx)
-    docker_install_url = \
-        ctx.node.properties.get('resource_config', {}).get('install_url', "")
-    docker_install_script = \
-        ctx.node.properties.get(
-            'resource_config', {}).get('install_script', "")
-    # check if file or content
-    final_file = ""  # represent the file path
-    if not docker_install_script:
-        ctx.logger.error("please check the installation script")
-        return
-    if not os.path.isfile(docker_install_script):  # not a path / check if URL
-        final_file = get_shared_resource(docker_install_script)
-        # check if it returns the samething then it is not URL
-        if final_file == docker_install_script:  # here we will dump the file
-            final_file = dump_to_file(docker_install_script)
-    else:
-        if os.path.isabs(docker_install_script):  # absolute_file_on_manager
-            file_name = docker_install_script.rsplit('/', 1)[1]
-            file_type = file_name.rsplit('.', 1)[1]
-            if file_type == 'zip':
-                final_file = unzip_archive(docker_install_script)
-            elif file_type in TAR_FILE_EXTENSTIONS:
-                final_file = untar_archive(docker_install_script)
-
-        else:  # could be bundled in the blueprint [relative_path]
-            final_file = ctx.download_resource(docker_install_script)
-    ctx.logger.info("downloaded the script to {0}".format(final_file))
-    # reaching here we should have got a value for the file
-    if not final_file:
-        raise NonRecoverableError(
-            "the installation script is not valid for some reason")
-        return
+    install_url = ctx.node.properties.get('install_url')
+    post_install_url = ctx.node.properties.get('install_script')
 
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
         with s:
-            docker_installed = False
-            output = sudo('which docker')
-            ctx.logger.info("output {0}".format(output))
-            docker_installed = output is not None \
-                and 'no docker' not in output \
-                and '/docker' in output
-            ctx.logger.info(
-                "Is Docker installed ? : {0}".format(docker_installed))
-            if not docker_installed:  # docker is not installed
-                ctx.logger.info("Installing docker from the provided link")
-                put(final_file, "/tmp")
-                final_file = final_file.replace(
-                    os.path.dirname(final_file), "/tmp")
-                sudo("chmod a+x {0}".format(final_file))
-                output = \
-                    sudo('curl -fsSL -o get-docker.sh {0}; '
-                         'sh get-docker.sh && {1}'.format(
-                            docker_install_url, "{0}".format(final_file)))
-                ctx.logger.info("Installation output : {0}".format(output))
-            else:
-                # docker is installed ,
-                # we need to check if the api port is enabled
-                output = sudo('docker -H tcp://0.0.0.0:2375 ps')
-                if 'Is the docker daemon running?' not in output:
-                    ctx.logger.info("your docker installation is good to go")
-                    return
-                else:
-                    ctx.logger.info(
-                        "your docker installation need to enable API access")
-                    return
+            call_sudo(
+                'curl -fsSL {0} -o /tmp/install.sh'.format(install_url),
+                fab_ctx=s)
+            call_sudo('chmod 0755 /tmp/install.sh', fab_ctx=s)
+            call_sudo('sh /tmp/install.sh', fab_ctx=s)
+            call_sudo(
+                'curl -fsSL {0} -o /tmp/postinstall.sh'.format(
+                    post_install_url),
+                fab_ctx=s)
+            call_sudo('chmod 0755 /tmp/postinstall.sh', fab_ctx=s)
+            call_sudo('sh /tmp/postinstall.sh', fab_ctx=s)
+            call_sudo('usermod -aG docker {0}'.format(docker_user), fab_ctx=s)
 
 
 @operation
@@ -549,10 +551,13 @@ def uninstall_docker(ctx, **kwargs):
     docker_ip, docker_user, docker_key, _ = get_docker_machine_from_ctx(ctx)
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
         with s:
-            os_type = sudo("echo $(python -c "
-                           "'import platform; "
-                           "print(platform.linux_distribution("
-                           "full_distribution_name=False)[0])')")
+            os_type = call_sudo("echo $(python -c "
+                                "'import platform; "
+                                "print(platform.linux_distribution("
+                                "full_distribution_name=False)[0])')",
+                                fab_ctx=s)
+            if not PY2:
+                os_type = os_type.stdout
             os_type = os_type.splitlines()
             value = ""
             # sometimes ubuntu print the message when using sudo
@@ -565,9 +570,9 @@ def uninstall_docker(ctx, **kwargs):
             ctx.logger.info("os_type {0}".format(os_type))
             result = ""
             if os_type.lower() in REDHAT_OS_VERS:
-                result = sudo("yum remove -y docker*")
+                result = call_sudo("yum remove -y docker*", fab_ctx=s)
             elif os_type.lower() in DEBIAN_OS_VERS:
-                result = sudo("apt-get remove -y docker*")
+                result = call_sudo("apt-get remove -y docker*", fab_ctx=s)
             ctx.logger.info("uninstall result {0}".format(result))
 
 
@@ -870,7 +875,8 @@ def stop_container(ctx, docker_client, stop_command, **kwargs):
                 with get_fabric_settings(ctx, docker_ip, docker_user,
                                          docker_key) as s:
                     with s:
-                        put(script, script, mirror_local_mode=True)
+                        call_put(
+                            script, script, mirror_local_mode=True, fab_ctx=s)
             # now we can restart the container , and it will
             # run with the overriden script that contain the
             # stop_command

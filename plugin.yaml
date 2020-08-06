@@ -1,9 +1,9 @@
 plugins:
   docker:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/2.0.2.zip
+    source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/2.0.3.1.zip
     package_name: 'cloudify-docker-plugin'
-    package_version: '2.0.2'
+    package_version: '2.0.3.1'
 
 dsl_definitions:
 
@@ -165,11 +165,11 @@ data_types:
       install_url:
         description: Docker Installation Link
         type: string
-        default: ''
+        default: 'https://get.docker.com'
       install_script:
         description: Docker Installation script
         type: string
-        default: ''
+        default: 'https://raw.githubusercontent.com/cloudify-cosmo/cloudify-docker-plugin/master/cloudify_docker/resources/post-install.sh'
 
   cloudify.types.docker.ClientConfig:
     properties:
