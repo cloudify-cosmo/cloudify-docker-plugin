@@ -23,7 +23,8 @@ from ecosystem_tests.dorkl import (
     prepare_test,
     blueprints_upload,
     deployments_create,
-    executions_start
+    executions_start,
+    cloudify_exec
 )
 
 
@@ -42,16 +43,21 @@ docker = 'examples/docker/installation/install-docker.yaml'
 def blueprint_examples(request):
     try:
         blueprints_upload(vm, 'vm')
-        deployments_create('vm')
-        executions_start('install', 'vm')
+        deployments_create('vm', inputs='agent_user=centos')
+        executions_start('install', 'vm', timeout=200)
+        vm_caps = cloudify_exec('cfy deployments capabilities vm')
         blueprints_upload(docker, 'docker')
-        deployments_create('docker')
-        executions_start('install', 'docker')
+        deployments_create(
+            'docker',
+            inputs='docker_host={0} -i docker_user=centos'.format(
+                vm_caps['endpoint']['value']))
+        executions_start('install', 'docker', timeout=200)
         try:
             dirname_param = os.path.dirname(request.param).split('/')[-1:][0]
             basic_blueprint_test(
                 request.param,
                 dirname_param,
+                inputs='docker_host={0} -i docker_user=centos',
                 timeout=3000)
         except BaseException:
             cleanup_on_failure(request.param)
