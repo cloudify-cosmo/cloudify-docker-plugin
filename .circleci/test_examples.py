@@ -35,7 +35,7 @@ SECRETS_TO_CREATE = {
 prepare_test(secrets=SECRETS_TO_CREATE)
 
 blueprint_list = ['examples/docker/docker/general/any-container.yaml']
-vm = 'examples/hello-world-example/gcp.yaml'
+vm = 'examples/virtual-machine/gcp.yaml'
 docker = 'examples/docker/installation/install-docker.yaml'
 
 
