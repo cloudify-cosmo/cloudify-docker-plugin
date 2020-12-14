@@ -2,3 +2,5 @@
   - New Version that is using dockerpy module
 2.0.2:
   - Fix flake8 issue.
+2.0.3:
+  - Upgrade packages to fix build
