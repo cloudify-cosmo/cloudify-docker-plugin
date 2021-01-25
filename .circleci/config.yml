@@ -139,7 +139,7 @@ commands:
           at: workspace
       - run:
           name: update pip
-          command: pip install -U pip
+          command: pip install -U pip===20.3.3
       - run:
           name: install cloudify
           command: |
@@ -174,7 +174,7 @@ commands:
           at: workspace
       - run:
           name: update pip
-          command: pip install -U pip
+          command: pip install -U pip===20.3.3
       - run:
           name: install cloudify
           command: |
@@ -264,7 +264,7 @@ jobs:
       - generate_rhel_py27py36_wagon
 
   build_bundle:
-    executor: wagon_generator
+    executor: py36
     steps:
       - checkout
       - build_archive
@@ -288,7 +288,7 @@ jobs:
       - run_integration_tests_510
 
   release:
-    executor: py27
+    executor: py36
     steps:
       - checkout
       - release_plugin
