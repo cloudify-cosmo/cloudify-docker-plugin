@@ -1,5 +1,3 @@
 cloudify>=4.5.5
 docker-py
 fabric==2.5.0
-nose
-mock>=1.0

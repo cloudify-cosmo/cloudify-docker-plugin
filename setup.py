@@ -36,6 +36,5 @@ setup(
     test_requires=[
         "cloudify-common>=4.5.5",
         "docker-py",
-        "nose",
     ]
 )
