@@ -4,3 +4,5 @@
   - Fix flake8 issue.
 2.0.3:
   - Upgrade packages to fix build
+2.0.4:
+  - Bump and rerelease for arm wagon.
