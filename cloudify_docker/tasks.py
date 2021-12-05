@@ -740,6 +740,14 @@ def create_container(ctx, docker_client, **kwargs):
             "Running this command on container : {0} ".format(
                 container_args.get("command", "")))
         docker_client.start(container)
+        # fetch container details
+        container_info = docker_client.inspect_container(container)
+        ctx.instance.runtime_properties['container_info'] = container_info
+        # if command in detach mode -since the command will keep running-
+        # no need to follow logs
+        if container_args.get("detach", False):
+            ctx.logger.info("command is running in detach mode True")
+            return
         container_logs = follow_container_logs(ctx, docker_client, container)
         ctx.logger.info("container logs : {0} ".format(container_logs))
         ctx.instance.runtime_properties['run_result'] = container_logs
