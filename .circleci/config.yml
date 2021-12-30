@@ -267,7 +267,6 @@ workflows:
               - master
     jobs:
       - node/check_py3_compat_job
-      - unittests_py27
       - node/unittests_job
       - wagon:
           filters:
