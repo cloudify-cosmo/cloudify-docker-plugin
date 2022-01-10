@@ -3,6 +3,7 @@ version: 2.1
 orbs:
   node: cloudify/public-unittest-orb@1.0.2 #orb version
   wagonorb: cloudify/wagon-bulder-orb@1.0.3 #orb version
+  releaseorb: cloudify/release-orb@1.0.5 #orb version
 
 checkout:
   post:
@@ -62,38 +63,6 @@ commands:
           command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
       - run: pytest -s .circleci/test_examples.py
 
-  release_plugin:
-    steps:
-      - run:
-          name: "Pull Submodules"
-          command: |
-            git submodule init
-            git submodule update --remote --recursive
-      - run:
-          name: Download pip
-          command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
-      - run:
-          name: Install pip
-          command: sudo python get-pip.py
-      - run:
-          name: Install virtualenv
-          command: pip install --user virtualenv
-      - run:
-          name: Init virtualenv
-          command: virtualenv env
-      - run:
-          name: install tox
-          command: pip install --user pygithub pyyaml==3.10
-      - run:
-          name: upgrade setuptools
-          command: pip install --upgrade setuptools
-      - run:
-          name: install local project
-          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
-      - attach_workspace:
-          at: workspace
-      - run: ecosystem-test package-release -n cloudify-docker-plugin
-
 jobs:
   integration_tests_510:
     executor: cloudify-machine-510
@@ -103,12 +72,6 @@ jobs:
     steps:
       - checkout
       - run_integration_tests_510
-
-  release:
-    executor: py36
-    steps:
-      - checkout
-      - release_plugin
 
 workflows:
   version: 2
@@ -142,7 +105,7 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - release:
+      - releaseorb/release:
           filters:
             branches:
               only: /master/
