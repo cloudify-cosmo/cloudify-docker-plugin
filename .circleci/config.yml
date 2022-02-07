@@ -20,58 +20,25 @@ executors:
     docker:
       - image: circleci/python:3.6
 
-  cloudify-machine-510:
+
+  cloudify-machine-py3:
     machine:
       image: ubuntu-1604:201903-01
 
 commands:
-  run_integration_tests_510:
+  run_test:
     steps:
-      - run:
-          name: "Pull Submodules"
-          command: |
-            git submodule update --init --recursive --remote
-      - attach_workspace:
-          at: workspace
-      - run:
-          name: update pip
-          command: pip install -U pip===20.3.3
-      - run:
-          name: install cloudify
-          command: |
-            pip install -r test-requirements.txt
-      - run:
-          name: download manager docker image
-          command:  wget http://repository.cloudifysource.org/cloudify/5.1.0/.dev1-release/cloudify-manager-aio-docker-5.1.0.dev1.tar
-      - run:
-          name: load docker image
-          command: docker load -i cloudify-manager-aio-docker-5.1.0.dev1.tar
-      - run:
-          name: retain space by dumping the tar
-          command: rm cloudify-manager-aio-docker-5.1.0.dev1.tar
-      - run:
-          name: show images
-          command: docker images
-      - run:
-          name: start docker container
-          command: docker run --name cfy_manager -d --restart unless-stopped -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run --tmpfs /run/lock --security-opt seccomp:unconfined --cap-add SYS_ADMIN --network host cloudify-manager-aio:latest
-      - run:
-          name: wait for starter
-          command: docker exec -it cfy_manager cfy_manager wait-for-starter
-      - run:
-          name: install local project
-          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
       - run: pytest -s .circleci/test_examples.py
 
 jobs:
-  integration_tests_510:
-    executor: cloudify-machine-510
+  integration_tests:
+    executor: cloudify-machine-py3
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
       IAAS: gcp
     steps:
       - checkout
-      - run_integration_tests_510
+      - run_test
 
 workflows:
   version: 2
@@ -99,7 +66,7 @@ workflows:
             - wagonorb/wagon
             - wagonorb/arch64_wagon
             - wagonorb/rhel_wagon
-      - integration_tests_510:
+      - integration_tests:
           requires:
             - wagonorb/build_bundle
           filters:
@@ -110,7 +77,7 @@ workflows:
             branches:
               only: /master/
           requires:
-            - integration_tests_510
+            - integration_tests
   nightly:
     triggers:
     - schedule:
@@ -134,7 +101,7 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - integration_tests_510:
+      - integration_tests:
           requires:
             - wagonorb/wagon
             - wagonorb/arch64_wagon
