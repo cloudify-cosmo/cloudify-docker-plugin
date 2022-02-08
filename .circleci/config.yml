@@ -29,7 +29,7 @@ commands:
   run_test:
     steps:
       - run: pyenv global 3.6.5
-      - run: pip install pytest
+      - run: pip install pytest https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/refs/heads/master.zip
       - run: pytest -s .circleci/test_examples.py
 
 jobs:
