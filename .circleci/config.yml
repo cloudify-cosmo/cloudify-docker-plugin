@@ -4,6 +4,7 @@ orbs:
   node: cloudify/public-unittest-orb@1 #orb version
   wagonorb: cloudify/wagon-bulder-orb@1 #orb version
   releaseorb: cloudify/release-orb@1 #orb version
+  managerorb: cloudify/manager-orb@1
 
 checkout:
   post:
@@ -40,6 +41,7 @@ jobs:
       IAAS: gcp
     steps:
       - checkout
+      - managerorb/create_manager_container_latest
       - run_test
 
 workflows:
