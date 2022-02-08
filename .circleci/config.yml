@@ -28,6 +28,7 @@ executors:
 commands:
   run_test:
     steps:
+      - run: pyenv global 3.6.5
       - run: pip install pytest
       - run: pytest -s .circleci/test_examples.py
 
