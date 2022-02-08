@@ -28,7 +28,7 @@ executors:
 commands:
   run_test:
     steps:
-      - run: pip install -y pytest
+      - run: pip install pytest
       - run: pytest -s .circleci/test_examples.py
 
 jobs:
