@@ -48,7 +48,7 @@ setup(
     install_requires=[
         "cloudify-common>=4.5.5",
         "docker-py==1.10.6",
-        "cloudify-utilities-plugins-sdk==0.0.26",  # Shared Resource Downloader
+        "cloudify-utilities-plugins-sdk>=0.0.61",  # Shared Resource Downloader
         "fabric==2.5.0",
         "patchwork"  # to copy files to docker machine
     ],
