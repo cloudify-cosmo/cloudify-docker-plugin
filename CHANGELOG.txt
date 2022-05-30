@@ -9,6 +9,7 @@
 2.0.5:
   - Handle detach true in case of running commands.
   - Fetch container details after starting it.
-  2.0.6:
-    - Fix Rsync host verfication failed.
-    - Change how we fetch container execution.
+2.0.6:
+  - Fix Rsync host verfication failed.
+  - Change how we fetch container execution.
+  - V2 Plugin YAML

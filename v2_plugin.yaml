@@ -1,0 +1,406 @@
+plugins:
+  docker:
+    executor: central_deployment_agent
+    source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/2.0.6.zip
+    package_name: 'cloudify-docker-plugin'
+    package_version: '2.0.6'
+
+dsl_definitions:
+
+  client_config: &client_config
+    client_config:
+      type: cloudify.types.docker.ClientConfig
+      description: Your Docker client configuration.
+      required: false
+
+  docker_machine: &docker_machine
+    docker_machine:
+      type: cloudify.types.docker.DockerMachineConfig
+      description: Docker Machine IP,User,Private_key
+      required: false
+
+  playbook_config: &playbook_config
+    ansible_playbook_executable_path:
+      type: string
+      default: "ansible-playbook"
+      description: >
+        A full path to your ansible_playbook executable if user don't want to
+        use the included version of executable in the plugin
+    playbook_source_path:
+      type: string
+      default: ""
+      description: >
+        A full path/URL that contain playbook specified in playbook_path
+        or site_yaml_path.
+    playbook_path:
+      type: string
+      default: ""
+      description: >
+        A path to your `site.yaml` or `main.yaml` in your
+        Ansible Playbook relative to blueprint or playbook_source_path
+        if playbook_source_path is URL to archive File relative inside the archive.
+    site_yaml_path:
+      type: string
+      default: ""
+      description: >
+        DEPRECATED.
+        A path to your `site.yaml` or `main.yaml` in your
+        Ansible Playbook relative to blueprint or playbook_source_path
+        if playbook_source_path is URL to archive File relative inside the archive.
+    additional_playbook_files:
+      type: list
+      default: []
+      description: >
+        A list of string paths blueprint resources that you
+        would like to download to the playbook directory.
+        If you use this variable, you must list all of the paths
+        that you expect to download.
+    sources:
+      default: {}
+      description: >
+        Your Inventory sources. Either YAML or a path to a file.
+        If not provided the inventory will be take from the `sources`
+        runtime property.
+    run_data:
+      default: {}
+      description: >
+        Variable values.
+    sensitive_keys:
+      type: list
+      description: keys that you want us to obscure
+      default:
+        - ansible_password
+    options_config:
+      default: {}
+      description: >
+        Command-line options, such as `tags` or `skip_tags`.
+    ansible_env_vars:
+      default:
+        ANSIBLE_HOST_KEY_CHECKING: "False"
+        # On Ansible 2.8.x "INVALID_TASK_ATTRIBUTE_FAILED" default value has
+        # been changed to "True" which cause failure when run playbook
+        ANSIBLE_INVALID_TASK_ATTRIBUTE_FAILED: "False"
+      description: >
+        A dictionary of environment variables to set.
+    debug_level:
+      type: integer
+      default: 2
+      description: >
+        Debug level
+    additional_args:
+      type: string
+      description: >
+        Additional args that you want to use, for example, '-c local'.
+      default: ''
+    save_playbook:
+      type: boolean
+      description: >
+        Save playbook after action
+      default: false
+    remerge_sources:
+      type: boolean
+      description: >
+        update sources on target node
+      default: false
+    ansible_become:
+      type: boolean
+      description: >
+        A boolean value, `true` or `false` whether
+        to assume the user privileges.
+      default: false
+
+  playbook_inputs: &playbook_inputs
+    ansible_playbook_executable_path:
+      default: { get_property: [SELF, ansible_playbook_executable_path] }
+    playbook_source_path:
+      default: { get_property: [SELF, playbook_source_path] }
+    playbook_path:
+      default: { get_property: [SELF, playbook_path] }
+    site_yaml_path:
+      default: { get_property: [SELF, site_yaml_path] }
+    save_playbook:
+      default: { get_property: [SELF, save_playbook] }
+    remerge_sources:
+      default: { get_property: [SELF, remerge_sources] }
+    sources:
+      default: { get_property: [SELF, sources] }
+    run_data:
+      default: { get_property: [SELF, run_data] }
+    sensitive_keys:
+      default: { get_property: [SELF, sensitive_keys] }
+    options_config:
+      default: { get_property: [SELF, options_config] }
+    ansible_env_vars:
+      default: { get_property: [SELF, ansible_env_vars] }
+    debug_level:
+      default: { get_property: [SELF, debug_level] }
+    additional_args:
+      default: { get_property: [SELF, additional_args] }
+
+data_types:
+
+  cloudify.types.docker.DockerMachineConfig:
+    properties:
+      docker_ip:
+        description: Docker Machine IP
+        type: string
+        default: ''
+      docker_user:
+        description: Docker Machine User
+        type: string
+        default: ''
+      docker_key:
+        description: Docker Machine Private Key
+        type: string
+        default: ''
+      container_volume:
+        description: Docker Container volume_mapping
+        type: string
+        default: ''
+
+  cloudify.types.docker.DockerInstallationConfig:
+    properties:
+      install_url:
+        description: Docker Installation Link
+        type: string
+        default: 'https://get.docker.com'
+      install_script:
+        description: Docker Installation script
+        type: string
+        default: 'https://raw.githubusercontent.com/cloudify-cosmo/cloudify-docker-plugin/master/cloudify_docker/resources/post-install.sh'
+
+  cloudify.types.docker.ClientConfig:
+    properties:
+      docker_host:
+        description: Docker Machine IP to connect to.
+        type: string
+        default: ''
+      docker_rest_port:
+        description: Docker Machine rest port.
+        type: string
+        default: ''
+
+  cloudify.types.docker.Image:
+    properties:
+      image_content:
+        description: Docker image to build
+        type: string
+        default: ''
+      tag:
+        description: Docker image tag
+        type: string
+        default: ''
+
+  cloudify.types.docker.Container:
+    properties:
+      image_tag:
+        description: Docker image tag to build container
+        type: string
+        default: ''
+      container_args:
+        description: >
+          dict of arguments to pass to container when run
+          check this URL for details: https://tinyurl.com/v8url54
+        type: dict
+        default: {}
+
+  cloudify.types.docker.ContainerFiles:
+    properties:
+      docker_machine:
+        description: Docker Machine IP,User,Private_key
+        type: cloudify.types.docker.DockerMachineConfig
+        default: {}
+      source:
+        description: Files location that will be mapped to container
+        type: string
+        default: ''
+      destination:
+        description: >
+          Location to extract the files into,
+          that will be mapped to container volume later
+        type: string
+        default: ''
+      extra_files:
+        description: More files to add to source before it goes to destination
+        # type: list
+        default: []
+      ansible_sources:
+        description: special case for ansible sources
+        # type: dict
+        default: {}
+      terraform_sources:
+        description: special case for terraform sources
+        # type: dict
+        default: {}
+
+  cloudify.types.terraform.Backend:
+    properties:
+      name:
+        type: string
+        description: Some name.
+        required: False
+      options:
+        description: Should be a dictionary of key/values.
+        required: False
+
+  cloudify.types.terraform.RootModule:
+    properties:
+      source:
+        type: string
+        description: >
+          Path or URL to the ZIP file containing the Terraform project.
+          If this is a path, then it must be relative to the blueprint's root.
+        required: true
+      backend:
+        type: cloudify.types.terraform.Backend
+        description: >
+          If a backend is not defined in source,
+          and you want to use a specific backend, define that here.
+        default: {}
+      variables:
+        description: A dictionary of variables.
+        required: false
+        default: {}
+      environment_variables:
+        description: A dictionary of environment variables.
+        required: false
+        default: {}
+
+node_types:
+
+  cloudify.nodes.docker.images:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *client_config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.cloudify_docker.tasks.list_images
+
+  cloudify.nodes.docker.containers:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *client_config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.cloudify_docker.tasks.list_containers
+
+  cloudify.nodes.docker.host:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *docker_machine
+      resource_config:
+        type: cloudify.types.docker.DockerInstallationConfig
+        description: Docker Installation type
+        required: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.cloudify_docker.tasks.install_docker
+        delete:
+          implementation: docker.cloudify_docker.tasks.uninstall_docker
+
+
+  cloudify.nodes.docker.host_details:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *client_config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.cloudify_docker.tasks.list_host_details
+
+  cloudify.nodes.docker.image:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *client_config
+      resource_config:
+        type: cloudify.types.docker.Image
+        description: Docker Image type
+        required: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.cloudify_docker.tasks.build_image
+        delete:
+          implementation: docker.cloudify_docker.tasks.remove_image
+
+  cloudify.nodes.docker.container:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *client_config
+      resource_config:
+        type: cloudify.types.docker.Container
+        description: Docker Container type
+        required: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.cloudify_docker.tasks.create_container
+        stop:
+          implementation: docker.cloudify_docker.tasks.stop_container
+          inputs:
+            stop_command:
+              type: string
+              default: ""
+        delete:
+          implementation: docker.cloudify_docker.tasks.remove_container
+
+  cloudify.nodes.docker.container_files:
+    derived_from: cloudify.nodes.Root
+    properties:
+      resource_config:
+        type: cloudify.types.docker.ContainerFiles
+        description: Docker Container Files type
+        required: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.cloudify_docker.tasks.prepare_container_files
+        delete:
+          implementation: docker.cloudify_docker.tasks.remove_container_files
+
+  cloudify.nodes.docker.ansible_playbook:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *playbook_config
+      <<: *docker_machine
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: docker.cloudify_docker.ansible.set_playbook_config
+          inputs:
+            <<: *playbook_inputs
+        create:
+          implementation: docker.cloudify_docker.ansible.create_ansible_playbook
+        delete:
+          implementation: docker.cloudify_docker.ansible.remove_ansible_playbook
+
+  cloudify.nodes.docker.terraform_module:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *docker_machine
+      terraform_plugins:
+        description: Terraform Plugins to install
+        default: []
+        required: true
+      resource_config:
+        type: cloudify.types.terraform.RootModule
+        required: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.cloudify_docker.terraform.prepare_terraform_files
+        delete:
+          implementation: docker.cloudify_docker.terraform.remove_terraform_files
+
+blueprint_labels:
+  obj-type:
+    values:
+      - docker
+
+labels:
+  obj-type:
+    values:
+      - docker
