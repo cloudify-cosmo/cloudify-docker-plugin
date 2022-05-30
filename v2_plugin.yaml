@@ -222,15 +222,15 @@ data_types:
         default: ''
       extra_files:
         description: More files to add to source before it goes to destination
-        # type: list
+        type: list
         default: []
       ansible_sources:
         description: special case for ansible sources
-        # type: dict
+        type: dict
         default: {}
       terraform_sources:
         description: special case for terraform sources
-        # type: dict
+        type: dict
         default: {}
 
   cloudify.types.terraform.Backend:
