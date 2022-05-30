@@ -9,3 +9,5 @@
 2.0.5:
   - Handle detach true in case of running commands.
   - Fetch container details after starting it.
+2.0.6:
+  - V2 Plugin YAML

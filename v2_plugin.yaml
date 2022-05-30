@@ -48,8 +48,7 @@ dsl_definitions:
         Ansible Playbook relative to blueprint or playbook_source_path
         if playbook_source_path is URL to archive File relative inside the archive.
     additional_playbook_files:
-      # uncomment on 5+
-      # type: list
+      type: list
       default: []
       description: >
         A list of string paths blueprint resources that you
@@ -67,8 +66,7 @@ dsl_definitions:
       description: >
         Variable values.
     sensitive_keys:
-      # uncomment on 5+
-      # type: list
+      type: list
       description: keys that you want us to obscure
       default:
         - ansible_password
@@ -396,3 +394,13 @@ node_types:
           implementation: docker.cloudify_docker.terraform.prepare_terraform_files
         delete:
           implementation: docker.cloudify_docker.terraform.remove_terraform_files
+
+blueprint_labels:
+  obj-type:
+    values:
+      - docker
+
+labels:
+  obj-type:
+    values:
+      - docker
