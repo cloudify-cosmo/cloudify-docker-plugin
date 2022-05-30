@@ -24,7 +24,6 @@ import shutil
 import getpass
 import tempfile
 import traceback
-import threading
 import subprocess
 
 import docker
@@ -81,7 +80,8 @@ def call_put(destination,
     ctx.logger.info('Copying: {0} {1}'.format(destination, destination_parent))
     if FABRIC_VER == 2:
         return patchwork.transfers.rsync(
-            fab_ctx, destination, destination_parent, exclude='.git')
+            fab_ctx, destination, destination_parent, exclude='.git',
+            strict_host_keys=False)
     elif FABRIC_VER == 1:
         return put(destination, destination_parent, mirror_local_mode)
 
@@ -199,7 +199,6 @@ def handle_docker_exception(func):
         except docker.errors.DockerException as de:
             raise NonRecoverableError(str(de))
         except Exception:
-            ctx = kwargs['ctx']
             tb = traceback.format_exc()
             ctx.logger.error("Exception Happend: {0}".format(tb))
             raise NonRecoverableError(tb)
@@ -222,27 +221,30 @@ def with_docker(func):
 def follow_container_logs(ctx, docker_client, container, **kwargs):
 
     @handle_docker_exception
-    def stop_follow_function(container_socket):
-        container_socket.close()
+    def check_container_exited(docker_client, container):
+        result = docker_client.inspect_container(container)
+        if not result.get('State', {}).get('Running', True):
+            ctx.logger.info('Container exit_code {0}'.format(
+                result['State']['ExitCode']))
+            return True
+        return False
 
     run_output = ""
-    container_logs = docker_client.attach(container, stream=True)
+    container_logs = docker_client.logs(container, stream=True)
     ctx.logger.info("Following container {0} logs".format(container))
     ctx.logger.info("Attach returned {0}".format(container_logs))
-    # stop after 2 minutes at max
-    timer = threading.Timer(120, stop_follow_function, args=[container_logs])
-    timer.start()
-    try:
-        for chunk in container_logs:
-            run_output += "{0}\n".format(chunk)
-            ctx.logger.info("{0}".format(chunk))
-    finally:
-        timer.cancel()
-    if not run_output:
-        container_logs = docker_client.logs(container, stream=True)
-        for chunk in container_logs:
-            run_output += "{0}\n".format(chunk)
-            ctx.logger.info("{0}".format(chunk))
+    while True:
+        try:
+            chunk = next(container_logs)
+            if chunk:
+                chunk = chunk.decode('utf-8', 'replace').strip()
+                run_output += "{0}\n".format(chunk)
+                # ctx.logger.debug("{0}".format(chunk))
+            elif check_container_exited(docker_client, container):
+                break
+        except StopIteration:
+            break
+    container_logs.close()
     return run_output
 
 
