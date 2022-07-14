@@ -297,6 +297,8 @@ def prepare_container_files(ctx, **kwargs):
     # Reaching this point we should have got the files into source_tmp_path
     if not destination:
         destination = tempfile.mkdtemp()
+        # fix permissions for this temp directory
+        os.chmod(destination, 0o755)
     move_files(source_tmp_path, destination)
     shutil.rmtree(source_tmp_path)
 
