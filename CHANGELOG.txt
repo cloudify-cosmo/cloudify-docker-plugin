@@ -13,3 +13,5 @@
   - Fix Rsync host verfication failed.
   - Change how we fetch container execution.
   - V2 Plugin YAML
+  2.0.7:
+    - Fix Temp Dir permissions.
