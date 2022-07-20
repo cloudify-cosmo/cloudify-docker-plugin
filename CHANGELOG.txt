@@ -13,5 +13,8 @@
   - Fix Rsync host verfication failed.
   - Change how we fetch container execution.
   - V2 Plugin YAML
-  2.0.7:
-    - Fix Temp Dir permissions.
+2.0.7:
+  - Fix Temp Dir permissions.
+2.0.8:
+  - Support plugin 1_4 dsl yaml
+  - Release redhat8 wagon
