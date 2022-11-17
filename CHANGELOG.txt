@@ -18,3 +18,7 @@
 2.0.8:
   - Support plugin 1_4 dsl yaml
   - Release redhat8 wagon
+2.0.9:
+  - Fix Deprecation from SocketIO and basic refactor for code readability.
+  - Added support passing file and handled perparation for the container files accordingly.
+  - Added the clean up logic for the tmp files same as terraform plugin.

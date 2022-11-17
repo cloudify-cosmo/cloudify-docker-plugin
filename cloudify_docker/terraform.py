@@ -36,7 +36,7 @@ from cloudify_common_sdk.resource_downloader import get_shared_resource
 from cloudify_common_sdk.resource_downloader import TAR_FILE_EXTENSTIONS
 from cloudify_common_sdk._compat import text_type
 
-from .tasks import LOCAL_HOST_ADDRESSES
+from .constants import LOCAL_HOST_ADDRESSES
 
 
 @operation
@@ -45,16 +45,11 @@ def prepare_terraform_files(ctx, **kwargs):
     docker_ip, docker_user, docker_key, container_volume = \
         get_docker_machine_from_ctx(ctx)
 
-    source = \
-        ctx.node.properties.get('resource_config', {}).get('source', "")
-    backend = \
-        ctx.node.properties.get('resource_config', {}).get('backend', {})
-    variables = \
-        ctx.node.properties.get('resource_config', {}).get('variables', {})
-    environment_variables = \
-        ctx.node.properties.get('resource_config', {}).get(
-            'environment_variables', {})
-
+    resource_config = ctx.node.properties.get('resource_config', {})
+    source = resource_config.get('source', "")
+    backend = resource_config.get('backend', {})
+    variables = resource_config.get('variables', {})
+    environment_variables = resource_config.get('environment_variables', {})
     terraform_plugins = ctx.node.properties.get('terraform_plugins', [])
 
     if not source:

@@ -22,10 +22,14 @@ from cloudify.state import current_ctx
 # from cloudify.test_utils import workflow_test
 from cloudify.mocks import MockCloudifyContext
 
-from cloudify_docker.tasks import (list_images, list_host_details,
-                                   list_containers, prepare_container_files,
-                                   remove_container_files, build_image,
-                                   remove_image)
+from cloudify_docker.tasks import (build_image,
+                                   list_images,
+                                   remove_image,
+                                   list_containers,
+                                   list_host_details,
+                                   find_host_script_path,
+                                   remove_container_files,
+                                   prepare_container_files)
 
 
 class TestPlugin(unittest.TestCase):
@@ -53,40 +57,6 @@ class TestPlugin(unittest.TestCase):
         )
         return ctx
 
-    # @workflow_test(path.join('blueprint', 'blueprint.yaml'),
-    #                resources_to_copy=[(path.join('blueprint', 'plugin',
-    #                                              'test_plugin.yaml'),
-    #                                    'plugin')],
-    #                inputs={'docker_host': '127.0.0.1'})
-    # def test_list_images_workflow(self, cfy_local):
-    #     # execute install workflow
-    #     """
-    #
-    #     :param cfy_local:
-    #     """
-    #     images = {
-    #         "Image1":{
-    #             "Created":1586389397,
-    #             "Id":"sha256:ef5bbc24923e"
-    #         }
-    #     }
-    #     mock_images_list = mock.Mock()
-    #     mock_images_list.images.return_value = images
-    #     mock_client = mock.MagicMock(return_value=mock_images_list)
-    #     with mock.patch('docker.Client', mock_client):
-    #         cfy_local.execute('install', task_retries=0)
-    #
-    #         # extract single node instance
-    #         instance = cfy_local.storage.get_node_instances()[0]
-    #
-    #         # assert runtime properties is properly set in node instance
-    #         self.assertEqual(instance.runtime_properties['images'],
-    #                          images)
-    #
-    #         # assert deployment outputs are ok
-    #         self.assertDictEqual(cfy_local.outputs(),
-    #                              {'test_output': images})
-
     def test_list_images(self):
         ctx = self.mock_ctx('test_list_images', self.get_client_conf_props())
         current_ctx.set(ctx=ctx)
@@ -99,10 +69,10 @@ class TestPlugin(unittest.TestCase):
         }
 
         mock_images_list = mock.Mock()
-        mock_images_list.images.return_value = images
+        mock_images_list.images.list.return_value = images
         mock_client = mock.MagicMock(return_value=mock_images_list)
 
-        with mock.patch('docker.Client', mock_client):
+        with mock.patch('docker.DockerClient', mock_client):
             kwargs = {
                 'ctx': ctx
             }
@@ -128,7 +98,7 @@ class TestPlugin(unittest.TestCase):
         mock_host_details_list.info.return_value = details
         mock_client = mock.MagicMock(return_value=mock_host_details_list)
 
-        with mock.patch('docker.Client', mock_client):
+        with mock.patch('docker.DockerClient', mock_client):
             kwargs = {
                 'ctx': ctx
             }
@@ -149,10 +119,10 @@ class TestPlugin(unittest.TestCase):
         }
 
         mock_containers_list = mock.Mock()
-        mock_containers_list.containers.return_value = containers
+        mock_containers_list.containers.list.return_value = containers
         mock_client = mock.MagicMock(return_value=mock_containers_list)
 
-        with mock.patch('docker.Client', mock_client):
+        with mock.patch('docker.DockerClient', mock_client):
             kwargs = {
                 'ctx': ctx
             }
@@ -232,11 +202,13 @@ class TestPlugin(unittest.TestCase):
                 "tag": "test:1.0"
             }
         })
-        build_result = [{"stream": "Step 1/1 : FROM amd64/centos:7"},
-                        {"stream": "\n"},
-                        {"stream": " ---\u003e 5e35e350aded\n"}]
+        build_result = [
+            {"stream": "Step 1/1 : FROM amd64/centos:7"},
+            {"stream": "\n"},
+            {"stream": " ---\u003e 5e35e350aded\n"}
+        ]
         build_result_prop = ""
-        for chunk in iter(build_result):
+        for chunk in build_result:
             build_result_prop += "{0}\n".format(chunk)
 
         image_get = [{
@@ -263,24 +235,22 @@ class TestPlugin(unittest.TestCase):
         ctx = self.mock_ctx('test_build_image', node_props)
         current_ctx.set(ctx=ctx)
 
-        mock_image_build = mock.Mock()
-        mock_image_build.return_value = iter(build_result)
+        mock_images = mock.Mock()
+        mock_images.images.build.return_value = ("Id", iter(build_result))
+        mock_images.images.get.return_value = image_get
+        mock_client = mock.MagicMock(return_value=mock_images)
 
-        mock_image_get = mock.Mock()
-        mock_image_get.return_value = image_get
-
-        with mock.patch('docker.Client.build', mock_image_build):
-            with mock.patch('docker.Client.images', mock_image_get):
-                kwargs = {
-                    'ctx': ctx
-                }
-                build_image(**kwargs)
-                self.assertEqual(
-                    ctx.instance.runtime_properties['build_result'],
-                    build_result_prop)
-                self.assertEqual(
-                    ctx.instance.runtime_properties['image'],
-                    image_get)
+        with mock.patch('docker.DockerClient', mock_client):
+            kwargs = {
+                'ctx': ctx
+            }
+            build_image(**kwargs)
+            self.assertEqual(
+                ctx.instance.runtime_properties['build_result'],
+                build_result_prop)
+            self.assertEqual(
+                ctx.instance.runtime_properties['image'],
+                repr(image_get))
 
     def test_remove_image(self):
         node_props = self.get_client_conf_props()
@@ -305,13 +275,37 @@ class TestPlugin(unittest.TestCase):
                             runtime_properties_test)
         current_ctx.set(ctx=ctx)
 
-        mock_remove_image = mock.Mock()
-        mock_remove_image.remove_image = mock.Mock()
+        mock_images = mock.Mock()
+        mock_images.images.remove = mock.Mock()
+        mock_client = mock.MagicMock(return_value=mock_images)
 
-        with mock.patch('docker.Client.remove_image', mock_remove_image):
+        with mock.patch('docker.DockerClient',
+                        mock_client):
             kwargs = {
                 'ctx': ctx
             }
             remove_image(**kwargs)
             self.assertIsNone(
                 ctx.instance.runtime_properties.get('build_result', None))
+
+    def test_if_volume_mapping_in_script(self):
+
+        command = 'ansible-playbook -i hosts /uninstall-playbooks/delete.yaml'
+        container_args = {
+            'volumes_mapping': ['/tmp/tmpfijhaktv', '/tmp/tmpcz0u65ro'],
+            'volumes': ['/install-playbooks',
+                        '/uninstall-playbooks']
+        }
+        self.assertEqual(
+            find_host_script_path(command, container_args),
+            '/tmp/tmpcz0u65ro/delete.yaml')
+
+    def test_if_volume_mapping_not_in_script(self):
+
+        command = 'ansible-playbook -i hosts /dummy_location/delete.yaml'
+        container_args = {
+            'volumes_mapping': ['/tmp/tmpfijhaktv', '/tmp/tmpcz0u65ro'],
+            'volumes': ['/install-playbooks',
+                        '/uninstall-playbooks']
+        }
+        self.assertIsNone(find_host_script_path(command, container_args))
