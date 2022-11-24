@@ -289,6 +289,17 @@ class TestPlugin(unittest.TestCase):
                 ctx.instance.runtime_properties.get('build_result', None))
 
     def test_if_volume_mapping_in_script(self):
+        containers = {
+            "Contianer1": {
+                "Created": 1586389397,
+                "Id": "sha256:e2231923e"
+            }
+        }
+
+        mock_containers_get = mock.Mock()
+        mock_containers_get.containers.get.return_value = \
+            containers['Contianer1']
+        mock_client = mock.MagicMock(return_value=mock_containers_get)
 
         command = 'ansible-playbook -i hosts /uninstall-playbooks/delete.yaml'
         container_args = {
@@ -297,10 +308,22 @@ class TestPlugin(unittest.TestCase):
                         '/uninstall-playbooks']
         }
         self.assertEqual(
-            find_host_script_path(command, container_args),
+            find_host_script_path(mock_client, 'sha256:e2231923e',
+                                  command, container_args),
             '/tmp/tmpcz0u65ro/delete.yaml')
 
     def test_if_volume_mapping_not_in_script(self):
+        containers = {
+            "Contianer1": {
+                "Created": 1586389397,
+                "Id": "sha256:e2231923e"
+            }
+        }
+
+        mock_containers_get = mock.Mock()
+        mock_containers_get.containers.get.return_value = \
+            containers['Contianer1']
+        mock_client = mock.MagicMock(return_value=mock_containers_get)
 
         command = 'ansible-playbook -i hosts /dummy_location/delete.yaml'
         container_args = {
@@ -308,4 +331,7 @@ class TestPlugin(unittest.TestCase):
             'volumes': ['/install-playbooks',
                         '/uninstall-playbooks']
         }
-        self.assertIsNone(find_host_script_path(command, container_args))
+        self.assertIsNone(find_host_script_path(mock_client,
+                                                'sha256:e2231923e',
+                                                command,
+                                                container_args))

@@ -14,6 +14,7 @@
 # limitations under the License.
 import io
 import os
+import time
 import json
 import yaml
 import fcntl
@@ -22,6 +23,7 @@ import struct
 import socket
 import shutil
 import getpass
+import tarfile
 import tempfile
 import traceback
 import subprocess
@@ -224,12 +226,16 @@ def with_docker(func):
         ctx = kwargs['ctx']
         client_config = ctx.node.properties.get('client_config', {})
         base_url = None
-        if client_config.get('docker_host', ''):
+        if client_config.get('docker_host', '') \
+                and client_config.get('docker_rest_port', ''):
             base_url = "tcp://{0}:{1}".format(
                 client_config['docker_host'],
                 client_config['docker_rest_port'])
         elif client_config.get('docker_sock_file', ''):
             base_url = "unix:/{0}".format(client_config['docker_sock_file'])
+        else:
+            # if we are here that means we don't have a valid docker config
+            raise NonRecoverableError('Invalid docker client config')
         kwargs['docker_client'] = docker.DockerClient(base_url=base_url,
                                                       tls=False)
         return func(*args, **kwargs)
@@ -777,7 +783,8 @@ def check_if_applicable_command(command):
         return False
 
 
-def find_host_script_path(command, container_args):
+def find_host_script_path(docker_client, container_id,
+                          command, container_args):
     # given the original command and the mapping
     # let's return the path we will be overriding the content for
     script = None
@@ -800,25 +807,49 @@ def find_host_script_path(command, container_args):
     ctx.logger.debug("script to override {0}".format(script))
     # Handle the attached volume to override
     # the script with stop_command
-    volumes = container_args.get("volumes", "")
-    volumes_mapping = container_args.get("volumes_mapping", "")
-    # look for the script in the mapped volumes
-    mapping_to_use = ""
-    for volume, mapping in zip(volumes, volumes_mapping):
-        ctx.logger.debug(
-            "check if script {0} contain volume {1}".format(script,
-                                                            volume))
-        if volume in script:
-            ctx.logger.debug("replacing {0} with {1}".format(volume,
-                                                             mapping))
-            script = script.replace(volume, mapping)
-            ctx.logger.debug("script to modify is {0}".format(script))
-            mapping_to_use = mapping
-            break
+    volumes = container_args.get("volumes", None)
+    volumes_mapping = container_args.get("volumes_mapping", None)
+    if volumes and volumes_mapping:
+        # look for the script in the mapped volumes
+        mapping_to_use = ""
+        for volume, mapping in zip(volumes, volumes_mapping):
+            ctx.logger.debug(
+                "check if script {0} contain volume {1}".format(script,
+                                                                volume))
+            if volume in script:
+                ctx.logger.debug("replacing {0} with {1}".format(volume,
+                                                                 mapping))
+                script = script.replace(volume, mapping)
+                ctx.logger.debug("script to modify is {0}".format(script))
+                mapping_to_use = mapping
+                break
 
-    if not mapping_to_use:
-        ctx.logger.info("volume mapping is not correct")
-        return
+        if not mapping_to_use:
+            ctx.logger.info("volume mapping is not correct")
+            return
+    else:
+        # let's look for local files inside the container
+        containerObj = docker_client.containers.get(container_id)
+        bits, stats = containerObj.get_archive(script)
+        if stats.get('size', 0) > 0:
+            destination = tempfile.mkdtemp()
+            f = open(
+                os.path.join(destination, stats.get('name')), 'wb')
+            for chunk in bits:
+                f.write(chunk)
+            f.close()
+            file_obj = tarfile.open(f.name, "r")
+            file = file_obj.extractfile(stats.get('name'))
+            file_content = file.read()
+            file_obj.close()
+            os.remove(f.name)
+            # return the file name and content so it would be handled
+            # via put_archive though cotinaer API
+            return script, file_content
+        else:
+            ctx.logger.info('script not found inside the container '
+                            'since no volumes were mapped')
+            return
     return script
 
 
@@ -838,72 +869,99 @@ def handle_container_timed_out(ctx, docker_client, container_id,
             return
         # we will get the docker_host conf from mapped
         # container_files node through relationships
+        volumes = container_args.get("volumes", None)
+        volumes_mapping = container_args.get("volumes_mapping", None)
         docker_ip = ""
         relationships = list(ctx.instance.relationships)
-        for rel in relationships:
-            node = rel.target.node
-            resource_config = node.properties.get('resource_config', {})
-            docker_machine = resource_config.get('docker_machine', {})
-            ctx.logger.debug("checking for IP in {0}".format(node.name))
-            if node.type == 'cloudify.nodes.docker.container_files':
-                docker_ip = docker_machine.get('docker_ip', "")
-                docker_user = docker_machine.get('docker_user', "")
-                docker_key = docker_machine.get('docker_key', "")
-                break
-            if node.type == 'cloudify.nodes.docker.terraform_module':
-                docker_machine = node.properties.get('docker_machine', {})
-                docker_ip = docker_machine.get('docker_ip', "")
-                docker_user = docker_machine.get('docker_user', "")
-                docker_key = docker_machine.get('docker_key', "")
-                break
-        if not docker_ip:
-            ctx.logger.info(
-                "can't find docker_ip in container_files "
-                "node through relationships")
-            return
+        if volumes and volumes_mapping:
+            for rel in relationships:
+                node = rel.target.node
+                resource_config = node.properties.get('resource_config', {})
+                docker_machine = resource_config.get('docker_machine', {})
+                ctx.logger.debug("checking for IP in {0}".format(node.name))
+                if node.type == 'cloudify.nodes.docker.container_files':
+                    docker_ip = docker_machine.get('docker_ip', "")
+                    docker_user = docker_machine.get('docker_user', "")
+                    docker_key = docker_machine.get('docker_key', "")
+                    break
+                if node.type == 'cloudify.nodes.docker.terraform_module':
+                    docker_machine = node.properties.get('docker_machine', {})
+                    docker_ip = docker_machine.get('docker_ip', "")
+                    docker_user = docker_machine.get('docker_user', "")
+                    docker_key = docker_machine.get('docker_key', "")
+                    break
+            if not docker_ip:
+                ctx.logger.info(
+                    "can't find docker_ip in container_files "
+                    "node through relationships")
+                return
 
         # here we assume the command is OK , and we have arguments to it
 
-        script = find_host_script_path(command, container_args)
+        script, _ = find_host_script_path(docker_client, container_id,
+                                          command, container_args)
         if not script:
             return
         replace_script = stop_command
 
         is_ansible_custom_case = 'ansible' in script_executor
         if is_ansible_custom_case:
-            replace_script = find_host_script_path(stop_command,
-                                                   container_args)
+            _, replace_script = find_host_script_path(docker_client,
+                                                      container_id,
+                                                      stop_command,
+                                                      container_args)
             if not replace_script:
                 return
-            # let's read from the remote docker if that is the case
-            if is_remote_docker(docker_ip):
-                with get_fabric_settings(ctx, docker_ip, docker_user,
-                                         docker_key) as s:
-                    with s:
-                        replace_script = call_sudo(
-                            'cat {0}'.format(replace_script),
-                            fab_ctx=s).stdout
-            else:
-                # check from local
-                with open(replace_script, 'r') as f:
-                    replace_script = f.read()
+
+            # check if we have volume mapping or not
+            if volumes and volumes_mapping:
+                # let's read from the remote docker if that is the case
+                if is_remote_docker(docker_ip):
+                    with get_fabric_settings(ctx, docker_ip, docker_user,
+                                             docker_key) as s:
+                        with s:
+                            replace_script = call_sudo(
+                                'cat {0}'.format(replace_script),
+                                fab_ctx=s).stdout
+                else:
+                    # check from local
+                    with open(replace_script, 'r') as f:
+                        replace_script = f.read()
+
+        container_obj = docker_client.containers.get(container_id)
         # if we are here , then we found the script
         # in one of the mapped volumes
         ctx.logger.debug("override script {0} content to {1}".format(
             script, replace_script))
-        with open(script, 'w') as outfile:
-            outfile.write(replace_script)
+        if volumes and volumes_mapping:
+            with open(script, 'w') as outfile:
+                outfile.write(replace_script)
 
-        if is_remote_docker(docker_ip):
-            with get_fabric_settings(ctx, docker_ip, docker_user,
-                                     docker_key) as s:
-                with s:
-                    call_put(
-                        script, script, mirror_local_mode=True, fab_ctx=s)
+            if is_remote_docker(docker_ip):
+                with get_fabric_settings(ctx, docker_ip, docker_user,
+                                         docker_key) as s:
+                    with s:
+                        call_put(
+                            script, script, mirror_local_mode=True, fab_ctx=s)
+        else:
+            # if we are here we have the replace content and we need to replace
+            # script content inside the container files
+            script_dir = os.path.dirname("/{0}".format(script))
+            pw_tarstream = io.BytesIO()
+            pw_tar = tarfile.TarFile(fileobj=pw_tarstream, mode='w')
+            file_data = replace_script
+            tarinfo = tarfile.TarInfo(name=script)
+            tarinfo.size = len(file_data)
+            tarinfo.mtime = time.time()
+            pw_tar.addfile(tarinfo, io.BytesIO(file_data))
+            pw_tar.close()
+            pw_tarstream.seek(0)
+            container_obj.put_archive(script_dir,
+                                      pw_tarstream)
+
         # now we can restart the container , and it will
         # run with the overriden script that contain the
         # stop_command
-        container_obj = docker_client.containers.get(container_id)
         container_obj.restart()
         container_logs = follow_container_logs(ctx, docker_client,
                                                container_obj)
