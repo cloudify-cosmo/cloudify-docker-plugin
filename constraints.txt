@@ -2,4 +2,4 @@ cloudify-common>=5.1.0
 fabric==2.5.0
 networkx==1.9.1
 cryptography==3.3.2
-docker-py==1.10.6
+docker>=5.0.3

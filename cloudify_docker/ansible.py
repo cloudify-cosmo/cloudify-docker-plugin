@@ -38,12 +38,11 @@ from cloudify_common_sdk.resource_downloader import get_shared_resource
 from cloudify_common_sdk.resource_downloader import TAR_FILE_EXTENSTIONS
 from cloudify_common_sdk._compat import text_type
 
-from .tasks import HOSTS
-from .tasks import LOCAL_HOST_ADDRESSES
-WORKSPACE = 'workspace'
-LIST_TYPES = ['skip-tags', 'tags']
-BP_INCLUDES_PATH = '/opt/manager/resources/blueprints/' \
-                   '{tenant}/{blueprint}/{relative_path}'
+from .constants import (HOSTS,
+                        WORKSPACE,
+                        LIST_TYPES,
+                        BP_INCLUDES_PATH,
+                        LOCAL_HOST_ADDRESSES)
 
 
 @operation
