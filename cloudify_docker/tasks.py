@@ -247,7 +247,7 @@ def follow_container_logs(ctx, docker_client, container, **kwargs):
 
     @handle_docker_exception
     def check_container_exited(docker_client, container):
-        result = docker_client.containers.get(container)
+        result = docker_client.containers.get(container.id)
         if result.status == 'exited':
             ctx.logger.info('Container exit_code {0}'.format(
                 result.attrs['State']['ExitCode']))
@@ -732,7 +732,7 @@ def create_container(ctx, docker_client, **kwargs):
         if container_args.get("detach", False):
             ctx.logger.info("command is running in detach mode True")
             ctx.instance.runtime_properties['container'] = container.id
-            container_info = docker_client.containers.get(container)
+            container_info = docker_client.containers.get(container.id)
             ctx.instance.runtime_properties['container_info'] = \
                 repr(container_info)
             return

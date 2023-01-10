@@ -22,3 +22,5 @@
   - Fix Deprecation from SocketIO and basic refactor for code readability.
   - Added support passing file and handled perparation for the container files accordingly.
   - Added the clean up logic for the tmp files same as terraform plugin.
+2.0.10:
+  - Fix get api due to back-compat issue.
