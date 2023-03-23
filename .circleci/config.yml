@@ -63,17 +63,11 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - wagonorb/build_bundle:
-          filters:
-            branches:
-              only: /master/
+      - integration_tests:
           requires:
             - wagonorb/wagon
             - wagonorb/arch64_wagon
             - wagonorb/rhel_wagon
-      - integration_tests:
-          requires:
-            - wagonorb/build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
