@@ -24,3 +24,5 @@
   - Added the clean up logic for the tmp files same as terraform plugin.
 2.0.10:
   - Fix get api due to back-compat issue.
+2.0.11:
+  - add __version__.py file in cloudify_docker folder.
