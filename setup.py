@@ -28,7 +28,7 @@ def read(rel_path):
 
 def get_version():
     current_dir = pathlib.Path(__file__).parent.resolve()
-    with open(os.path.join(current_dir, 'cloudify_azure/__version__.py'),
+    with open(os.path.join(current_dir, 'cloudify_docker/__version__.py'),
               'r') as outfile:
         var = outfile.read()
         return re.search(r'\d+.\d+.\d+', var).group()
