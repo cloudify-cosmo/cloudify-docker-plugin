@@ -564,8 +564,12 @@ def list_images(ctx, docker_client, **kwargs):
 def install_docker(ctx, **kwargs):
     # fetch the data needed for installation
     docker_ip, docker_user, docker_key, _ = get_docker_machine_from_ctx(ctx)
-    install_url = ctx.node.properties.get('install_url')
-    post_install_url = ctx.node.properties.get('install_script')
+    resource_config = ctx.node.properties.get('resource_config', {})
+    install_url = resource_config.get('install_url')
+    post_install_url = resource_config.get('install_script')
+
+    if not (install_url and post_install_url):
+        raise NonRecoverableError("Please validate your install config")
 
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
         with s:
