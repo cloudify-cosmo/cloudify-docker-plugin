@@ -209,7 +209,7 @@ data_types:
         type: string
         default: ''
       all_tags:
-        dtype: boolean
+        type: boolean
         description: Pull all tags
         default: false
 
