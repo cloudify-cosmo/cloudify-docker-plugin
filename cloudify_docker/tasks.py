@@ -44,7 +44,7 @@ from cloudify_common_sdk.resource_downloader import untar_archive
 from cloudify_common_sdk.resource_downloader import get_shared_resource
 from cloudify_common_sdk.resource_downloader import TAR_FILE_EXTENSTIONS
 from cloudify_common_sdk._compat import text_type, PY2
-from docker.errors import ImageNotFound
+from docker.errors import ImageNotFound, NotFound
 
 try:
     if PY2:
@@ -639,14 +639,20 @@ def list_containers(ctx, docker_client, **kwargs):
 @with_docker
 def pull_image(ctx, docker_client, **kwargs):
     resource_config = ctx.node.properties.get('resource_config', {})
-    image_name = resource_config.get('image_name')
-    tag = resource_config.get('tag', 'latest')
-    all_tags = resource_config.get('all_tags')
+    tag = resource_config.get('tag')
+    all_tags = resource_config.get('all_tags', False)
+    if not tag:
+        return
+    repository = tag.split(':')[0]
     try:
-        docker_client.images.get('{0}:{1}'.format(image_name, tag))
+        image_tag = tag.split(':')[1]
+    except IndexError:
+        image_tag = 'latest'
+    try:
+        docker_client.images.get(tag)
     except ImageNotFound:
-        docker_client.images.pull(repository=image_name,
-                                  tag=tag, all_tags=all_tags)
+        docker_client.images.pull(repository=repository,
+                                  tag=image_tag, all_tags=all_tags)
 
 
 @operation
@@ -1003,6 +1009,12 @@ def stop_container(ctx, docker_client, stop_command, **kwargs):
                                                          'container_args')
     if not stop_command:
         ctx.logger.info("no stop command, nothing to do")
+        try:
+            container_obj = docker_client.containers.get(container)
+            container_obj.stop()
+            container_obj.wait()
+        except NotFound:
+            pass
         return
 
     script_executor = stop_command.split(' ', 1)[0]

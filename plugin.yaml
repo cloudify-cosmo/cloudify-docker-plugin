@@ -200,10 +200,6 @@ data_types:
 
   cloudify.types.docker.PullImage:
     properties:
-      image_name:
-        description: Docker image name
-        type: string
-        default: ''
       tag:
         description: Docker image tag
         type: string
