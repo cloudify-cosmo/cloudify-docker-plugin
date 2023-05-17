@@ -653,6 +653,7 @@ def pull_image(ctx, docker_client, **kwargs):
     except ImageNotFound:
         docker_client.images.pull(repository=repository,
                                   tag=image_tag, all_tags=all_tags)
+        ctx.instance.runtime_properties['build_result'] = 'Image was pull'
 
 
 @operation
