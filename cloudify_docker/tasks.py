@@ -44,6 +44,7 @@ from cloudify_common_sdk.resource_downloader import untar_archive
 from cloudify_common_sdk.resource_downloader import get_shared_resource
 from cloudify_common_sdk.resource_downloader import TAR_FILE_EXTENSTIONS
 from cloudify_common_sdk._compat import text_type, PY2
+from docker.errors import ImageNotFound
 
 try:
     if PY2:
@@ -631,6 +632,21 @@ def list_host_details(ctx, docker_client, **kwargs):
 def list_containers(ctx, docker_client, **kwargs):
     ctx.instance.runtime_properties['contianers'] = \
         docker_client.containers.list(all=True, trunc=True)
+
+
+@operation
+@handle_docker_exception
+@with_docker
+def pull_image(ctx, docker_client, **kwargs):
+    resource_config = ctx.node.properties.get('resource_config', {})
+    image_name = resource_config.get('image_name')
+    tag = resource_config.get('tag', 'latest')
+    all_tags = resource_config.get('all_tags')
+    try:
+        docker_client.images.get('{0}:{1}'.format(image_name, tag))
+    except ImageNotFound:
+        docker_client.images.pull(repository=image_name,
+                                  tag=tag, all_tags=all_tags)
 
 
 @operation
