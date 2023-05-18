@@ -605,13 +605,20 @@ def install_docker(ctx, **kwargs):
 def uninstall_docker(ctx, **kwargs):
     # fetch the data needed for installation
     docker_ip, docker_user, docker_key, _ = get_docker_machine_from_ctx(ctx)
+    resource_config = ctx.node.properties.get('resource_config', {})
+    install_with_sudo = resource_config.get('install_with_sudo', True)
+    if install_with_sudo:
+        command_obj = call_sudo
+    else:
+        command_obj = call_command
+
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
         with s:
-            os_type = call_sudo("echo $(python -c "
-                                "'import platform; "
-                                "print(platform.linux_distribution("
-                                "full_distribution_name=False)[0])')",
-                                fab_ctx=s)
+            os_type = command_obj("echo $(python -c "
+                                  "'import platform; "
+                                  "print(platform.linux_distribution("
+                                  "full_distribution_name=False)[0])')",
+                                  fab_ctx=s)
             if not PY2:
                 os_type = os_type.stdout
             os_type = os_type.splitlines()
@@ -623,12 +630,25 @@ def uninstall_docker(ctx, **kwargs):
                 else:
                     value += line
             os_type = value.strip()
+            yum_command = False
+            apt_command = False
+            if not os_type:
+                ctx.logger.info('OS not detected. Check the commands...')
+                command_yum = str(command_obj('yum', fab_ctx=s))
+                command_apt = str(command_obj('apt-get', fab_ctx=s))
+                yum_command = False \
+                    if 'command not found' in command_yum else True
+                apt_command = False \
+                    if 'command not found' in command_apt else True
+                ctx.logger.info('System: YUM: {0}. APT-GET: {1}'.format(
+                    yum_command, apt_command))
+
             ctx.logger.info("os_type {0}".format(os_type))
             result = ""
-            if os_type.lower() in REDHAT_OS_VERS:
-                result = call_sudo("yum remove -y docker*", fab_ctx=s)
-            elif os_type.lower() in DEBIAN_OS_VERS:
-                result = call_sudo("apt-get remove -y docker*", fab_ctx=s)
+            if os_type.lower() in REDHAT_OS_VERS or yum_command:
+                result = command_obj("yum remove -y docker*", fab_ctx=s)
+            elif os_type.lower() in DEBIAN_OS_VERS or apt_command:
+                result = command_obj("apt-get remove -y docker*", fab_ctx=s)
             ctx.logger.info("uninstall result {0}".format(result))
 
 
