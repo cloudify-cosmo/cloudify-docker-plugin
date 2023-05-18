@@ -48,7 +48,7 @@ from docker.errors import ImageNotFound, NotFound
 
 try:
     if PY2:
-        from fabric.api import settings, sudo, put
+        from fabric.api import settings, sudo, put, run
         FABRIC_VER = 1
     else:
         from fabric import Connection, Config
@@ -74,6 +74,16 @@ def call_sudo(command, fab_ctx=None):
         return out
     elif FABRIC_VER == 1:
         return sudo(command)
+
+
+def call_command(command, fab_ctx=None):
+    ctx.logger.debug('Executing without sudo: {0}'.format(command))
+    if FABRIC_VER == 2:
+        out = fab_ctx.run(command)
+        ctx.logger.debug('Out: {0}'.format(out))
+        return out
+    elif FABRIC_VER == 1:
+        return run(command)
 
 
 def call_put(destination,
@@ -568,24 +578,27 @@ def install_docker(ctx, **kwargs):
     resource_config = ctx.node.properties.get('resource_config', {})
     install_url = resource_config.get('install_url')
     post_install_url = resource_config.get('install_script')
+    install_with_sudo = resource_config.get('install_with_sudo', True)
 
     if not (install_url and post_install_url):
         raise NonRecoverableError("Please validate your install config")
+    installation_commands = [
+        'curl -fsSL {0} -o /tmp/install.sh'.format(install_url),
+        'chmod 0755 / tmp / install.sh',
+        'sh /tmp/install.sh',
+        'curl -fsSL {0} -o /tmp/postinstall.sh'.format(post_install_url),
+        'chmod 0755 /tmp/postinstall.sh',
+        'sh /tmp/postinstall.sh',
+        'usermod -aG docker {0}'.format(docker_user)
+    ]
 
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
         with s:
-            call_sudo(
-                'curl -fsSL {0} -o /tmp/install.sh'.format(install_url),
-                fab_ctx=s)
-            call_sudo('chmod 0755 /tmp/install.sh', fab_ctx=s)
-            call_sudo('sh /tmp/install.sh', fab_ctx=s)
-            call_sudo(
-                'curl -fsSL {0} -o /tmp/postinstall.sh'.format(
-                    post_install_url),
-                fab_ctx=s)
-            call_sudo('chmod 0755 /tmp/postinstall.sh', fab_ctx=s)
-            call_sudo('sh /tmp/postinstall.sh', fab_ctx=s)
-            call_sudo('usermod -aG docker {0}'.format(docker_user), fab_ctx=s)
+            for _command in installation_commands:
+                if install_with_sudo:
+                    call_sudo(_command, fab_ctx=s)
+                else:
+                    call_command(_command, fab_ctx=s)
 
 
 @operation

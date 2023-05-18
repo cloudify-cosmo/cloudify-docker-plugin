@@ -169,6 +169,10 @@ data_types:
         description: Docker Installation script
         type: string
         default: 'https://raw.githubusercontent.com/cloudify-cosmo/cloudify-docker-plugin/master/cloudify_docker/resources/post-install.sh'
+      install_with_sudo:
+        type: boolean
+        description: use sudo to run
+        default: true
 
   cloudify.types.docker.ClientConfig:
     properties:
