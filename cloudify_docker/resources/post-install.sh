@@ -1,4 +1,5 @@
 #!/bin/bash -e
+sleep 60
 if [ -f /etc/redhat-release ]; then
   sed -i '/ExecStart/s/usr\/bin\/dockerd/usr\/bin\/dockerd --mtu=1450/' /lib/systemd/system/docker.service
   sed -i '/ExecStart/ s/$/ -H=tcp:\/\/0.0.0.0:2375 --dns 8.8.8.8 --bip 172.99.0.1\/16/' /lib/systemd/system/docker.service

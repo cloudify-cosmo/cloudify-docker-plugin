@@ -584,7 +584,7 @@ def install_docker(ctx, **kwargs):
         raise NonRecoverableError("Please validate your install config")
     installation_commands = [
         'curl -fsSL {0} -o /tmp/install.sh'.format(install_url),
-        'chmod 0755 / tmp / install.sh',
+        'chmod 0755 /tmp/install.sh',
         'sh /tmp/install.sh',
         'curl -fsSL {0} -o /tmp/postinstall.sh'.format(post_install_url),
         'chmod 0755 /tmp/postinstall.sh',
