@@ -47,7 +47,6 @@ commands:
       - run: ecosystem-test upload-plugin -PN utilities
       - run: ecosystem-test upload-plugin -PN gcp
 
-
   run_test:
     steps:
       - run: ecosystem-test local-blueprint-test -b examples/docker/install-docker-gcp-vm/docker-on-vm.yaml -i agent_user=centos --timeout=3000 --on-failure=uninstall-force --test-id=docker_vm_test
