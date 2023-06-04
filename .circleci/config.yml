@@ -1,5 +1,12 @@
 version: 2.1
 
+orbs:
+  node: cloudify/public-unittest-orb@volatile
+  wagonorb: cloudify/wagon-bulder-orb@volatile
+  releaseorb: cloudify/release-orb@volatile
+  managerorb: cloudify/manager-orb@volatile
+  slack: cloudify/notify-slack@2
+
 job-post-steps: &job-post-steps
   post-steps:
    - slack/notify_failed
@@ -12,13 +19,6 @@ unittest-post-steps: &unittest-post-steps
         path: /home/circleci/project/coverage.xml
         prefix: tests
     - slack/notify_failed
-
-orbs:
-  node: cloudify/public-unittest-orb@volatile
-  wagonorb: cloudify/wagon-bulder-orb@volatile
-  releaseorb: cloudify/release-orb@volatile
-  managerorb: cloudify/manager-orb@volatile
-  slack: cloudify/notify-slack@2
 
 checkout:
   post:
