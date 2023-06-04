@@ -41,11 +41,13 @@ executors:
       image: ubuntu-2004:202201-02
 
 commands:
+  prepare_test_manager:
+    steps:
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es gcp_credentials=$gcp_credentials -s region=us-east1 -s zone=us-east1-b -es ssl_cert=$ssl_cert -es ssl_key=$ssl_key --yum-package python-netaddr --yum-package git  -p $(find ~/project/workspace/build/ -name *centos-Core*x86_64.wgn)  ~/project/plugin.yaml
+
   run_test:
     steps:
-      - run: pyenv global 3.6.5
-      - run: pip install pytest https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/refs/heads/master.zip
-      - run: pytest -s .circleci/test_examples.py
+      - run: ecosystem-test local-blueprint-test -b examples/docker/install-docker-gcp-vm/docker-on-vm.yaml -i agent_user=centos --timeout=3000 --on-failure=uninstall-force --test-id=docker_vm_test
 
 jobs:
   integration_tests:
@@ -56,6 +58,7 @@ jobs:
     steps:
       - checkout
       - managerorb/create_manager_container_latest
+      - prepare_test_manager
       - run_test
 
 workflows:
