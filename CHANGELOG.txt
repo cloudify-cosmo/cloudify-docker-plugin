@@ -28,3 +28,6 @@
   - add __version__.py file in cloudify_docker folder.
 2.0.12:
   - fix install config for docker host.
+2.0.13:
+  - Add PullImage Node type.
+  - Allow docker installation without sudo.

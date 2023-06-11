@@ -2,7 +2,7 @@ plugins:
   docker:
     executor: central_deployment_agent
     package_name: 'cloudify-docker-plugin'
-    package_version: '2.0.12'
+    package_version: '2.0.13'
 
 dsl_definitions:
 
@@ -212,7 +212,6 @@ data_types:
         type: boolean
         description: Pull all tags
         default: false
-
 
   cloudify.types.docker.Container:
     properties:
