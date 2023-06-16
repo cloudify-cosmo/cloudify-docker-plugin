@@ -174,6 +174,22 @@ data_types:
         description: use sudo to run
         default: true
 
+  cloudify.types.docker.DockerOfflineInstallationConfig:
+    properties:
+      package_tar_path:
+        description: Docker Installation Tar path (must be located on the on where docker installed)
+        type: string
+      post_install_script_path:
+        description: Docker Installation post script path
+        type: string
+      installation_dir:
+        description: Docker Installation path
+        type: string
+      install_with_sudo:
+        type: boolean
+        description: use sudo to run
+        default: true
+
   cloudify.types.docker.ClientConfig:
     properties:
       docker_host:
@@ -213,6 +229,16 @@ data_types:
         description: Pull all tags
         default: false
 
+  cloudify.types.docker.TarImage:
+    properties:
+      tag:
+        description: Docker image tag
+        type: string
+        default: ''
+      image_tar_path:
+        description: Docker image path
+        type: string
+        default: ''
 
   cloudify.types.docker.Container:
     properties:
@@ -324,6 +350,20 @@ node_types:
         delete:
           implementation: docker.cloudify_docker.tasks.uninstall_docker
 
+  cloudify.nodes.docker.offline_host:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *docker_machine
+      resource_config:
+        type: cloudify.types.docker.DockerOfflineInstallationConfig
+        description: Docker Installation type
+        required: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.cloudify_docker.tasks.install_docker_offline
+        delete:
+          implementation: docker.cloudify_docker.tasks.uninstall_docker_offline
 
   cloudify.nodes.docker.host_details:
     derived_from: cloudify.nodes.Root
@@ -361,6 +401,21 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: docker.cloudify_docker.tasks.pull_image
+        delete:
+          implementation: docker.cloudify_docker.tasks.remove_image
+
+  cloudify.nodes.docker.tarimage:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *client_config
+      resource_config:
+        type: cloudify.types.docker.TarImage
+        description: Docker Image type
+        required: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.cloudify_docker.tasks.load_image_from_tar
         delete:
           implementation: docker.cloudify_docker.tasks.remove_image
 
