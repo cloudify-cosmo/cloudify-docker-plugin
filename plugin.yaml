@@ -404,21 +404,6 @@ node_types:
         delete:
           implementation: docker.cloudify_docker.tasks.remove_image
 
-  cloudify.nodes.docker.tarimage:
-    derived_from: cloudify.nodes.Root
-    properties:
-      <<: *client_config
-      resource_config:
-        type: cloudify.types.docker.TarImage
-        description: Docker Image type
-        required: true
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          implementation: docker.cloudify_docker.tasks.load_image_from_tar
-        delete:
-          implementation: docker.cloudify_docker.tasks.remove_image
-
   cloudify.nodes.docker.container:
     derived_from: cloudify.nodes.Root
     properties:
