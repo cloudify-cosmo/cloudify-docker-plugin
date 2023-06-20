@@ -589,7 +589,8 @@ def install_docker(ctx, **kwargs):
         'curl -fsSL {0} -o /tmp/postinstall.sh'.format(post_install_url),
         'chmod 0755 /tmp/postinstall.sh',
         'sh /tmp/postinstall.sh',
-        'usermod -aG docker {0}'.format(docker_user)
+        'usermod -aG docker {0}'.format(docker_user),
+        'newgrp docker'
     ]
 
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
@@ -623,7 +624,8 @@ def install_docker_offline(ctx, **kwargs):
         'dpkg -i {0}*.deb'.format(installation_dir),
         'chmod 0755 {0}'.format(post_install_path),
         'sh {}'.format(post_install_path),
-        'usermod -aG docker {0}'.format(docker_user)
+        'usermod -aG docker {0}'.format(docker_user),
+        'newgrp docker'
     ]
 
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
@@ -1179,44 +1181,4 @@ def remove_container(ctx, docker_client, **kwargs):
         remove_res = container_obj.remove()
         ctx.instance.runtime_properties.pop('container')
         ctx.logger.info("Remove result {0}".format(remove_res))
-
-
-# @operation
-# @handle_docker_exception
-# @with_docker
-# def load_image_from_tar(ctx, docker_client, **kwargs):
-#     resource_config = ctx.node.properties.get('resource_config', {})
-#     image_tar_path = resource_config.get('image_tar_path', "")
-#     image_tag = resource_config.get('tag', "")
-#     with open(image_tar_path, "r") as f:
-#         docker_client.images.load(f)
-#
-#
-# @operation
-# @handle_docker_exception
-# @with_docker
-# def create_tar_from_image(ctx, docker_client, **kwargs):
-#     """
-#         support only for EDGE OS (ubuntu22.04)
-#     """
-#     # fetch the data needed for installation
-#     docker_ip, docker_user, docker_key, _ = get_docker_machine_from_ctx(ctx)
-#     resource_config = ctx.node.properties.get('resource_config', {})
-#     package_tar = resource_config.get('tar_path')
-#     tag = resource_config.get('tag')
-#     install_with_sudo = resource_config.get('install_with_sudo', True)
-#
-#     if not (package_tar and tag):
-#         raise NonRecoverableError("Please validate your install config")
-#
-#     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
-#         with s:
-#             if install_with_sudo:
-#                 call_sudo(
-#                     'docker save --output {0} {1}'.format(package_tar, tag),
-#                     fab_ctx=s)
-#             else:
-#                 call_command(
-#                     'docker save --output {0} {1}'.format(package_tar, tag),
-#                     fab_ctx=s)
 
