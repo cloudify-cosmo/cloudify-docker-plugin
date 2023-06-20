@@ -589,8 +589,7 @@ def install_docker(ctx, **kwargs):
         'curl -fsSL {0} -o /tmp/postinstall.sh'.format(post_install_url),
         'chmod 0755 /tmp/postinstall.sh',
         'sh /tmp/postinstall.sh',
-        'usermod -aG docker {0}'.format(docker_user),
-        'newgrp docker'
+        'usermod -aG docker {0}'.format(docker_user)
     ]
 
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
@@ -624,8 +623,7 @@ def install_docker_offline(ctx, **kwargs):
         'dpkg -i {0}*.deb'.format(installation_dir),
         'chmod 0755 {0}'.format(post_install_path),
         'sh {}'.format(post_install_path),
-        'usermod -aG docker {0}'.format(docker_user),
-        'newgrp docker'
+        'usermod -aG docker {0}'.format(docker_user)
     ]
 
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
