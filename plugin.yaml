@@ -173,6 +173,28 @@ data_types:
         type: boolean
         description: use sudo to run
         default: true
+      offline_installation:
+        type: boolean
+        description: Install docker when the vm has no internet access
+        default: false
+      package_tar_path:
+        description: |
+          Docker Installation Tar path (must be located on the on where docker installed)
+          Required when offline installation
+        type: string
+        default: ''
+      post_install_script_path:
+        description: |
+          Docker Installation post script path
+          Required when offline installation
+        type: string
+        default: ''
+      installation_dir:
+        description: |
+          Docker Installation path
+          Required when offline installation
+        type: string
+        default: ''
 
   cloudify.types.docker.ClientConfig:
     properties:
@@ -201,16 +223,13 @@ data_types:
         description: Docker image tag
         type: string
         default: ''
-
-  cloudify.types.docker.PullImage:
-    properties:
-      tag:
-        description: Docker image tag
-        type: string
-        default: ''
+      pull_image:
+        type: boolean
+        description: Pull image
+        default: false
       all_tags:
         type: boolean
-        description: Pull all tags
+        description: Pull all tags (only if pull_image is True)
         default: false
 
   cloudify.types.docker.Container:
@@ -323,7 +342,6 @@ node_types:
         delete:
           implementation: docker.cloudify_docker.tasks.uninstall_docker
 
-
   cloudify.nodes.docker.host_details:
     derived_from: cloudify.nodes.Root
     properties:
@@ -345,21 +363,6 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: docker.cloudify_docker.tasks.build_image
-        delete:
-          implementation: docker.cloudify_docker.tasks.remove_image
-
-  cloudify.nodes.docker.pullimage:
-    derived_from: cloudify.nodes.Root
-    properties:
-      <<: *client_config
-      resource_config:
-        type: cloudify.types.docker.PullImage
-        description: Docker Image type
-        required: true
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          implementation: docker.cloudify_docker.tasks.pull_image
         delete:
           implementation: docker.cloudify_docker.tasks.remove_image
 

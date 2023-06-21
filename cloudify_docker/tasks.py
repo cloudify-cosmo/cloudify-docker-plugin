@@ -571,8 +571,17 @@ def list_images(ctx, docker_client, **kwargs):
 
 
 @operation
-@handle_docker_exception
 def install_docker(ctx, **kwargs):
+    resource_config = ctx.node.properties.get('resource_config', {})
+    offline_installation = resource_config.get('offline_installation')
+    if not offline_installation:
+        _install_docker(ctx=ctx, **kwargs)
+    else:
+        _install_docker_offline(ctx=ctx, **kwargs)
+
+
+@handle_docker_exception
+def _install_docker(ctx, **kwargs):
     # fetch the data needed for installation
     docker_ip, docker_user, docker_key, _ = get_docker_machine_from_ctx(ctx)
     resource_config = ctx.node.properties.get('resource_config', {})
@@ -601,8 +610,76 @@ def install_docker(ctx, **kwargs):
                     call_command(_command, fab_ctx=s)
 
 
+@handle_docker_exception
+def _install_docker_offline(ctx, **kwargs):
+    """
+        support only for EDGE OS (ubuntu22.04)
+    """
+    # fetch the data needed for installation
+    docker_ip, docker_user, docker_key, _ = get_docker_machine_from_ctx(ctx)
+    resource_config = ctx.node.properties.get('resource_config', {})
+    package_tar_path = resource_config.get('package_tar_path')
+    post_install_path = resource_config.get('post_install_script_path')
+    installation_dir = resource_config.get('installation_dir')
+    install_with_sudo = resource_config.get('install_with_sudo', True)
+    installation_dir = installation_dir if installation_dir.endswith('/')\
+        else '{0}/'.format(installation_dir)
+    if not (package_tar_path and post_install_path):
+        raise NonRecoverableError("Please validate your install config")
+    installation_commands = [
+        'tar -xf {0} -C {1}'.format(package_tar_path, installation_dir),
+        'dpkg -i {0}*.deb'.format(installation_dir),
+        'chmod 0755 {0}'.format(post_install_path),
+        'sh {}'.format(post_install_path),
+        'usermod -aG docker {0}'.format(docker_user)
+    ]
+
+    with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
+        with s:
+            for _command in installation_commands:
+                if install_with_sudo:
+                    call_sudo(_command, fab_ctx=s)
+                else:
+                    call_command(_command, fab_ctx=s)
+
+
 @operation
 def uninstall_docker(ctx, **kwargs):
+    resource_config = ctx.node.properties.get('resource_config', {})
+    offline_installation = resource_config.get('offline_installation')
+    if not offline_installation:
+        _uninstall_docker(ctx=ctx, **kwargs)
+    else:
+        _uninstall_docker_offline(ctx=ctx, **kwargs)
+
+
+def _uninstall_docker_offline(ctx, **kwargs):
+    """
+            support only for EDGE OS (ubuntu22.04)
+    """
+    # fetch the data needed for installation
+    docker_ip, docker_user, docker_key, _ = get_docker_machine_from_ctx(ctx)
+    resource_config = ctx.node.properties.get('resource_config', {})
+    install_with_sudo = resource_config.get('install_with_sudo', True)
+    installation_dir = resource_config.get('installation_dir')
+    installation_dir = installation_dir if installation_dir.endswith('/') \
+        else '{0}/'.format(installation_dir)
+    installation_commands = [
+        'dpkg --remove docker-buildx-plugin docker-ce docker-ce-rootless-'
+        'extras docker-ce-cli docker-compose-plugin  containerd.io',
+        'rm -rf {0}'.format(installation_dir)
+    ]
+
+    with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
+        with s:
+            for _command in installation_commands:
+                if install_with_sudo:
+                    call_sudo(_command, fab_ctx=s)
+                else:
+                    call_command(_command, fab_ctx=s)
+
+
+def _uninstall_docker(ctx, **kwargs):
     # fetch the data needed for installation
     docker_ip, docker_user, docker_key, _ = get_docker_machine_from_ctx(ctx)
     resource_config = ctx.node.properties.get('resource_config', {})
@@ -670,33 +747,13 @@ def list_containers(ctx, docker_client, **kwargs):
 @operation
 @handle_docker_exception
 @with_docker
-def pull_image(ctx, docker_client, **kwargs):
-    resource_config = ctx.node.properties.get('resource_config', {})
-    tag = resource_config.get('tag')
-    all_tags = resource_config.get('all_tags', False)
-    if not tag:
-        return
-    repository = tag.split(':')[0]
-    try:
-        image_tag = tag.split(':')[1]
-    except IndexError:
-        image_tag = 'latest'
-    try:
-        docker_client.images.get(tag)
-    except ImageNotFound:
-        docker_client.images.pull(repository=repository,
-                                  tag=image_tag, all_tags=all_tags)
-        ctx.instance.runtime_properties['build_result'] = 'Image was pull'
-
-
-@operation
-@handle_docker_exception
-@with_docker
 def build_image(ctx, docker_client, **kwargs):
     resource_config = ctx.node.properties.get('resource_config', {})
     image_content, tag = get_from_resource_config(resource_config,
                                                   'image_content',
                                                   'tag')
+    pull_image = resource_config.get('pull_image', False)
+
     if image_content:
         # check what content we got, URL , path or string
         split = image_content.split('://')
@@ -729,6 +786,21 @@ def build_image(ctx, docker_client, **kwargs):
             raise NonRecoverableError("Build Failed check build-result")
         ctx.instance.runtime_properties['image'] =  \
             repr(docker_client.images.get(name=tag))
+    elif pull_image:
+        all_tags = resource_config.get('all_tags', False)
+        if not tag:
+            return
+        repository = tag.split(':')[0]
+        try:
+            image_tag = tag.split(':')[1]
+        except IndexError:
+            image_tag = 'latest'
+        try:
+            docker_client.images.get(tag)
+        except ImageNotFound:
+            docker_client.images.pull(repository=repository,
+                                      tag=image_tag, all_tags=all_tags)
+            ctx.instance.runtime_properties['build_result'] = 'Image was pull'
 
 
 @operation
@@ -1120,3 +1192,4 @@ def remove_container(ctx, docker_client, **kwargs):
         remove_res = container_obj.remove()
         ctx.instance.runtime_properties.pop('container')
         ctx.logger.info("Remove result {0}".format(remove_res))
+
