@@ -229,17 +229,6 @@ data_types:
         description: Pull all tags
         default: false
 
-  cloudify.types.docker.TarImage:
-    properties:
-      tag:
-        description: Docker image tag
-        type: string
-        default: ''
-      image_tar_path:
-        description: Docker image path
-        type: string
-        default: ''
-
   cloudify.types.docker.Container:
     properties:
       image_tag:
