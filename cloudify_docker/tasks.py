@@ -1192,4 +1192,3 @@ def remove_container(ctx, docker_client, **kwargs):
         remove_res = container_obj.remove()
         ctx.instance.runtime_properties.pop('container')
         ctx.logger.info("Remove result {0}".format(remove_res))
-

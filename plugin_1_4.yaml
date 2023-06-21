@@ -230,17 +230,6 @@ data_types:
         description: Pull all tags (only if pull_image is True)
         default: false
 
-  cloudify.types.docker.PullImage:
-    properties:
-      tag:
-        description: Docker image tag
-        type: string
-        default: ''
-      all_tags:
-        type: boolean
-        description: Pull all tags
-        default: false
-
   cloudify.types.docker.Container:
     properties:
       image_tag:
@@ -373,21 +362,6 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: docker.cloudify_docker.tasks.build_image
-        delete:
-          implementation: docker.cloudify_docker.tasks.remove_image
-
-  cloudify.nodes.docker.pullimage:
-    derived_from: cloudify.nodes.Root
-    properties:
-      <<: *client_config
-      resource_config:
-        type: cloudify.types.docker.PullImage
-        description: Docker Image type
-        required: true
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          implementation: docker.cloudify_docker.tasks.pull_image
         delete:
           implementation: docker.cloudify_docker.tasks.remove_image
 

@@ -29,5 +29,5 @@
 2.0.12:
   - fix install config for docker host.
 2.0.13:
-  - Add PullImage Node type.
-  - Allow docker installation without sudo.
+  - Add PullImage support.
+  - Allow docker installation without sudo and offline.
