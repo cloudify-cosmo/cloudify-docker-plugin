@@ -1,5 +1,12 @@
 version: 2.1
 
+orbs:
+  node: cloudify/public-unittest-orb@volatile
+  wagonorb: cloudify/wagon-bulder-orb@volatile
+  releaseorb: cloudify/release-orb@volatile
+  managerorb: cloudify/manager-orb@volatile
+  slack: cloudify/notify-slack@2
+
 job-post-steps: &job-post-steps
   post-steps:
    - slack/notify_failed
@@ -12,13 +19,6 @@ unittest-post-steps: &unittest-post-steps
         path: /home/circleci/project/coverage.xml
         prefix: tests
     - slack/notify_failed
-
-orbs:
-  node: cloudify/public-unittest-orb@volatile
-  wagonorb: cloudify/wagon-bulder-orb@volatile
-  releaseorb: cloudify/release-orb@volatile
-  managerorb: cloudify/manager-orb@volatile
-  slack: cloudify/notify-slack@2
 
 checkout:
   post:
@@ -41,11 +41,15 @@ executors:
       image: ubuntu-2004:202201-02
 
 commands:
+  prepare_test_manager:
+    steps:
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es gcp_credentials=$gcp_credentials --yum-package python-netaddr --yum-package git -p $(find ~/project/workspace/build/ -name *centos-Core*x86_64.wgn) ~/project/plugin.yaml
+      - run: ecosystem-test upload-plugin -PN utilities
+      - run: ecosystem-test upload-plugin -PN gcp
+
   run_test:
     steps:
-      - run: pyenv global 3.6.5
-      - run: pip install pytest https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/refs/heads/master.zip
-      - run: pytest -s .circleci/test_examples.py
+      - run: ecosystem-test local-blueprint-test -b examples/docker/install-docker-gcp-vm/docker-on-vm.yaml -i agent_user=centos --timeout=3000 --on-failure=uninstall-force --test-id=docker_vm_test
 
 jobs:
   integration_tests:
@@ -56,6 +60,7 @@ jobs:
     steps:
       - checkout
       - managerorb/create_manager_container_latest
+      - prepare_test_manager
       - run_test
 
 workflows:
