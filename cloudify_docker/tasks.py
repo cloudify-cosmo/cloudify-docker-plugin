@@ -610,7 +610,6 @@ def _install_docker(ctx, **kwargs):
                     call_command(_command, fab_ctx=s)
 
 
-@operation
 @handle_docker_exception
 def _install_docker_offline(ctx, **kwargs):
     """
@@ -645,8 +644,16 @@ def _install_docker_offline(ctx, **kwargs):
 
 
 @operation
-@handle_docker_exception
-def uninstall_docker_offline(ctx, **kwargs):
+def uninstall_docker(ctx, **kwargs):
+    resource_config = ctx.node.properties.get('resource_config', {})
+    offline_installation = resource_config.get('offline_installation')
+    if not offline_installation:
+        _uninstall_docker(ctx=ctx, **kwargs)
+    else:
+        _uninstall_docker_offline(ctx=ctx, **kwargs)
+
+
+def _uninstall_docker_offline(ctx, **kwargs):
     """
             support only for EDGE OS (ubuntu22.04)
     """
@@ -654,11 +661,13 @@ def uninstall_docker_offline(ctx, **kwargs):
     docker_ip, docker_user, docker_key, _ = get_docker_machine_from_ctx(ctx)
     resource_config = ctx.node.properties.get('resource_config', {})
     install_with_sudo = resource_config.get('install_with_sudo', True)
-
+    installation_dir = resource_config.get('installation_dir')
+    installation_dir = installation_dir if installation_dir.endswith('/') \
+        else '{0}/'.format(installation_dir)
     installation_commands = [
         'dpkg --remove docker-buildx-plugin docker-ce docker-ce-rootless-'
         'extras docker-ce-cli docker-compose-plugin  containerd.io',
-        'rm -rf /data/docker'
+        'rm -rf {0}'.format(installation_dir)
     ]
 
     with get_fabric_settings(ctx, docker_ip, docker_user, docker_key) as s:
@@ -669,8 +678,8 @@ def uninstall_docker_offline(ctx, **kwargs):
                 else:
                     call_command(_command, fab_ctx=s)
 
-@operation
-def uninstall_docker(ctx, **kwargs):
+
+def _uninstall_docker(ctx, **kwargs):
     # fetch the data needed for installation
     docker_ip, docker_user, docker_key, _ = get_docker_machine_from_ctx(ctx)
     resource_config = ctx.node.properties.get('resource_config', {})
