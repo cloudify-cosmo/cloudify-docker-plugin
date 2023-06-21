@@ -571,8 +571,17 @@ def list_images(ctx, docker_client, **kwargs):
 
 
 @operation
-@handle_docker_exception
 def install_docker(ctx, **kwargs):
+    resource_config = ctx.node.properties.get('resource_config', {})
+    offline_installation = resource_config.get('offline_installation')
+    if not offline_installation:
+        _install_docker(ctx=ctx, **kwargs)
+    else:
+        _install_docker_offline(ctx=ctx, **kwargs)
+
+
+@handle_docker_exception
+def _install_docker(ctx, **kwargs):
     # fetch the data needed for installation
     docker_ip, docker_user, docker_key, _ = get_docker_machine_from_ctx(ctx)
     resource_config = ctx.node.properties.get('resource_config', {})
@@ -603,7 +612,7 @@ def install_docker(ctx, **kwargs):
 
 @operation
 @handle_docker_exception
-def install_docker_offline(ctx, **kwargs):
+def _install_docker_offline(ctx, **kwargs):
     """
         support only for EDGE OS (ubuntu22.04)
     """
@@ -729,33 +738,13 @@ def list_containers(ctx, docker_client, **kwargs):
 @operation
 @handle_docker_exception
 @with_docker
-def pull_image(ctx, docker_client, **kwargs):
-    resource_config = ctx.node.properties.get('resource_config', {})
-    tag = resource_config.get('tag')
-    all_tags = resource_config.get('all_tags', False)
-    if not tag:
-        return
-    repository = tag.split(':')[0]
-    try:
-        image_tag = tag.split(':')[1]
-    except IndexError:
-        image_tag = 'latest'
-    try:
-        docker_client.images.get(tag)
-    except ImageNotFound:
-        docker_client.images.pull(repository=repository,
-                                  tag=image_tag, all_tags=all_tags)
-        ctx.instance.runtime_properties['build_result'] = 'Image was pull'
-
-
-@operation
-@handle_docker_exception
-@with_docker
 def build_image(ctx, docker_client, **kwargs):
     resource_config = ctx.node.properties.get('resource_config', {})
     image_content, tag = get_from_resource_config(resource_config,
                                                   'image_content',
                                                   'tag')
+    pull_image = resource_config.get('pull_image', False)
+
     if image_content:
         # check what content we got, URL , path or string
         split = image_content.split('://')
@@ -788,6 +777,21 @@ def build_image(ctx, docker_client, **kwargs):
             raise NonRecoverableError("Build Failed check build-result")
         ctx.instance.runtime_properties['image'] =  \
             repr(docker_client.images.get(name=tag))
+    elif pull_image:
+        all_tags = resource_config.get('all_tags', False)
+        if not tag:
+            return
+        repository = tag.split(':')[0]
+        try:
+            image_tag = tag.split(':')[1]
+        except IndexError:
+            image_tag = 'latest'
+        try:
+            docker_client.images.get(tag)
+        except ImageNotFound:
+            docker_client.images.pull(repository=repository,
+                                      tag=image_tag, all_tags=all_tags)
+            ctx.instance.runtime_properties['build_result'] = 'Image was pull'
 
 
 @operation
