@@ -2,7 +2,7 @@ plugins:
   docker:
     executor: central_deployment_agent
     package_name: 'cloudify-docker-plugin'
-    package_version: '2.0.12'
+    package_version: '2.0.13'
 
 dsl_definitions:
 
@@ -169,6 +169,32 @@ data_types:
         description: Docker Installation script
         type: string
         default: 'https://raw.githubusercontent.com/cloudify-cosmo/cloudify-docker-plugin/master/cloudify_docker/resources/post-install.sh'
+      install_with_sudo:
+        type: boolean
+        description: use sudo to run
+        default: true
+      offline_installation:
+        type: boolean
+        description: Install docker when the vm has no internet access
+        default: false
+      package_tar_path:
+        description: |
+          Docker Installation Tar path (must be located on the on where docker installed)
+          Required when offline installation
+        type: string
+        default: ''
+      post_install_script_path:
+        description: |
+          Docker Installation post script path
+          Required when offline installation
+        type: string
+        default: ''
+      installation_dir:
+        description: |
+          Docker Installation path
+          Required when offline installation
+        type: string
+        default: ''
 
   cloudify.types.docker.ClientConfig:
     properties:
@@ -197,6 +223,14 @@ data_types:
         description: Docker image tag
         type: string
         default: ''
+      pull_image:
+        type: boolean
+        description: Pull image
+        default: false
+      all_tags:
+        type: boolean
+        description: Pull all tags (only if pull_image is True)
+        default: false
 
   cloudify.types.docker.Container:
     properties:
@@ -307,7 +341,6 @@ node_types:
           implementation: docker.cloudify_docker.tasks.install_docker
         delete:
           implementation: docker.cloudify_docker.tasks.uninstall_docker
-
 
   cloudify.nodes.docker.host_details:
     derived_from: cloudify.nodes.Root
