@@ -1,5 +1,5 @@
 cloudify-common>=5.1.0
-fabric==2.5.0
+fabric==2.7.1
 networkx==1.9.1
 cryptography==40.0.2
 docker>=5.0.3
