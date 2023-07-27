@@ -1,337 +1,224 @@
 plugins:
   docker:
     executor: central_deployment_agent
-    package_name: 'cloudify-docker-plugin'
-    package_version: '2.0.13'
-
+    package_name: cloudify-docker-plugin
+    package_version: 2.0.14
 dsl_definitions:
-
-  client_config: &client_config
-    client_config:
+  client_config:
+    client_config: &id001
       type: cloudify.types.docker.ClientConfig
-      description: Your Docker client configuration.
       required: false
-
-  docker_machine: &docker_machine
-    docker_machine:
+  docker_machine:
+    docker_machine: &id002
       type: cloudify.types.docker.DockerMachineConfig
-      description: Docker Machine IP,User,Private_key
       required: false
-
-  playbook_config: &playbook_config
-    ansible_playbook_executable_path:
+  playbook_config:
+    ansible_playbook_executable_path: &id003
       type: string
-      default: "ansible-playbook"
-      description: >
-        A full path to your ansible_playbook executable if user don't want to
-        use the included version of executable in the plugin
-    playbook_source_path:
+      default: ansible-playbook
+    playbook_source_path: &id004
       type: string
-      default: ""
-      description: >
-        A full path/URL that contain playbook specified in playbook_path
-        or site_yaml_path.
-    playbook_path:
+      default: ''
+    playbook_path: &id005
       type: string
-      default: ""
-      description: >
-        A path to your `site.yaml` or `main.yaml` in your
-        Ansible Playbook relative to blueprint or playbook_source_path
-        if playbook_source_path is URL to archive File relative inside the archive.
-    site_yaml_path:
+      default: ''
+    site_yaml_path: &id006
       type: string
-      default: ""
-      description: >
-        DEPRECATED.
-        A path to your `site.yaml` or `main.yaml` in your
-        Ansible Playbook relative to blueprint or playbook_source_path
-        if playbook_source_path is URL to archive File relative inside the archive.
-    additional_playbook_files:
+      default: ''
+    additional_playbook_files: &id007
       type: list
       default: []
-      description: >
-        A list of string paths blueprint resources that you
-        would like to download to the playbook directory.
-        If you use this variable, you must list all of the paths
-        that you expect to download.
-    sources:
+    sources: &id008
       default: {}
-      description: >
-        Your Inventory sources. Either YAML or a path to a file.
-        If not provided the inventory will be take from the `sources`
-        runtime property.
-    run_data:
+    run_data: &id009
       default: {}
-      description: >
-        Variable values.
-    sensitive_keys:
+    sensitive_keys: &id010
       type: list
-      description: keys that you want us to obscure
       default:
         - ansible_password
-    options_config:
+    options_config: &id011
       default: {}
-      description: >
-        Command-line options, such as `tags` or `skip_tags`.
-    ansible_env_vars:
+    ansible_env_vars: &id012
       default:
-        ANSIBLE_HOST_KEY_CHECKING: "False"
-        # On Ansible 2.8.x "INVALID_TASK_ATTRIBUTE_FAILED" default value has
-        # been changed to "True" which cause failure when run playbook
-        ANSIBLE_INVALID_TASK_ATTRIBUTE_FAILED: "False"
-      description: >
-        A dictionary of environment variables to set.
-    debug_level:
+        ANSIBLE_HOST_KEY_CHECKING: 'False'
+        ANSIBLE_INVALID_TASK_ATTRIBUTE_FAILED: 'False'
+    debug_level: &id013
       type: integer
       default: 2
-      description: >
-        Debug level
-    additional_args:
+    additional_args: &id014
       type: string
-      description: >
-        Additional args that you want to use, for example, '-c local'.
       default: ''
-    save_playbook:
+    save_playbook: &id015
       type: boolean
-      description: >
-        Save playbook after action
       default: false
-    remerge_sources:
+    remerge_sources: &id016
       type: boolean
-      description: >
-        update sources on target node
       default: false
-    ansible_become:
+    ansible_become: &id017
       type: boolean
-      description: >
-        A boolean value, `true` or `false` whether
-        to assume the user privileges.
       default: false
-
-  playbook_inputs: &playbook_inputs
-    ansible_playbook_executable_path:
+  playbook_inputs:
+    ansible_playbook_executable_path: &id018
       default: { get_property: [SELF, ansible_playbook_executable_path] }
-    playbook_source_path:
+    playbook_source_path: &id019
       default: { get_property: [SELF, playbook_source_path] }
-    playbook_path:
+    playbook_path: &id020
       default: { get_property: [SELF, playbook_path] }
-    site_yaml_path:
+    site_yaml_path: &id021
       default: { get_property: [SELF, site_yaml_path] }
-    save_playbook:
+    save_playbook: &id022
       default: { get_property: [SELF, save_playbook] }
-    remerge_sources:
+    remerge_sources: &id023
       default: { get_property: [SELF, remerge_sources] }
-    sources:
+    sources: &id024
       default: { get_property: [SELF, sources] }
-    run_data:
+    run_data: &id025
       default: { get_property: [SELF, run_data] }
-    sensitive_keys:
+    sensitive_keys: &id026
       default: { get_property: [SELF, sensitive_keys] }
-    options_config:
+    options_config: &id027
       default: { get_property: [SELF, options_config] }
-    ansible_env_vars:
+    ansible_env_vars: &id028
       default: { get_property: [SELF, ansible_env_vars] }
-    debug_level:
+    debug_level: &id029
       default: { get_property: [SELF, debug_level] }
-    additional_args:
+    additional_args: &id030
       default: { get_property: [SELF, additional_args] }
-
 data_types:
-
   cloudify.types.docker.DockerMachineConfig:
     properties:
       docker_ip:
-        description: Docker Machine IP
         type: string
         default: ''
       docker_user:
-        description: Docker Machine User
         type: string
         default: ''
       docker_key:
-        description: Docker Machine Private Key
         type: string
         default: ''
       container_volume:
-        description: Docker Container volume_mapping
         type: string
         default: ''
-
   cloudify.types.docker.DockerInstallationConfig:
     properties:
       install_url:
-        description: Docker Installation Link
         type: string
-        default: 'https://get.docker.com'
+        default: https://get.docker.com
       install_script:
-        description: Docker Installation script
         type: string
-        default: 'https://raw.githubusercontent.com/cloudify-cosmo/cloudify-docker-plugin/master/cloudify_docker/resources/post-install.sh'
+        default: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-docker-plugin/master/cloudify_docker/resources/post-install.sh
       install_with_sudo:
         type: boolean
-        description: use sudo to run
         default: true
       offline_installation:
         type: boolean
-        description: Install docker when the vm has no internet access
         default: false
       package_tar_path:
-        description: |
-          Docker Installation Tar path (must be located on the on where docker installed)
-          Required when offline installation
         type: string
         default: ''
       post_install_script_path:
-        description: |
-          Docker Installation post script path
-          Required when offline installation
         type: string
         default: ''
       installation_dir:
-        description: |
-          Docker Installation path
-          Required when offline installation
         type: string
         default: ''
-
   cloudify.types.docker.ClientConfig:
     properties:
       docker_host:
-        description: Docker Machine IP to connect to.
         type: string
         default: ''
       docker_rest_port:
-        description: Docker Machine rest port.
         type: string
         default: ''
       docker_sock_file:
-        description: >
-          if docker is local you can leverage the sock file.
-          the default value would be /var/run/docker.sock
         type: string
         default: ''
-
   cloudify.types.docker.Image:
     properties:
       image_content:
-        description: Docker image to build
         type: string
         default: ''
       tag:
-        description: Docker image tag
         type: string
         default: ''
       pull_image:
         type: boolean
-        description: Pull image
         default: false
       all_tags:
         type: boolean
-        description: Pull all tags (only if pull_image is True)
         default: false
-
   cloudify.types.docker.Container:
     properties:
       image_tag:
-        description: Docker image tag to build container
         type: string
         default: ''
       container_args:
-        description: >
-          dict of arguments to pass to container when run
-          check this URL for details: https://tinyurl.com/v8url54
         type: dict
         default: {}
-
   cloudify.types.docker.ContainerFiles:
     properties:
       docker_machine:
-        description: Docker Machine IP,User,Private_key
         type: cloudify.types.docker.DockerMachineConfig
         default: {}
       source:
-        description: Files location that will be mapped to container
         type: string
         default: ''
       destination:
-        description: >
-          Location to extract the files into,
-          that will be mapped to container volume later
         type: string
         default: ''
       extra_files:
-        description: More files to add to source before it goes to destination
         type: list
         default: []
       ansible_sources:
-        description: special case for ansible sources
         type: dict
         default: {}
       terraform_sources:
-        description: special case for terraform sources
         type: dict
         default: {}
-
   cloudify.types.terraform.Backend:
     properties:
       name:
         type: string
-        description: Some name.
-        required: False
+        required: false
       options:
-        description: Should be a dictionary of key/values.
-        required: False
-
+        required: false
   cloudify.types.terraform.RootModule:
     properties:
       source:
         type: string
-        description: >
-          Path or URL to the ZIP file containing the Terraform project.
-          If this is a path, then it must be relative to the blueprint's root.
         required: true
       backend:
         type: cloudify.types.terraform.Backend
-        description: >
-          If a backend is not defined in source,
-          and you want to use a specific backend, define that here.
         default: {}
       variables:
-        description: A dictionary of variables.
         required: false
         default: {}
       environment_variables:
-        description: A dictionary of environment variables.
         required: false
         default: {}
-
 node_types:
-
   cloudify.nodes.docker.images:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *client_config
+      client_config: *id001
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
           implementation: docker.cloudify_docker.tasks.list_images
-
   cloudify.nodes.docker.containers:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *client_config
+      client_config: *id001
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
           implementation: docker.cloudify_docker.tasks.list_containers
-
   cloudify.nodes.docker.host:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *docker_machine
+      docker_machine: *id002
       resource_config:
         type: cloudify.types.docker.DockerInstallationConfig
-        description: Docker Installation type
         required: true
     interfaces:
       cloudify.interfaces.lifecycle:
@@ -339,24 +226,20 @@ node_types:
           implementation: docker.cloudify_docker.tasks.install_docker
         delete:
           implementation: docker.cloudify_docker.tasks.uninstall_docker
-
-
   cloudify.nodes.docker.host_details:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *client_config
+      client_config: *id001
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
           implementation: docker.cloudify_docker.tasks.list_host_details
-
   cloudify.nodes.docker.image:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *client_config
+      client_config: *id001
       resource_config:
         type: cloudify.types.docker.Image
-        description: Docker Image type
         required: true
     interfaces:
       cloudify.interfaces.lifecycle:
@@ -364,14 +247,12 @@ node_types:
           implementation: docker.cloudify_docker.tasks.build_image
         delete:
           implementation: docker.cloudify_docker.tasks.remove_image
-
   cloudify.nodes.docker.container:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *client_config
+      client_config: *id001
       resource_config:
         type: cloudify.types.docker.Container
-        description: Docker Container type
         required: true
     interfaces:
       cloudify.interfaces.lifecycle:
@@ -382,16 +263,14 @@ node_types:
           inputs:
             stop_command:
               type: string
-              default: ""
+              default: ''
         delete:
           implementation: docker.cloudify_docker.tasks.remove_container
-
   cloudify.nodes.docker.container_files:
     derived_from: cloudify.nodes.Root
     properties:
       resource_config:
         type: cloudify.types.docker.ContainerFiles
-        description: Docker Container Files type
         required: true
     interfaces:
       cloudify.interfaces.lifecycle:
@@ -399,29 +278,52 @@ node_types:
           implementation: docker.cloudify_docker.tasks.prepare_container_files
         delete:
           implementation: docker.cloudify_docker.tasks.remove_container_files
-
   cloudify.nodes.docker.ansible_playbook:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *playbook_config
-      <<: *docker_machine
+      ansible_playbook_executable_path: *id003
+      playbook_source_path: *id004
+      playbook_path: *id005
+      site_yaml_path: *id006
+      additional_playbook_files: *id007
+      sources: *id008
+      run_data: *id009
+      sensitive_keys: *id010
+      options_config: *id011
+      ansible_env_vars: *id012
+      debug_level: *id013
+      additional_args: *id014
+      save_playbook: *id015
+      remerge_sources: *id016
+      ansible_become: *id017
+      docker_machine: *id002
     interfaces:
       cloudify.interfaces.lifecycle:
         precreate:
           implementation: docker.cloudify_docker.ansible.set_playbook_config
           inputs:
-            <<: *playbook_inputs
+            ansible_playbook_executable_path: *id018
+            playbook_source_path: *id019
+            playbook_path: *id020
+            site_yaml_path: *id021
+            save_playbook: *id022
+            remerge_sources: *id023
+            sources: *id024
+            run_data: *id025
+            sensitive_keys: *id026
+            options_config: *id027
+            ansible_env_vars: *id028
+            debug_level: *id029
+            additional_args: *id030
         create:
           implementation: docker.cloudify_docker.ansible.create_ansible_playbook
         delete:
           implementation: docker.cloudify_docker.ansible.remove_ansible_playbook
-
   cloudify.nodes.docker.terraform_module:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *docker_machine
+      docker_machine: *id002
       terraform_plugins:
-        description: Terraform Plugins to install
         default: []
         required: true
       resource_config:
@@ -433,12 +335,10 @@ node_types:
           implementation: docker.cloudify_docker.terraform.prepare_terraform_files
         delete:
           implementation: docker.cloudify_docker.terraform.remove_terraform_files
-
 blueprint_labels:
   obj-type:
     values:
       - docker
-
 labels:
   obj-type:
     values:
