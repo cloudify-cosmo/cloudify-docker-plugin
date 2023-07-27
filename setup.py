@@ -43,7 +43,7 @@ setup(
         "docker>=5.0.3", # Latest with official support for python 3.6 is 5.0.3
         "cloudify-utilities-plugins-sdk>=0.0.61",  # Shared Resource Downloader
         "fabric>=2.5.0",
-        "patchwork"  # to copy files to docker machine
+        "patchwork>=1.0.1"  # to copy files to docker machine
     ],
     test_requires=[
         "cloudify-common>=6.4",
