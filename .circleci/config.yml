@@ -43,7 +43,7 @@ executors:
 commands:
   prepare_test_manager:
     steps:
-      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es gcp_credentials=$gcp_credentials --yum-package python-netaddr --yum-package git -p $(find ~/project/workspace/build/ -name *centos-Core*x86_64.wgn) ~/project/plugin.yaml
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es gcp_credentials=$gcp_credentials --yum-package python-netaddr --yum-package git -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin.yaml
       - run: ecosystem-test upload-plugin -PN utilities
       - run: ecosystem-test upload-plugin -PN gcp
 
@@ -70,9 +70,13 @@ workflows:
       - node/check_py3_compat_job
       - node/unittests_job:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *unittest-post-steps
       - wagonorb/wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - wagonorb/wagon_311:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -85,14 +89,19 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - integration_tests:
+          context: 
+            - plugins-inputs
           requires:
             - wagonorb/wagon
+            - wagonorb/wagon_311
             - wagonorb/arch64_wagon
             - wagonorb/rhel_wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - releaseorb/release:
+          context: 
+            - plugins-inputs
           filters:
             branches:
               only: /master/
@@ -110,9 +119,13 @@ workflows:
       - node/check_py3_compat_job
       - node/unittests_job:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *unittest-post-steps
       - wagonorb/wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - wagonorb/wagon_311:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -126,10 +139,11 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - integration_tests:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - wagonorb/wagon
+            - wagonorb/wagon_311
             - wagonorb/arch64_wagon
             - wagonorb/rhel_wagon
           filters:
