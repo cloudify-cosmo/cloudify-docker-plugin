@@ -108,8 +108,7 @@ def get_lan_ip():
             return socket.inet_ntoa(fcntl.ioctl(
                 s.fileno(),
                 0x8915,  # SIOCGIFADDR
-                struct.pack('256s', bytes(ifname[:15]))
-                # Python 3: add 'utf-8' to bytes
+                struct.pack('256s', bytes(ifname[:15], encoding='utf8'))
             )[20:24])
         return "127.0.0.1"
 
