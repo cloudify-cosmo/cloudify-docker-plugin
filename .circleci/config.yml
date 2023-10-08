@@ -1,12 +1,5 @@
 version: 2.1
 
-orbs:
-  node: cloudify/public-unittest-orb@volatile
-  wagonorb: cloudify/wagon-bulder-orb@volatile
-  releaseorb: cloudify/release-orb@volatile
-  managerorb: cloudify/manager-orb@volatile
-  slack: cloudify/notify-slack@2
-
 job-post-steps: &job-post-steps
   post-steps:
    - slack/notify_failed
@@ -20,6 +13,12 @@ unittest-post-steps: &unittest-post-steps
         prefix: tests
     - slack/notify_failed
 
+orbs:
+  node: cloudify/public-unittest-orb@volatile
+  wagonorb: cloudify/wagon-bulder-orb@volatile
+  releaseorb: cloudify/release-orb@volatile
+  slack: cloudify/notify-slack@2
+
 checkout:
   post:
     - >
@@ -29,27 +28,45 @@ checkout:
         git checkout -qf FETCH_HEAD
       fi
 
-
 executors:
-
-  py36:
-    docker:
-      - image: circleci/python:3.6
 
   cloudify-machine-py3:
     machine:
       image: ubuntu-2004:202201-02
 
 commands:
+
+  setup_manager:
+    steps:
+      - run: |
+          if [[ -z "${CLOUDIFY_HOST}" ]]; then
+              exit 1
+          fi
+      - run: |
+          if [[ -z "${CLOUDIFY_TENANT}" ]] && [ -z "${CIRCLE_PROJECT_REPONAME}" ]; then
+              exit 1
+          fi
+      - run: |
+          if [[ -z "${CLOUDIFY_TOKEN}" ]]; then
+              exit 1
+          fi
+      - run: |
+          response=$(curl --write-out '%{http_code}' --silent --insecure --header "Tenant: ${CLOUDIFY_TENANT}" --header "Authentication-Token: ${CLOUDIFY_TOKEN}" https://$CLOUDIFY_HOST/api/v3.1/status --output /dev/null)
+          if [[ $response != 200 ]]; then
+              echo "Failed to get manager status";
+              exit 1
+          fi
+      - run: pip3 install urllib3==1.26.15 requests-toolbelt==0.10.1
+      - run: pip3 install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/refs/heads/master.zip
+      - run: git submodule update --init --recursive --remote
+
   prepare_test_manager:
     steps:
-      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es gcp_credentials=$gcp_credentials --yum-package python-netaddr --yum-package git -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin.yaml
-      - run: ecosystem-test upload-plugin -PN utilities
-      - run: ecosystem-test upload-plugin -PN gcp
+      - run: ecosystem-test prepare-remote-test-manager -es gcp_credentials=$gcp_credentials -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_5.yaml
 
   run_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/docker/install-docker-gcp-vm/docker-on-vm.yaml -i agent_user=centos --timeout=3000 --on-failure=uninstall-force --test-id=docker_vm_test
+      - run: ecosystem-test remote-blueprint-test -b examples/docker/install-docker-gcp-vm/docker-on-vm.yaml -i agent_user=centos --timeout=3000 --on-failure=uninstall-force --test-id=docker_vm_test
 
 jobs:
   integration_tests:
@@ -59,7 +76,9 @@ jobs:
       IAAS: gcp
     steps:
       - checkout
-      - managerorb/create_manager_container_latest
+      - attach_workspace:
+          at: workspace
+      - setup_manager
       - prepare_test_manager
       - run_test
 
