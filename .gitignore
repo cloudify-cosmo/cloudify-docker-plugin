@@ -68,3 +68,8 @@ NOTES
 .cloudify
 local-storage
 *.wgn
+
+fusion-agent
+fusion-common
+fusion-manager
+cloudify-utilities-plugins-sdk
