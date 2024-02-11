@@ -34,3 +34,4 @@
 2.0.14:
   - updated circleci context & added wagon for py 3.11.
 2.0.15: Release with DSL 1.5 plugin YAML.
+2.0.16: added .drp folder for trufflehog.
